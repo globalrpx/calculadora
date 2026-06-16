@@ -77,7 +77,12 @@ export default async function SignUpPage({
             />
             <span>
               Aceito os{" "}
-              <Link href="/termos" className="font-semibold text-rpx-blue hover:underline">
+              <Link
+                href="/termos"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-rpx-blue hover:underline"
+              >
                 termos
               </Link>
             </span>
