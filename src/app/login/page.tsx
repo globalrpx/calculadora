@@ -2,11 +2,12 @@ import { signInAction } from "@/lib/actions/auth";
 import { hasSupabaseConfig, mockUsers } from "@/lib/auth/mock-users";
 import { Brand } from "@/components/layout/Brand";
 import { Button } from "@/components/ui/Button";
+import Link from "next/link";
 
 export default async function LoginPage({
   searchParams
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; registered?: string }>;
 }) {
   const params = await searchParams;
   const showMockUsers = !hasSupabaseConfig();
@@ -25,6 +26,11 @@ export default async function LoginPage({
         {params.error ? (
           <div className="mt-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             Nao foi possivel entrar. Verifique seus dados ou o perfil do usuario.
+          </div>
+        ) : null}
+        {params.registered ? (
+          <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            Cadastro recebido. Verifique seu e-mail para ativar o acesso.
           </div>
         ) : null}
         <form action={signInAction} className="mt-6 grid gap-4">
@@ -53,6 +59,11 @@ export default async function LoginPage({
             Entrar
           </Button>
         </form>
+        <div className="mt-5 text-center text-sm text-slate-600">
+          <Link href="/cadastro" className="font-semibold text-rpx-blue hover:underline">
+            Faça seu cadastro
+          </Link>
+        </div>
         {showMockUsers ? (
           <div className="mt-6 rounded-md border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-bold uppercase text-slate-500">Usuarios mock para esta fase</p>

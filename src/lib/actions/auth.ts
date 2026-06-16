@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { findMockUser, hasSupabaseConfig, MOCK_AUTH_COOKIE } from "@/lib/auth/mock-users";
 import { createClient } from "@/lib/supabase/server";
@@ -69,4 +69,51 @@ export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function signUpAction(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  const acceptedTerms = formData.get("acceptedTerms") === "on";
+
+  if (!hasSupabaseConfig()) {
+    redirect("/cadastro?error=supabase-not-configured");
+  }
+
+  if (!name || !email || !phone || password.length < 6) {
+    redirect("/cadastro?error=invalid-fields");
+  }
+
+  if (!acceptedTerms) {
+    redirect("/cadastro?error=terms");
+  }
+
+  const headerStore = await headers();
+  const origin = headerStore.get("origin") ?? "http://localhost:3001";
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${origin}/app`,
+      data: {
+        name,
+        phone,
+        role: "client"
+      }
+    }
+  });
+
+  if (error) {
+    redirect(`/cadastro?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (!data.session) {
+    redirect("/login?registered=check-email");
+  }
+
+  redirect("/app");
 }

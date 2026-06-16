@@ -57,6 +57,58 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-06-16 - Cadastro publico de clientes
+
+- Tela `/cadastro` criada com campos:
+  - Nome;
+  - E-mail;
+  - Celular;
+  - Senha;
+  - Aceite dos termos.
+- Tela `/termos` criada como pagina publica inicial de termos de uso.
+- Link `Faça seu cadastro` adicionado abaixo do formulario de login.
+- Link `Efetuar login` adicionado abaixo do formulario de cadastro.
+- Home atualizada com botao `Cadastre-se grátis` ao lado de `Entrar`.
+- Action `signUpAction` criada usando Supabase Auth.
+- Novos cadastros passam a receber perfil `client`.
+- Migration `002_public_signup_profiles.sql` criada e aplicada no Supabase remoto:
+  - coluna `phone` em `profiles`;
+  - funcao `handle_new_user_profile()`;
+  - trigger em `auth.users` para criar/atualizar `profiles`.
+- `agents.md` atualizado para orientar que deploy manual na Vercel so deve ocorrer por pedido explicito durante rodadas de multiplos ajustes.
+
+Arquivos principais:
+
+- `src/app/cadastro/page.tsx`
+- `src/app/termos/page.tsx`
+- `src/app/login/page.tsx`
+- `src/app/page.tsx`
+- `src/lib/actions/auth.ts`
+- `src/lib/types.ts`
+- `src/lib/auth/mock-users.ts`
+- `supabase/migrations/002_public_signup_profiles.sql`
+- `agents.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- `npm run build` aprovado com 19 rotas.
+- `supabase db push` aplicou a migration `002`.
+- `supabase migration list` confirmou `001` e `002` em local/remoto.
+- Cadastro direto via Supabase Auth criou usuario e perfil `client` com nome, e-mail e celular.
+- `/`, `/login`, `/cadastro` e `/termos` renderizando localmente com links/campos esperados.
+
+Nao foi possivel validar ainda:
+
+- Fluxo completo visual de cadastro via browser embutido apos submit, pois o browser reteve uma pagina de erro de conexao durante o reinicio do dev server.
+- Deploy Vercel desta entrega, por pedido de aguardar fechamento da rodada antes de publicar.
+
+Proxima etapa recomendada:
+
+- Testar a rota `/cadastro` online quando o usuario pedir o proximo deploy Vercel.
+
 ### 2026-06-16 - Logo do login com link para home
 
 - Componente `Brand` passou a aceitar `href` opcional.

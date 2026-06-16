@@ -6,9 +6,12 @@ export default function HomePage() {
     <main className="min-h-screen">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-4 py-6 sm:px-6 lg:px-8">
         <Brand />
-        <ButtonLink href="/login" variant="secondary">
-          Entrar
-        </ButtonLink>
+        <div className="flex items-center gap-3">
+          <ButtonLink href="/login" variant="secondary">
+            Entrar
+          </ButtonLink>
+          <ButtonLink href="/cadastro">Cadastre-se grátis</ButtonLink>
+        </div>
       </header>
       <section className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-20">
         <div>

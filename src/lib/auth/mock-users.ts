@@ -58,6 +58,7 @@ export function mockUserToProfile(user: MockUser): Profile {
     auth_user_id: user.id,
     name: user.name,
     email: user.email,
+    phone: null,
     role: user.role,
     client_id: user.clientId,
     created_at: now,
