@@ -1,0 +1,10 @@
+<svg width="520" height="144" viewBox="0 0 520 144" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Global RPX</title>
+  <desc id="desc">Logo horizontal da Global RPX</desc>
+  <rect width="520" height="144" rx="18" fill="white"/>
+  <rect x="24" y="24" width="96" height="96" rx="16" fill="#123F8C"/>
+  <path d="M48 90V47h29c10 0 17 6 17 15 0 7-4 12-11 14l14 14H82L69 77H61v13H48Zm13-24h14c5 0 8-2 8-6s-3-6-8-6H61v12Z" fill="white"/>
+  <path d="M92 90l22-43h13l-22 43H92Z" fill="#D7282F"/>
+  <text x="148" y="67" fill="#123F8C" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="800">GLOBAL RPX</text>
+  <text x="150" y="101" fill="#172033" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="500">Importacao com inteligencia operacional</text>
+</svg>
