@@ -57,6 +57,32 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-06-16 - Logo do login com link para home
+
+- Componente `Brand` passou a aceitar `href` opcional.
+- Logo da tela `/login` configurado como link para `/`.
+- Demais usos do `Brand` permanecem sem link.
+
+Arquivos principais:
+
+- `src/components/layout/Brand.tsx`
+- `src/app/login/page.tsx`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- Verificacao local em `http://localhost:3001/login` confirmou um link `href="/"` no logo.
+
+Nao foi possivel validar ainda:
+
+- Deploy automatico da Vercel desta alteracao antes do push.
+
+Proxima etapa recomendada:
+
+- Confirmar deploy automatico e testar o clique no ambiente online.
+
 ### 2026-06-16 - Deploy Vercel de producao para teste online
 
 - Vercel CLI autenticado fora do ambiente Codex com a conta `globalrpxdev-6068`.

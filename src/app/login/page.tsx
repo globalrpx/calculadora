@@ -14,7 +14,7 @@ export default async function LoginPage({
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">
       <section className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-soft">
-        <Brand />
+        <Brand href="/" />
         <div className="mt-8">
           <p className="text-sm font-semibold uppercase text-rpx-red">Acesso seguro</p>
           <h1 className="mt-2 text-3xl font-bold text-rpx-ink">Entrar na plataforma</h1>
