@@ -57,29 +57,33 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
-### 2026-06-16 - Preparacao local para versionamento GitHub
+### 2026-06-16 - Publicacao inicial no GitHub
 
 - `.gitignore` revisado para ignorar artefatos locais, dependencias, builds, arquivos de ambiente e logs de package managers.
 - `.DS_Store` local removido antes do versionamento.
 - Arquivos do projeto preparados para commit inicial em Git.
-- Remote GitHub ainda nao configurado neste momento.
+- Commit inicial criado e publicado no GitHub.
+- Relatorio de preparacao para GitHub criado em `docs/GITHUB_READY_REPORT.md`.
 
 Arquivos principais:
 
 - `.gitignore`
+- `docs/GITHUB_READY_REPORT.md`
 - `state.md`
 
 Validado:
 
 - `git status` sem `.DS_Store`, `.env`, `.env.local`, `node_modules/`, `.next/` ou `.vercel/`.
+- Remote `origin` configurado para `https://github.com/hcferreira/globalrpx.git`.
+- Push da branch `main` concluido com sucesso.
 
 Nao foi possivel validar ainda:
 
-- Push para GitHub, pois nenhum remote `origin` estava configurado.
+- Deploy em ambiente externo.
 
 Proxima etapa recomendada:
 
-- Configurar o remote `origin` com a URL do repositorio GitHub e executar o push da branch `main`.
+- Configurar CI e preparar deploy preview na Vercel antes de integrar Supabase real.
 
 ### 2026-06-12 - Estabilizacao tecnica do Next.js
 
