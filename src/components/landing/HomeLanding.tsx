@@ -46,6 +46,9 @@ const authorityStats: Stat[] = [
   { value: "Brasil + China", label: "equipe atuando nas duas pontas" }
 ];
 
+const whatsappContactUrl =
+  "https://api.whatsapp.com/send/?phone=5519998899164&text=D%C3%BAvidas%20sobre%20a%20calculadora%20da%20RPX";
+
 const problems: Problem[] = [
   {
     title: "Comprar sem saber a margem real",
@@ -305,14 +308,22 @@ function CalculatorPreview() {
 
 function PlaceholderLink({
   children,
-  note = "TODO: definir rota ou canal final para este CTA."
+  href = "#",
+  note = "TODO: definir rota ou canal final para este CTA.",
+  rel,
+  target
 }: {
   children: React.ReactNode;
+  href?: string;
   note?: string;
+  rel?: string;
+  target?: string;
 }) {
   return (
     <a
-      href="#"
+      href={href}
+      rel={rel}
+      target={target}
       title={note}
       className="inline-flex min-h-11 items-center justify-center rounded-md border border-rpx-blue/20 bg-white px-4 py-2 text-sm font-semibold text-rpx-blue transition hover:bg-rpx-sky"
     >
@@ -382,7 +393,14 @@ export function HomeLanding() {
               <ButtonLink href="/cadastro" className="sm:min-w-56">
                 Calcular minha importação grátis
               </ButtonLink>
-              <PlaceholderLink>Falar com um especialista</PlaceholderLink>
+              <PlaceholderLink
+                href={whatsappContactUrl}
+                note="Abrir conversa no WhatsApp com a Global RPX."
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Falar com um especialista
+              </PlaceholderLink>
             </div>
             <p className="mt-3 text-sm font-medium text-slate-500">Grátis para começar. Sem compromisso.</p>
             <p className="mt-6 max-w-3xl text-sm leading-6 text-slate-500">
@@ -495,7 +513,14 @@ export function HomeLanding() {
               </ul>
             </div>
             <div className="mt-6">
-              <PlaceholderLink>Solicitar análise da operação</PlaceholderLink>
+              <PlaceholderLink
+                href={whatsappContactUrl}
+                note="Abrir conversa no WhatsApp com a Global RPX."
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Solicitar análise da operação
+              </PlaceholderLink>
             </div>
           </div>
         </div>
@@ -609,7 +634,14 @@ export function HomeLanding() {
               <ButtonLink href="/cadastro" variant="secondary" className="border-white bg-white text-rpx-blue hover:bg-rpx-sky">
                 Calcular minha importação grátis
               </ButtonLink>
-              <PlaceholderLink>Falar com um especialista</PlaceholderLink>
+              <PlaceholderLink
+                href={whatsappContactUrl}
+                note="Abrir conversa no WhatsApp com a Global RPX."
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Falar com um especialista
+              </PlaceholderLink>
             </div>
           </div>
         </div>
@@ -633,7 +665,7 @@ export function HomeLanding() {
             </a>
             <a href="/termos">Termos de Uso</a>
             <a
-              href="https://api.whatsapp.com/send/?phone=5519998899164&text=D%C3%BAvidas%20sobre%20a%20calculadora%20da%20RPX"
+              href={whatsappContactUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
