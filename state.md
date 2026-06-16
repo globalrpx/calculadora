@@ -62,6 +62,7 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 - Vercel CLI autenticado fora do ambiente Codex com a conta `globalrpxdev-6068`.
 - Projeto local vinculado ao time Vercel `global-rpx-s-projects`.
 - Projeto Vercel criado/vinculado: `calculadora`.
+- Repositorio GitHub `globalrpx/calculadora` conectado ao projeto Vercel.
 - Env vars de producao configuradas na Vercel:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -82,15 +83,16 @@ Validado:
 - `/login` retornando HTTP 200 online.
 - `/api/exchange-rate` retornando PTAX online.
 - Login online com `cliente1@gmail.com` redirecionando para `/app`.
+- `vercel git connect` confirmando que `globalrpx/calculadora` ja esta conectado ao projeto.
 
 Nao foi possivel validar ainda:
 
-- Deploy automatico por GitHub, pois a conexao GitHub <-> Vercel falhou por falta de Login Connection na conta Vercel.
-- Env vars de preview por branch, pois o projeto Vercel ainda nao tem repositorio Git conectado.
+- Primeiro deploy automatico disparado por push no GitHub.
+- Env vars de preview pelo CLI, pois a Vercel ainda exige branch de preview mesmo ao usar o comando recomendado para todos os previews.
 
 Proxima etapa recomendada:
 
-- Conectar o repositorio `globalrpx/calculadora` ao projeto Vercel pelo painel da Vercel para habilitar deploys automaticos e preview por branch.
+- Fazer um commit pequeno futuro para confirmar deploy automatico por push no GitHub e, se necessario, configurar env vars de Preview pelo painel da Vercel.
 
 ### 2026-06-16 - Ambiente local conectado ao Supabase real
 
