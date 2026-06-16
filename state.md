@@ -57,6 +57,41 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-06-16 - Deploy Vercel de producao para teste online
+
+- Vercel CLI autenticado fora do ambiente Codex com a conta `globalrpxdev-6068`.
+- Projeto local vinculado ao time Vercel `global-rpx-s-projects`.
+- Projeto Vercel criado/vinculado: `calculadora`.
+- Env vars de producao configuradas na Vercel:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Deploy concluido com sucesso na Vercel.
+- SSO deployment protection desativada para permitir teste publico pela URL.
+- URL publica principal:
+  - `https://calculadora-global-rpx-s-projects.vercel.app`
+
+Arquivos principais:
+
+- `.vercel/project.json` (local, ignorado pelo Git)
+- `state.md`
+
+Validado:
+
+- Build Vercel concluido com `npm run build`.
+- `/` retornando HTTP 200 online.
+- `/login` retornando HTTP 200 online.
+- `/api/exchange-rate` retornando PTAX online.
+- Login online com `cliente1@gmail.com` redirecionando para `/app`.
+
+Nao foi possivel validar ainda:
+
+- Deploy automatico por GitHub, pois a conexao GitHub <-> Vercel falhou por falta de Login Connection na conta Vercel.
+- Env vars de preview por branch, pois o projeto Vercel ainda nao tem repositorio Git conectado.
+
+Proxima etapa recomendada:
+
+- Conectar o repositorio `globalrpx/calculadora` ao projeto Vercel pelo painel da Vercel para habilitar deploys automaticos e preview por branch.
+
 ### 2026-06-16 - Ambiente local conectado ao Supabase real
 
 - `.env.local` local configurado com URL e chave publica do projeto Supabase.
