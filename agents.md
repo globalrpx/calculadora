@@ -62,7 +62,7 @@ Estrutura principal:
 - Manter as alteracoes pequenas, coesas e alinhadas aos documentos.
 - Nao remover mudancas existentes sem pedido explicito.
 - Atualizar `state.md` ao final de cada entrega relevante.
-- Nao acionar deploy manual na Vercel a cada entrega. Fazer push no GitHub normalmente; aguardar pedido explicito do usuario para publicar/promover ou acompanhar deploy na Vercel durante rodadas de multiplos ajustes.
+- Nao acionar deploy manual na Vercel a cada entrega. Fazer push no GitHub normalmente; aguardar pedido explicito do usuario para publicar/promover ou acompanhar deploy na Vercel durante rodadas de multiplos ajustes. O `vercel.json` deve manter `git.deploymentEnabled: false` para evitar deploy automatico por push.
 
 ## Auth e seguranca
 

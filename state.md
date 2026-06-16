@@ -76,6 +76,7 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
   - funcao `handle_new_user_profile()`;
   - trigger em `auth.users` para criar/atualizar `profiles`.
 - `agents.md` atualizado para orientar que deploy manual na Vercel so deve ocorrer por pedido explicito durante rodadas de multiplos ajustes.
+- `vercel.json` atualizado com `git.deploymentEnabled: false` para evitar deploy automatico por push.
 
 Arquivos principais:
 
@@ -88,6 +89,7 @@ Arquivos principais:
 - `src/lib/auth/mock-users.ts`
 - `supabase/migrations/002_public_signup_profiles.sql`
 - `agents.md`
+- `vercel.json`
 - `state.md`
 
 Validado:
@@ -103,7 +105,7 @@ Validado:
 Nao foi possivel validar ainda:
 
 - Fluxo completo visual de cadastro via browser embutido apos submit, pois o browser reteve uma pagina de erro de conexao durante o reinicio do dev server.
-- Deploy Vercel desta entrega, por pedido de aguardar fechamento da rodada antes de publicar.
+- A Vercel disparou um build automatico apos o push mesmo com `[skip ci]`; a configuracao oficial para bloquear proximos deploys foi adicionada em `vercel.json`.
 
 Proxima etapa recomendada:
 
