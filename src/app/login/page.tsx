@@ -20,7 +20,7 @@ export default async function LoginPage({
           <p className="text-sm font-semibold uppercase text-rpx-red">Acesso seguro</p>
           <h1 className="mt-2 text-3xl font-bold text-rpx-ink">Entrar na plataforma</h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Use o e-mail cadastrado pela RPX para acessar sua area.
+            Use o e-mail cadastrado para acessar sua area.
           </p>
         </div>
         {params.error ? (
@@ -30,7 +30,7 @@ export default async function LoginPage({
         ) : null}
         {params.registered ? (
           <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            Cadastro recebido. Verifique seu e-mail para ativar o acesso.
+            Cadastro concluido. Sua conta ja pode ser usada para entrar na plataforma.
           </div>
         ) : null}
         <form action={signInAction} className="mt-6 grid gap-4">

@@ -254,15 +254,19 @@ O `SUPABASE_SERVICE_ROLE_KEY` nao deve ser exposto no client.
 
 Nesta fundacao, criar apenas o necessario para autenticacao e roteamento por perfil.
 
-#### profiles
+#### app_users
 
 ```text
 id uuid primary key
-auth_user_id uuid references auth.users(id)
 name text
 email text
+phone text
 role text
+status text
 client_id uuid null
+auth_provider text null
+auth_provider_user_id text null
+accepted_terms_at timestamptz null
 created_at timestamptz
 updated_at timestamptz
 ```
@@ -297,15 +301,15 @@ Ativar Row Level Security nas tabelas.
 
 Regras desejadas:
 
-- Usuario autenticado pode ler o proprio profile.
-- Admin pode ler todos os profiles.
+- Usuario autenticado pode ler o proprio registro em `app_users`.
+- Admin pode ler todos os usuarios da aplicacao.
 - Cliente pode ler apenas o proprio client quando houver `client_id`.
 - Admin pode ler todos os clients.
 
 Nesta etapa, se a complexidade de RLS atrasar a validacao visual, priorizar:
 
 1. Auth funcionando.
-2. Profile com role funcionando.
+2. Usuario da aplicacao com role funcionando.
 3. Protecao basica de rotas no Next.js.
 4. RLS refinada logo na etapa seguinte.
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { signOutAction } from "@/lib/actions/auth";
 import { Brand } from "@/components/layout/Brand";
 import { Button } from "@/components/ui/Button";
-import type { Profile } from "@/lib/types";
+import type { AppUser } from "@/lib/types";
 
 type NavItem = {
   href: string;
@@ -10,12 +10,12 @@ type NavItem = {
 };
 
 export function AppShell({
-  profile,
+  appUser,
   navItems,
   children,
   tone = "client"
 }: {
-  profile: Profile;
+  appUser: AppUser;
   navItems: NavItem[];
   children: React.ReactNode;
   tone?: "client" | "admin";
@@ -27,7 +27,7 @@ export function AppShell({
           <Brand />
           <div className="flex items-center gap-3">
             <div className="hidden text-right text-sm sm:block">
-              <p className="font-semibold text-rpx-ink">{profile.name ?? profile.email}</p>
+              <p className="font-semibold text-rpx-ink">{appUser.name ?? appUser.email}</p>
               <p className="text-xs uppercase text-slate-500">{tone === "admin" ? "Admin RPX" : "Cliente"}</p>
             </div>
             <form action={signOutAction}>

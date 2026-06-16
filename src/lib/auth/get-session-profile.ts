@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { findMockUser, hasSupabaseConfig, mockUserToProfile, MOCK_AUTH_COOKIE } from "@/lib/auth/mock-users";
+import { findMockUser, hasSupabaseConfig, mockUserToAppUser, MOCK_AUTH_COOKIE } from "@/lib/auth/mock-users";
 import { createClient } from "@/lib/supabase/server";
-import type { Profile, UserRole } from "@/lib/types";
+import type { AppUser, UserRole } from "@/lib/types";
 
 export async function getSessionProfile() {
   if (!hasSupabaseConfig()) {
@@ -19,7 +19,7 @@ export async function getSessionProfile() {
         id: mockUser.id,
         email: mockUser.email
       },
-      profile: mockUserToProfile(mockUser)
+      appUser: mockUserToAppUser(mockUser)
     };
   }
 
@@ -32,27 +32,28 @@ export async function getSessionProfile() {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
+  const { data: appUser } = await supabase
+    .from("app_users")
     .select("*")
-    .eq("auth_user_id", user.id)
+    .eq("auth_provider", "supabase")
+    .eq("auth_provider_user_id", user.id)
     .single();
 
-  if (!profile) {
-    redirect("/login?error=missing-profile");
+  if (!appUser) {
+    redirect("/login?error=missing-app-user");
   }
 
   return {
     user,
-    profile: profile as Profile
+    appUser: appUser as AppUser
   };
 }
 
 export async function requireRole(role: UserRole) {
   const session = await getSessionProfile();
 
-  if (session.profile.role !== role) {
-    redirect(session.profile.role === "admin" ? "/admin/dashboard" : "/app");
+  if (session.appUser.role !== role) {
+    redirect(session.appUser.role === "admin" ? "/admin/dashboard" : "/app");
   }
 
   return session;

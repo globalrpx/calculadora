@@ -1,8 +1,9 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { findMockUser, hasSupabaseConfig, MOCK_AUTH_COOKIE } from "@/lib/auth/mock-users";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signInAction(formData: FormData) {
@@ -46,17 +47,18 @@ export async function signInAction(formData: FormData) {
     redirect("/login?error=session-not-created");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
+  const { data: appUser } = await supabase
+    .from("app_users")
     .select("role")
-    .eq("auth_user_id", user.id)
+    .eq("auth_provider", "supabase")
+    .eq("auth_provider_user_id", user.id)
     .single();
 
-  if (!profile) {
-    redirect("/login?error=missing-profile");
+  if (!appUser) {
+    redirect("/login?error=missing-app-user");
   }
 
-  redirect(profile.role === "admin" ? "/admin/dashboard" : "/app");
+  redirect(appUser.role === "admin" ? "/admin/dashboard" : "/app");
 }
 
 export async function signOutAction() {
@@ -90,29 +92,47 @@ export async function signUpAction(formData: FormData) {
     redirect("/cadastro?error=terms");
   }
 
-  const headerStore = await headers();
-  const origin = headerStore.get("origin") ?? "http://localhost:3001";
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
 
-  const { data, error } = await supabase.auth.signUp({
+  const { data: createdUser, error: createUserError } = await adminSupabase.auth.admin.createUser({
     email,
     password,
-    options: {
-      emailRedirectTo: `${origin}/app`,
-      data: {
-        name,
-        phone,
-        role: "client"
-      }
+    email_confirm: true,
+    user_metadata: {
+      name,
+      phone,
+      role: "client"
     }
   });
 
-  if (error) {
-    redirect(`/cadastro?error=${encodeURIComponent(error.message)}`);
+  if (createUserError || !createdUser.user) {
+    redirect(`/cadastro?error=${encodeURIComponent(createUserError?.message ?? "create-user-failed")}`);
   }
 
-  if (!data.session) {
-    redirect("/login?registered=check-email");
+  const { error: insertAppUserError } = await adminSupabase.from("app_users").insert({
+    name,
+    email,
+    phone,
+    role: "client",
+    status: "active",
+    auth_provider: "supabase",
+    auth_provider_user_id: createdUser.user.id,
+    accepted_terms_at: new Date().toISOString()
+  });
+
+  if (insertAppUserError) {
+    await adminSupabase.auth.admin.deleteUser(createdUser.user.id);
+    redirect(`/cadastro?error=${encodeURIComponent(insertAppUserError.message)}`);
+  }
+
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (signInError) {
+    redirect("/login?registered=success");
   }
 
   redirect("/app");

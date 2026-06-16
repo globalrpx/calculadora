@@ -8,10 +8,10 @@ const navItems = [
 ];
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { profile } = await requireRole("client");
+  const { appUser } = await requireRole("client");
 
   return (
-    <AppShell profile={profile} navItems={navItems}>
+    <AppShell appUser={appUser} navItems={navItems}>
       {children}
     </AppShell>
   );

@@ -13,10 +13,10 @@ const navItems = [
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { profile } = await requireRole("admin");
+  const { appUser } = await requireRole("admin");
 
   return (
-    <AppShell profile={profile} navItems={navItems} tone="admin">
+    <AppShell appUser={appUser} navItems={navItems} tone="admin">
       {children}
     </AppShell>
   );

@@ -1,4 +1,4 @@
-import type { Profile, UserRole } from "@/lib/types";
+import type { AppUser, UserRole } from "@/lib/types";
 
 export const MOCK_AUTH_COOKIE = "global_rpx_mock_user";
 
@@ -50,17 +50,20 @@ export function getDefaultClientUser() {
   return mockUsers[0];
 }
 
-export function mockUserToProfile(user: MockUser): Profile {
+export function mockUserToAppUser(user: MockUser): AppUser {
   const now = new Date().toISOString();
 
   return {
     id: user.id,
-    auth_user_id: user.id,
     name: user.name,
     email: user.email,
     phone: null,
     role: user.role,
+    status: "active",
     client_id: user.clientId,
+    auth_provider: "mock",
+    auth_provider_user_id: user.id,
+    accepted_terms_at: now,
     created_at: now,
     updated_at: now
   };

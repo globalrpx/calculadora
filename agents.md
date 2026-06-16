@@ -55,6 +55,7 @@ Estrutura principal:
 
 ## Regras de implementacao
 
+- Em tarefas de construcao, antes de implementar, primeiro resumir o que foi entendido e apresentar um plano curto de execucao. So comecar os edits depois da aprovacao explicita do usuario.
 - Seguir o escopo da fase registrada em `state.md`.
 - Nao implementar funcionalidade completa quando o pedido for apenas fundacao ou front estatico.
 - Preferir componentes compartilhados para formulario, tabela, cards e estados vazios.
@@ -74,6 +75,7 @@ Estrutura principal:
 - Usuario deslogado nao acessa rotas internas.
 - `SUPABASE_SERVICE_ROLE_KEY` nunca deve ir para codigo client.
 - RLS deve proteger dados de cliente por `client_id`.
+- A base de usuarios da aplicacao deve ficar em tabela propria da app, independente do provedor de autenticacao. Usar `app_users` como fonte de verdade para perfis, papeis e futuros cadastros administrativos/exportacoes.
 
 ### Modo mock atual
 

@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { requireRole } from "@/lib/auth/get-session-profile";
 
 export default async function CalculatorPage() {
-  const { profile } = await requireRole("client");
+  const { appUser } = await requireRole("client");
 
   return (
     <>
@@ -12,7 +12,7 @@ export default async function CalculatorPage() {
         title="Calculadora"
         description="Crie cotacoes preliminares e compare o valor de importacao direta com o valor comprando via RPX."
       />
-      <CalculatorClient userEmail={profile.email ?? "cliente1@gmail.com"} />
+      <CalculatorClient userEmail={appUser.email} />
     </>
   );
 }

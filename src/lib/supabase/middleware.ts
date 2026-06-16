@@ -75,16 +75,17 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
+  const { data: appUser } = await supabase
+    .from("app_users")
     .select("role")
-    .eq("auth_user_id", user.id)
+    .eq("auth_provider", "supabase")
+    .eq("auth_provider_user_id", user.id)
     .single();
 
-  if (!profile) {
+  if (!appUser) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set("error", "missing-profile");
+    redirectUrl.searchParams.set("error", "missing-app-user");
     return NextResponse.redirect(redirectUrl);
   }
 
@@ -94,13 +95,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (pathname.startsWith("/admin") && profile.role !== "admin") {
+  if (pathname.startsWith("/admin") && appUser.role !== "admin") {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/app";
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (pathname.startsWith("/app") && profile.role === "admin") {
+  if (pathname.startsWith("/app") && appUser.role === "admin") {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/admin/dashboard";
     return NextResponse.redirect(redirectUrl);

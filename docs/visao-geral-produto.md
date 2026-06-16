@@ -172,17 +172,21 @@ Saidas previstas:
 
 ## Modelo de Dados Inicial
 
-### profiles
+### app_users
 
-Representa o perfil complementar de um usuario autenticado.
+Representa o usuario da aplicacao e deve permanecer independente do provedor de autenticacao. O provedor autentica; a plataforma controla perfis, papeis, relacao com cliente e futuras operacoes administrativas sobre a base de usuarios.
 
 ```text
 id
-auth_user_id
 name
 email
+phone
 role
+status
 client_id
+auth_provider
+auth_provider_user_id
+accepted_terms_at
 created_at
 updated_at
 ```
@@ -422,6 +426,7 @@ archived
 Regras essenciais:
 
 - `profiles`: usuario ve o proprio perfil; admin ve todos.
+- `app_users`: usuario ve o proprio cadastro de aplicacao; admin ve todos.
 - `clients`: cliente ve apenas o proprio cadastro; admin ve todos.
 - `quotes`: cliente ve apenas cotacoes do proprio `client_id`; admin ve todos.
 - `quote_images`: segue permissao da cotacao.

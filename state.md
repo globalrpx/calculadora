@@ -43,9 +43,9 @@ Stack alvo:
 
 ## Status atual
 
-Fase atual: Front da Calculadora com login mock.
+Fase atual: Fundacao autenticada com Supabase real e cadastro publico inicial de clientes.
 
-Estado: fundacao implementada, calculadora dinamica em memoria/localStorage e build Next.js de producao validado.
+Estado: fundacao implementada, calculadora dinamica em memoria/localStorage, autenticacao real funcionando e base de usuarios da aplicacao desacoplada do provedor via `app_users`.
 
 Servidor de preview atual:
 
@@ -56,6 +56,68 @@ http://127.0.0.1:3002
 Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As dependencias do app Next agora estao instaladas e o build passou; o ambiente ainda nao possui npm convencional no PATH, entao a estabilizacao usou um npm temporario.
 
 ## Entregue ate agora
+
+### 2026-06-16 - Base de usuarios desacoplada em `app_users`
+
+- Nova migration `003_app_users.sql` criada e aplicada no Supabase remoto.
+- Tabela `app_users` criada como fonte de verdade da aplicacao para:
+  - perfil;
+  - role;
+  - status;
+  - vinculo com `client_id`;
+  - aceite de termos;
+  - identificador do provedor de autenticacao.
+- Dados existentes de `profiles` migrados para `app_users`.
+- Funcao `public.is_admin()` e politica de leitura de `clients` passaram a usar `app_users`.
+- Trigger `on_auth_user_created_profile` e funcao `handle_new_user_profile()` removidos para parar de acoplar cadastro da app ao `auth.users`.
+- `signInAction`, `signUpAction`, sessao e middleware passaram a consultar `app_users`.
+- Novo helper server-side `src/lib/supabase/admin.ts` criado para operacoes com `SUPABASE_SERVICE_ROLE_KEY`.
+- Cadastro publico agora:
+  - cria usuario no provedor de auth;
+  - grava o registro correspondente em `app_users`;
+  - autentica o cliente e redireciona para `/app`.
+- `agents.md` atualizado para exigir plano aprovado antes de implementar e para registrar `app_users` como base de usuarios da aplicacao.
+- Documentacao de produto/fundacao atualizada para refletir `app_users` no modelo.
+
+Arquivos principais:
+
+- `src/lib/actions/auth.ts`
+- `src/lib/auth/get-session-profile.ts`
+- `src/lib/auth/mock-users.ts`
+- `src/lib/supabase/admin.ts`
+- `src/lib/supabase/middleware.ts`
+- `src/lib/types.ts`
+- `src/components/layout/AppShell.tsx`
+- `src/app/app/layout.tsx`
+- `src/app/admin/layout.tsx`
+- `src/app/app/calculadora/page.tsx`
+- `supabase/migrations/003_app_users.sql`
+- `agents.md`
+- `docs/visao-geral-produto.md`
+- `docs/plano-fundacao-sistema.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- `npm run build` aprovado com 19 rotas.
+- `supabase db push` aplicou a migration `003`.
+- `supabase migration list` confirmou `001`, `002` e `003` em local/remoto.
+- Fluxo visual real de cadastro em `http://localhost:3001/cadastro`:
+  - criou usuario novo;
+  - redirecionou para `/app`;
+  - exibiu a area do cliente autenticada.
+- Login real com o usuario recem-criado em `http://localhost:3001/login` redirecionou corretamente para `/app`.
+- Consulta direta ao banco confirmou registro novo em `app_users` com `role=client`, `status=active`, `auth_provider=supabase` e `accepted_terms_at`.
+
+Nao foi possivel validar ainda:
+
+- Fluxo administrativo futuro de listagem, edicao e exportacao de `app_users`, porque essas telas ainda nao foram implementadas.
+
+Proxima etapa recomendada:
+
+- Criar a estrutura administrativa de clientes/usuarios usando `app_users` como base da aplicacao e deixar `profiles` apenas como legado temporario ate a limpeza definitiva do esquema.
 
 ### 2026-06-16 - Cadastro publico de clientes
 
