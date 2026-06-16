@@ -57,6 +57,39 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-06-16 - Ajuste de zoom aparente no mobile da area restrita
+
+- Investigacao do comportamento em mobile apos login, onde a area restrita parecia abrir com zoom aumentado.
+- Causa provavel tratada: overflow horizontal no layout logado, principalmente pela soma de menu mobile, logo e saudacao da conta no header.
+- Header logado ajustado para caber melhor em telas pequenas:
+  - logo menor no breakpoint mobile;
+  - botao de conta com largura maxima e texto truncado;
+  - containers com `min-w-0`, `w-full` e gaps menores no mobile.
+- Reforco global de `overflow-x: hidden` em `html` e `body`.
+- Cards e titulos receberam protecoes contra estouro horizontal.
+
+Arquivos principais:
+
+- `src/app/globals.css`
+- `src/components/layout/AppShell.tsx`
+- `src/components/layout/AccountMenu.tsx`
+- `src/components/layout/Brand.tsx`
+- `src/components/layout/PageHeader.tsx`
+- `src/components/ui/Card.tsx`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+
+Nao foi possivel validar ainda:
+
+- teste visual completo em mobile real antes do deploy; a automacao local do browser falhou durante preenchimento/navegacao, apesar da aplicacao responder.
+
+Proxima etapa recomendada:
+
+- publicar em producao e validar no celular se a area restrita abre sem necessidade de zoom out.
+
 ### 2026-06-16 - Correcao operacional do cadastro em producao
 
 - Investigacao do erro online em `/cadastro` concluida com leitura dos logs da Vercel.

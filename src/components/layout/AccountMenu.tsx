@@ -43,15 +43,15 @@ export function AccountMenu({
   }, []);
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative min-w-0">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-label="Abrir menu da conta"
-        className="inline-flex min-h-11 items-center gap-2 rounded-md border border-rpx-blue/20 bg-white px-3 py-2 text-sm font-semibold text-rpx-ink transition hover:bg-rpx-sky"
+        className="inline-flex min-h-11 max-w-[150px] items-center gap-2 rounded-md border border-rpx-blue/20 bg-white px-3 py-2 text-sm font-semibold text-rpx-ink transition hover:bg-rpx-sky sm:max-w-[220px]"
       >
-        <span className="max-w-[180px] truncate">Olá, {greetingName}!</span>
+        <span className="min-w-0 truncate">Olá, {greetingName}!</span>
         <ChevronIcon open={open} />
       </button>
 

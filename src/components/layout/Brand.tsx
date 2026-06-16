@@ -15,7 +15,7 @@ export function Brand({ compact = false, href }: BrandProps) {
         width={540}
         height={210}
         priority
-        className="h-14 w-auto max-w-[190px]"
+        className="h-12 w-auto max-w-[135px] sm:h-14 sm:max-w-[190px]"
       />
       {!compact ? (
         <div>
@@ -34,7 +34,7 @@ export function Brand({ compact = false, href }: BrandProps) {
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex min-w-0 items-center gap-3">
       {content}
     </div>
   );
