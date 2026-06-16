@@ -57,6 +57,42 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-06-16 - Ambiente local conectado ao Supabase real
+
+- `.env.local` local configurado com URL e chave publica do projeto Supabase.
+- Usuarios reais de teste criados no Supabase Auth:
+  - `cliente1@gmail.com`
+  - `cliente2@gmail.com`
+  - `admin@globalrpx.com`
+- Clientes e perfis iniciais inseridos nas tabelas `clients` e `profiles`.
+- Senha temporaria de desenvolvimento definida para os tres usuarios reais.
+- Tela de login ajustada para ocultar atalhos mock quando Supabase real estiver configurado.
+- Servidor local reiniciado em `http://localhost:3001` lendo `.env.local`.
+
+Arquivos principais:
+
+- `.env.local` (local, ignorado pelo Git)
+- `src/app/login/page.tsx`
+- `state.md`
+
+Validado:
+
+- Autenticacao direta no Supabase para cliente 1, cliente 2 e admin.
+- Perfil correto retornado para cada usuario real.
+- Login real do cliente pelo app redirecionando para `/app`.
+- Login real do admin pelo app redirecionando para `/admin/dashboard`.
+- Tela `/login` sem atalhos mock em modo Supabase real.
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+
+Nao foi possivel validar ainda:
+
+- Envio real de imagens e persistencia de cotacoes no Supabase, pois essas tabelas ainda nao foram implementadas.
+
+Proxima etapa recomendada:
+
+- Criar migration da calculadora com `quotes`, `quote_images`, `calculation_parameters`, bucket `quote-images` e RLS por `client_id`.
+
 ### 2026-06-16 - Vinculo Supabase e migration fundacional aplicada
 
 - Supabase CLI autenticado fora do ambiente Codex com a conta `globalrpx`.

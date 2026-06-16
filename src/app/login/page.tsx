@@ -1,5 +1,5 @@
 import { signInAction } from "@/lib/actions/auth";
-import { mockUsers } from "@/lib/auth/mock-users";
+import { hasSupabaseConfig, mockUsers } from "@/lib/auth/mock-users";
 import { Brand } from "@/components/layout/Brand";
 import { Button } from "@/components/ui/Button";
 
@@ -9,6 +9,7 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const params = await searchParams;
+  const showMockUsers = !hasSupabaseConfig();
 
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">
@@ -52,20 +53,22 @@ export default async function LoginPage({
             Entrar
           </Button>
         </form>
-        <div className="mt-6 rounded-md border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-bold uppercase text-slate-500">Usuarios mock para esta fase</p>
-          <div className="mt-3 grid gap-2">
-            {mockUsers.map((user) => (
-              <form key={user.email} action={signInAction}>
-                <input type="hidden" name="email" value={user.email} />
-                <input type="hidden" name="password" value="mock" />
-                <button className="w-full rounded-md bg-white px-3 py-2 text-left text-sm font-semibold text-rpx-blue transition hover:bg-rpx-sky">
-                  {user.email}
-                </button>
-              </form>
-            ))}
+        {showMockUsers ? (
+          <div className="mt-6 rounded-md border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-bold uppercase text-slate-500">Usuarios mock para esta fase</p>
+            <div className="mt-3 grid gap-2">
+              {mockUsers.map((user) => (
+                <form key={user.email} action={signInAction}>
+                  <input type="hidden" name="email" value={user.email} />
+                  <input type="hidden" name="password" value="mock" />
+                  <button className="w-full rounded-md bg-white px-3 py-2 text-left text-sm font-semibold text-rpx-blue transition hover:bg-rpx-sky">
+                    {user.email}
+                  </button>
+                </form>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
       </section>
     </main>
   );
