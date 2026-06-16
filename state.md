@@ -74,7 +74,7 @@ Arquivos principais:
 Validado:
 
 - `git status` sem `.DS_Store`, `.env`, `.env.local`, `node_modules/`, `.next/` ou `.vercel/`.
-- Remote `origin` configurado para `https://github.com/hcferreira/globalrpx.git`.
+- Remote `origin` configurado para `https://github.com/globalrpx/calculadora.git`.
 - Push da branch `main` concluido com sucesso.
 
 Nao foi possivel validar ainda:

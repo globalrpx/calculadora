@@ -17,7 +17,7 @@ rm -f .DS_Store
 git add .
 git status --short
 git commit -m "chore: prepare project for github collaboration"
-git remote add origin https://github.com/hcferreira/globalrpx.git
+git remote add origin https://github.com/globalrpx/calculadora.git
 git remote -v
 git branch -M main
 git push -u origin main
@@ -65,7 +65,7 @@ Nenhum arquivo de projeto foi removido.
 ## Remote usado
 
 ```text
-origin https://github.com/hcferreira/globalrpx.git
+origin https://github.com/globalrpx/calculadora.git
 ```
 
 ## Resultado do push
@@ -80,7 +80,7 @@ branch 'main' set up to track 'origin/main'
 Repositorio:
 
 ```text
-https://github.com/hcferreira/globalrpx.git
+https://github.com/globalrpx/calculadora.git
 ```
 
 ## Pendencias
