@@ -57,6 +57,32 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-06-16 - Correcao operacional do cadastro em producao
+
+- Investigacao do erro online em `/cadastro` concluida com leitura dos logs da Vercel.
+- Causa raiz identificada: a server action de cadastro dependia de `SUPABASE_SERVICE_ROLE_KEY`, mas a variavel nao estava configurada no ambiente de producao da Vercel.
+- O problema nao estava relacionado ao novo campo opcional `Empresa`.
+- O fluxo de cadastro foi endurecido para falhar com redirecionamento controlado em vez de gerar erro 500 quando a `SUPABASE_SERVICE_ROLE_KEY` estiver ausente em algum ambiente.
+- A tela `/cadastro` agora exibe mensagem amigavel quando o ambiente de cadastro estiver temporariamente indisponivel por configuracao incompleta.
+
+Arquivos principais:
+
+- `src/lib/actions/auth.ts`
+- `src/app/cadastro/page.tsx`
+
+Validado:
+
+- Leitura dos logs de producao da Vercel confirmou o erro `Configure SUPABASE_SERVICE_ROLE_KEY.` no `POST /cadastro`.
+- Renderizacao publica de `/cadastro` em producao seguia normal; a quebra ocorria especificamente na submissao do formulario.
+
+Nao foi possivel validar ainda:
+
+- novo envio real do cadastro em producao antes de sincronizar a variavel `SUPABASE_SERVICE_ROLE_KEY` no projeto da Vercel e publicar um novo deploy.
+
+Proxima etapa recomendada:
+
+- sincronizar `SUPABASE_SERVICE_ROLE_KEY` na Vercel, publicar novo deploy e validar o cadastro online ponta a ponta.
+
 ### 2026-06-16 - Menu de conta, rota Minha Conta e empresa opcional no cadastro
 
 - Header logado passou a usar menu de conta compacto no lugar do bloco antigo com texto e botao grande de sair.

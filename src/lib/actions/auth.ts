@@ -99,7 +99,13 @@ export async function signUpAction(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const adminSupabase = createAdminClient();
+  let adminSupabase;
+
+  try {
+    adminSupabase = createAdminClient();
+  } catch {
+    redirect("/cadastro?error=service-role-not-configured");
+  }
 
   const { data: createdClient, error: createClientError } = await adminSupabase
     .from("clients")

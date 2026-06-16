@@ -9,6 +9,12 @@ export default async function SignUpPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const params = await searchParams;
+  const errorMessage =
+    params.error === "service-role-not-configured"
+      ? "Cadastro temporariamente indisponível. Tente novamente em instantes."
+      : params.error
+        ? "Não foi possível concluir o cadastro. Verifique os dados informados."
+        : null;
 
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">
@@ -21,9 +27,9 @@ export default async function SignUpPage({
             Acesse a calculadora e acompanhe suas cotações preliminares.
           </p>
         </div>
-        {params.error ? (
+        {errorMessage ? (
           <div className="mt-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            Não foi possível concluir o cadastro. Verifique os dados informados.
+            {errorMessage}
           </div>
         ) : null}
         <form action={signUpAction} className="mt-6 grid gap-4">
