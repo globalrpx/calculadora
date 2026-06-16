@@ -38,6 +38,16 @@ export default async function SignUpPage({
             />
           </label>
           <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            Empresa
+            <input
+              name="company"
+              type="text"
+              autoComplete="organization"
+              className="min-h-11 rounded-md border border-slate-300 px-3 outline-none transition focus:border-rpx-blue focus:ring-4 focus:ring-rpx-blue/10"
+            />
+            <span className="text-xs font-normal leading-5 text-slate-500">Opcional.</span>
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-slate-700">
             E-mail
             <input
               required

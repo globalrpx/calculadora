@@ -43,19 +43,223 @@ Stack alvo:
 
 ## Status atual
 
-Fase atual: Fundacao autenticada com Supabase real e cadastro publico inicial de clientes.
+Fase atual: Fundacao autenticada com Supabase real, cadastro publico inicial e primeira base dinamica do painel administrativo.
 
-Estado: fundacao implementada, calculadora dinamica em memoria/localStorage, autenticacao real funcionando e base de usuarios da aplicacao desacoplada do provedor via `app_users`.
+Estado: fundacao implementada, calculadora dinamica em memoria/localStorage, autenticacao real funcionando, base de usuarios da aplicacao desacoplada do provedor via `app_users` e modulo administrativo inicial conectado ao banco para dashboard, clientes, cotacoes e usuarios.
 
 Servidor de preview atual:
 
 ```text
-http://127.0.0.1:3002
+http://127.0.0.1:3001
 ```
 
 Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As dependencias do app Next agora estao instaladas e o build passou; o ambiente ainda nao possui npm convencional no PATH, entao a estabilizacao usou um npm temporario.
 
 ## Entregue ate agora
+
+### 2026-06-16 - Menu de conta, rota Minha Conta e empresa opcional no cadastro
+
+- Header logado passou a usar menu de conta compacto no lugar do bloco antigo com texto e botao grande de sair.
+- O novo trigger exibe saudacao no formato `Ola, Fulano!` com dropdown.
+- Dropdown passou a conter:
+  - `Minha conta`
+  - `Sair`
+- O logout agora encerra a sessao e redireciona para a Home `/`.
+- Nova rota autenticada `/conta` criada e protegida no middleware.
+- A tela `Minha conta` permite:
+  - editar nome;
+  - editar empresa;
+  - editar e-mail;
+  - editar telefone;
+  - atualizar senha em bloco separado.
+- Alteracao de e-mail agora valida duplicidade na base antes de salvar.
+- Atualizacao de conta sincroniza:
+  - `app_users`;
+  - `clients`, quando houver `client_id`;
+  - usuario do provider de auth via admin API.
+- Cadastro publico em `/cadastro` passou a ter campo `Empresa` opcional.
+- O campo opcional `Empresa` agora e persistido no momento do cadastro publico em `clients` e em `user_metadata`.
+- Navegacoes de admin e cliente foram extraidas para `src/lib/navigation.ts` para reuso em layouts e na rota `/conta`.
+
+Arquivos principais:
+
+- `src/components/layout/AccountMenu.tsx`
+- `src/components/layout/AppShell.tsx`
+- `src/lib/actions/account.ts`
+- `src/lib/actions/auth.ts`
+- `src/lib/navigation.ts`
+- `src/lib/supabase/middleware.ts`
+- `src/app/conta/page.tsx`
+- `src/app/cadastro/page.tsx`
+- `src/app/admin/layout.tsx`
+- `src/app/app/layout.tsx`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- `npm run build` aprovado com a nova rota `/conta`.
+- Validacao visual no browser confirmando:
+  - menu de conta compacto no header;
+  - dropdown com `Minha conta` e `Sair`;
+  - tela `/conta` com formularios de dados e senha;
+  - campo `Empresa` opcional presente em `/cadastro`.
+
+Nao foi possivel validar ainda:
+
+- submissao real de alteracao de e-mail, para evitar impactar uma conta existente no ambiente.
+- submissao real de troca de senha em conta ativa do ambiente.
+
+Proxima etapa recomendada:
+
+- aplicar o mesmo tratamento de dropdown/conta em refinamentos futuros da experiencia logada e replicar o padrao de feedback/acoes nos demais modulos administrativos.
+
+### 2026-06-16 - Padrao de CRUD administrativo e modulo de clientes completo
+
+- Documento `docs/spec-cruds.md` criado para definir o padrao minimo dos CRUDs administrativos.
+- `AGENTS.md` atualizado para exigir a leitura desse spec sempre que a tarefa envolver CRUD, filtros, tabelas ou exclusao.
+- Nova migration `005_crud_soft_delete.sql` criada e aplicada no Supabase remoto.
+- Ajustes de modelagem realizados:
+  - `clients.company_name` deixou de ser obrigatorio;
+  - `clients.deleted_at` adicionado;
+  - `app_users.deleted_at` adicionado;
+  - `clients.status` normalizado para `active/inactive`;
+  - indice unico de e-mail em `app_users` refeito para considerar apenas registros nao excluidos.
+- Login, sessao e middleware passaram a bloquear usuarios com `status != active` ou `deleted_at` preenchido.
+- Tabela base `DataTable` refatorada para:
+  - manter rolagem horizontal apenas dentro da tabela;
+  - evitar barra horizontal na pagina inteira;
+  - suportar melhor links e acoes por linha.
+- Modal de confirmacao reutilizavel criada para exclusoes com soft delete.
+- CRUD de Clientes fechado com:
+  - listagem dedicada;
+  - tela `Novo cliente`;
+  - tela `Editar cliente`;
+  - filtros por nome, empresa, origem, status, data inicial e data final;
+  - coluna `Acoes`;
+  - link clicavel no nome principal da linha;
+  - exclusao logica com confirmacao;
+  - desativacao do usuario vinculado da aplicacao quando houver.
+- O campo `Empresa` passou a ser opcional no formulario administrativo de clientes.
+- Para cadastros sem empresa, a listagem exibe `Pessoa fisica`.
+- Cadastro publico via site deixou de preencher empresa automaticamente com o nome da pessoa.
+
+Arquivos principais:
+
+- `docs/spec-cruds.md`
+- `AGENTS.md`
+- `supabase/migrations/005_crud_soft_delete.sql`
+- `src/lib/admin/queries.ts`
+- `src/lib/actions/admin.ts`
+- `src/lib/actions/auth.ts`
+- `src/lib/auth/get-session-profile.ts`
+- `src/lib/supabase/middleware.ts`
+- `src/components/ui/DataTable.tsx`
+- `src/components/ui/ConfirmDialog.tsx`
+- `src/components/ui/FormField.tsx`
+- `src/components/admin/ClientForm.tsx`
+- `src/components/admin/ClientFilters.tsx`
+- `src/components/admin/ClientRowActions.tsx`
+- `src/app/admin/clientes/page.tsx`
+- `src/app/admin/clientes/novo/page.tsx`
+- `src/app/admin/clientes/[id]/page.tsx`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- `npm run build` aprovado com novas rotas de clientes.
+- `supabase db push` aplicou a migration `005`.
+- Validacao visual no browser em `http://localhost:3001/admin/clientes` confirmando:
+  - filtros renderizados;
+  - coluna `Acoes` presente;
+  - links de edicao funcionando;
+  - modal de exclusao abrindo;
+  - ausencia de rolagem horizontal na pagina;
+  - rolagem horizontal restrita ao container da tabela em viewport estreito.
+- Validacao visual das telas:
+  - `/admin/clientes/novo`
+  - `/admin/clientes/[id]`
+
+Nao foi possivel validar ainda:
+
+- submissao real da exclusao logica ate o fim, para nao desativar cadastros existentes do ambiente.
+- replicacao completa do mesmo CRUD em `Usuarios` e `Cotacoes`.
+
+Proxima etapa recomendada:
+
+- aplicar o mesmo padrao de CRUD de clientes em `Usuarios` e depois em `Cotacoes`, reaproveitando filtros, acoes por linha e modal de confirmacao.
+
+### 2026-06-16 - Base dinamica inicial do painel administrativo
+
+- Nova migration `004_admin_foundation.sql` criada e aplicada no Supabase remoto.
+- O schema administrativo agora inclui:
+  - coluna `source` em `clients` para diferenciar origem `site` e `admin`;
+  - tabela `quotes` para historico persistido de cotacoes;
+  - tabela `simulations` para o futuro modulo de simulacoes com arquivo;
+  - indices e politicas RLS para leitura do proprio cliente e acesso total do admin.
+- A migration tambem faz backfill do relacionamento entre `app_users` clientes antigos e `clients`, preenchendo `client_id` quando faltava.
+- Cadastro publico em `/cadastro` passou a criar primeiro o registro em `clients` e depois o usuario da aplicacao em `app_users`, mantendo a base de clientes fora do provedor de auth.
+- Sidebar administrativa reorganizada para a ordem aprovada:
+  - Dashboard;
+  - Clientes;
+  - Cotações;
+  - Simulações;
+  - Usuários;
+  - itens futuros em grupo `Em breve`: Fornecedores, Despachantes e Parâmetros.
+- Dashboard administrativo passou a exibir totalizadores reais do banco:
+  - clientes cadastrados;
+  - usuarios admin ativos;
+  - cotacoes recebidas;
+  - pedidos de simulacao completa;
+  - simulacoes publicadas.
+- Tela `/admin/clientes` agora:
+  - lista clientes vindos do site e do painel;
+  - permite cadastrar cliente manualmente no admin.
+- Tela `/admin/usuarios` agora:
+  - lista usuarios administrativos;
+  - permite criar novos admins com Supabase Auth + `app_users`.
+- Tela `/admin/cotacoes` agora:
+  - lista cotacoes persistidas;
+  - deixa a base pronta para o futuro fluxo de pedido de simulacao completa.
+- O servidor local antigo em `3001` estava com estado quebrado; ele foi reiniciado e a validacao passou na instancia nova.
+
+Arquivos principais:
+
+- `supabase/migrations/004_admin_foundation.sql`
+- `src/lib/admin/queries.ts`
+- `src/lib/actions/admin.ts`
+- `src/lib/actions/auth.ts`
+- `src/app/admin/layout.tsx`
+- `src/components/layout/AppShell.tsx`
+- `src/app/admin/dashboard/page.tsx`
+- `src/app/admin/clientes/page.tsx`
+- `src/app/admin/cotacoes/page.tsx`
+- `src/app/admin/usuarios/page.tsx`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- `npm run build` aprovado com as novas rotas administrativas.
+- `supabase db push` aplicou a migration `004`.
+- `supabase migration list` confirmou `001`, `002`, `003` e `004` em local/remoto.
+- Validacao visual local em `http://localhost:3001` confirmando carregamento sem erro de:
+  - `/admin/dashboard`
+  - `/admin/clientes`
+  - `/admin/cotacoes`
+  - `/admin/usuarios`
+
+Nao foi possivel validar ainda:
+
+- Criacao real de cliente pelo painel com submissao completa do formulario.
+- Criacao real de novo admin pelo painel com submissao completa do formulario.
+- Persistencia real de cotacoes, porque o fluxo da calculadora ainda nao grava em `quotes`.
+- Tela funcional de simulacoes com upload e publicacao de PDF.
+
+Proxima etapa recomendada:
+
+- Persistir as cotacoes da calculadora em `quotes` e adicionar o gatilho de `pedido de simulacao completa` na area do cliente, para alimentar naturalmente o painel administrativo.
 
 ### 2026-06-16 - Landing page comercial da home e revisão de textos em PT-BR
 

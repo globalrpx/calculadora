@@ -41,7 +41,6 @@ export default async function LoginPage({
               name="email"
               type="email"
               autoComplete="email"
-              defaultValue="cliente1@gmail.com"
               className="min-h-11 rounded-md border border-slate-300 px-3 outline-none transition focus:border-rpx-blue focus:ring-4 focus:ring-rpx-blue/10"
             />
           </label>

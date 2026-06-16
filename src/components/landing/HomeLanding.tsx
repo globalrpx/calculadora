@@ -606,7 +606,7 @@ export function HomeLanding() {
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-              <ButtonLink href="/cadastro" className="bg-white text-rpx-blue hover:bg-rpx-sky">
+              <ButtonLink href="/cadastro" variant="secondary" className="border-white bg-white text-rpx-blue hover:bg-rpx-sky">
                 Calcular minha importação grátis
               </ButtonLink>
               <PlaceholderLink>Falar com um especialista</PlaceholderLink>
@@ -628,14 +628,20 @@ export function HomeLanding() {
             </p>
           </div>
           <div className="grid gap-3 text-sm font-medium text-slate-600 sm:text-right">
-            <a href="#" title="TODO: definir página final.">
+            <a href="/privacidade">
               Política de Privacidade
             </a>
             <a href="/termos">Termos de Uso</a>
-            <a href="#" title="TODO: definir página final.">
+            <a
+              href="https://api.whatsapp.com/send/?phone=5519998899164&text=D%C3%BAvidas%20sobre%20a%20calculadora%20da%20RPX"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Contato
             </a>
-            <a href="#global-rpx">Global RPX</a>
+            <a href="https://globalrpx.com" target="_blank" rel="noopener noreferrer">
+              Global RPX
+            </a>
           </div>
         </div>
       </footer>

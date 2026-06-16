@@ -11,6 +11,7 @@ export type AppUser = {
   auth_provider: string | null;
   auth_provider_user_id: string | null;
   accepted_terms_at: string | null;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 };

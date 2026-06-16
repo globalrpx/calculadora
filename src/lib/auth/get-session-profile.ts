@@ -43,6 +43,10 @@ export async function getSessionProfile() {
     redirect("/login?error=missing-app-user");
   }
 
+  if (appUser.status !== "active" || appUser.deleted_at) {
+    redirect("/login?error=account-inactive");
+  }
+
   return {
     user,
     appUser: appUser as AppUser

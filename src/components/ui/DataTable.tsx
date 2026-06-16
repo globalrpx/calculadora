@@ -15,36 +15,38 @@ export function DataTable<T>({
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <table className="w-full min-w-[760px] border-collapse text-left text-sm">
-        <thead className="bg-slate-50 text-slate-600">
-          <tr>
-            {columns.map((column) => (
-              <th key={String(column.key)} className="px-4 py-3 font-semibold">
-                {column.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {rows.length === 0 ? (
+      <div className="max-w-full overflow-x-auto">
+        <table className="min-w-[880px] w-full border-collapse text-left text-sm">
+          <thead className="bg-slate-50 text-slate-600">
             <tr>
-              <td className="px-4 py-8 text-center text-slate-500" colSpan={columns.length}>
-                {emptyLabel}
-              </td>
+              {columns.map((column) => (
+                <th key={String(column.key)} className="px-4 py-3 font-semibold whitespace-nowrap">
+                  {column.header}
+                </th>
+              ))}
             </tr>
-          ) : (
-            rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                {columns.map((column) => (
-                  <td key={String(column.key)} className="px-4 py-4 text-slate-600">
-                    {column.render ? column.render(row) : String(row[column.key as keyof T] ?? "-")}
-                  </td>
-                ))}
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.length === 0 ? (
+              <tr>
+                <td className="px-4 py-8 text-center text-slate-500" colSpan={columns.length}>
+                  {emptyLabel}
+                </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              rows.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  {columns.map((column) => (
+                    <td key={String(column.key)} className="px-4 py-4 align-top text-slate-600">
+                      {column.render ? column.render(row) : String(row[column.key as keyof T] ?? "-")}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

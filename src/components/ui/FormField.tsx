@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import type { InputHTMLAttributes, ReactNode } from "react";
+import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 
 export function FormField({
   label,
@@ -33,4 +33,16 @@ export function TextInput({ className, ...props }: InputHTMLAttributes<HTMLInput
 
 export function NumberInput({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <TextInput className={className} type="number" step="0.01" min="0" {...props} />;
+}
+
+export function SelectInput({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      className={clsx(
+        "h-11 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-rpx-blue focus:ring-4 focus:ring-rpx-blue/10",
+        className
+      )}
+      {...props}
+    />
+  );
 }

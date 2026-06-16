@@ -47,6 +47,9 @@ export default function TermsPage() {
           </section>
         </div>
         <div className="mt-8 flex flex-wrap gap-3">
+          <ButtonLink href="/" variant="secondary">
+            Voltar para a home
+          </ButtonLink>
           <ButtonLink href="/cadastro">Voltar ao cadastro</ButtonLink>
           <ButtonLink href="/login" variant="secondary">
             Efetuar login

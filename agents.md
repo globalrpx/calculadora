@@ -10,6 +10,7 @@ Leia, nesta ordem:
 2. `docs/visao-geral-produto.md`
 3. `docs/plano-fundacao-sistema.md`
 4. `docs/especificacao-calculadora.md`, quando a tarefa envolver calculadora, cotacoes, historico ou imagens.
+5. `docs/spec-cruds.md`, quando a tarefa envolver CRUDs administrativos, tabelas, filtros, formularios de cadastro/edicao ou exclusao.
 
 Depois de ler, confirme mentalmente:
 
@@ -64,6 +65,22 @@ Estrutura principal:
 - Nao remover mudancas existentes sem pedido explicito.
 - Atualizar `state.md` ao final de cada entrega relevante.
 - Nao acionar deploy manual na Vercel a cada entrega. Fazer push no GitHub normalmente; aguardar pedido explicito do usuario para publicar/promover ou acompanhar deploy na Vercel durante rodadas de multiplos ajustes. O `vercel.json` deve manter `git.deploymentEnabled: false` para evitar deploy automatico por push.
+
+### CRUDs administrativos
+
+Seguir o padrao definido em:
+
+- `docs/spec-cruds.md`
+
+Minimos obrigatorios:
+
+- cabecalho com acao principal `Novo`;
+- filtros acima da listagem;
+- tabela com rolagem horizontal apenas dentro do proprio container quando necessario;
+- coluna `Acoes` com `Editar` e `Excluir`;
+- nome principal clicavel para edicao;
+- soft delete com confirmacao em modal;
+- layout sem barra de rolagem horizontal na pagina inteira.
 
 ## Auth e seguranca
 

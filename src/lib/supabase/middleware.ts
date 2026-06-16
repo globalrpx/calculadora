@@ -10,7 +10,13 @@ export async function updateSession(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   const pathname = request.nextUrl.pathname;
-  const isInternalRoute = pathname === "/app" || pathname.startsWith("/app/") || pathname === "/admin" || pathname.startsWith("/admin/");
+  const isInternalRoute =
+    pathname === "/app" ||
+    pathname.startsWith("/app/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname === "/conta" ||
+    pathname.startsWith("/conta/");
 
   if (!isInternalRoute) {
     return response;
@@ -77,7 +83,7 @@ export async function updateSession(request: NextRequest) {
 
   const { data: appUser } = await supabase
     .from("app_users")
-    .select("role")
+    .select("role, status, deleted_at")
     .eq("auth_provider", "supabase")
     .eq("auth_provider_user_id", user.id)
     .single();
@@ -86,6 +92,13 @@ export async function updateSession(request: NextRequest) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     redirectUrl.searchParams.set("error", "missing-app-user");
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (appUser.status !== "active" || appUser.deleted_at) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/login";
+    redirectUrl.searchParams.set("error", "account-inactive");
     return NextResponse.redirect(redirectUrl);
   }
 

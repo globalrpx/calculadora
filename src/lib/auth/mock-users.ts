@@ -64,6 +64,7 @@ export function mockUserToAppUser(user: MockUser): AppUser {
     auth_provider: "mock",
     auth_provider_user_id: user.id,
     accepted_terms_at: now,
+    deleted_at: null,
     created_at: now,
     updated_at: now
   };
