@@ -564,7 +564,14 @@ export function HomeLanding() {
                 realmente merecem uma análise mais profunda.
               </p>
               <div className="mt-6">
-                <PlaceholderLink>Conhecer suporte para Canton Fair</PlaceholderLink>
+                <PlaceholderLink
+                  href={whatsappContactUrl}
+                  note="Abrir conversa no WhatsApp com a Global RPX."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Conhecer suporte para Canton Fair
+                </PlaceholderLink>
               </div>
             </div>
           </div>
