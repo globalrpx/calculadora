@@ -20,17 +20,17 @@ export default async function LoginPage({
           <p className="text-sm font-semibold uppercase text-rpx-red">Acesso seguro</p>
           <h1 className="mt-2 text-3xl font-bold text-rpx-ink">Entrar na plataforma</h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Use o e-mail cadastrado para acessar sua area.
+            Use o e-mail cadastrado para acessar sua área.
           </p>
         </div>
         {params.error ? (
           <div className="mt-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            Nao foi possivel entrar. Verifique seus dados ou o perfil do usuario.
+            Não foi possível entrar. Verifique seus dados ou o perfil do usuário.
           </div>
         ) : null}
         {params.registered ? (
           <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            Cadastro concluido. Sua conta ja pode ser usada para entrar na plataforma.
+            Cadastro concluído. Sua conta já pode ser usada para entrar na plataforma.
           </div>
         ) : null}
         <form action={signInAction} className="mt-6 grid gap-4">
@@ -66,7 +66,7 @@ export default async function LoginPage({
         </div>
         {showMockUsers ? (
           <div className="mt-6 rounded-md border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-bold uppercase text-slate-500">Usuarios mock para esta fase</p>
+            <p className="text-xs font-bold uppercase text-slate-500">Usuários mock para esta fase</p>
             <div className="mt-3 grid gap-2">
               {mockUsers.map((user) => (
                 <form key={user.email} action={signInAction}>

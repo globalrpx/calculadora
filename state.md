@@ -57,6 +57,81 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-06-16 - Landing page comercial da home e revisão de textos em PT-BR
+
+- A rota `/` foi substituída por uma landing page comercial focada em captação de leads para a calculadora.
+- A nova home passou a comunicar a calculadora como porta de entrada e a Global RPX como autoridade operacional.
+- Estrutura implementada na landing:
+  - header com navegação;
+  - hero com preview visual da calculadora;
+  - faixa de autoridade;
+  - dor do cliente;
+  - como funciona;
+  - o que o resultado apresenta;
+  - simulação gratuita x análise completa;
+  - para quem é;
+  - bloco Canton Fair;
+  - diferenciais da Global RPX;
+  - depoimentos placeholder;
+  - FAQ;
+  - CTA final;
+  - footer.
+- CTAs principais ligados ao fluxo real atual:
+  - `Calcular grátis` e equivalentes -> `/cadastro`
+  - `Entrar` -> `/login`
+- CTAs de contato e análise completa ficaram como placeholder neutro com `TODO`, sem inventar WhatsApp ou rota externa.
+- SEO básico adicionado na home com title e meta description específicos.
+- Textos visíveis das páginas principais foram revisados para Português Brasileiro com acentuação:
+  - home;
+  - login;
+  - cadastro;
+  - termos;
+  - área do cliente;
+  - páginas administrativas;
+  - calculadora e histórico.
+
+Arquivos principais:
+
+- `src/app/page.tsx`
+- `src/components/landing/HomeLanding.tsx`
+- `src/app/layout.tsx`
+- `src/app/login/page.tsx`
+- `src/app/cadastro/page.tsx`
+- `src/app/termos/page.tsx`
+- `src/app/app/page.tsx`
+- `src/app/app/layout.tsx`
+- `src/app/app/calculadora/page.tsx`
+- `src/app/app/simulacoes/page.tsx`
+- `src/app/admin/layout.tsx`
+- `src/app/admin/dashboard/page.tsx`
+- `src/app/admin/cotacoes/page.tsx`
+- `src/app/admin/fornecedores/page.tsx`
+- `src/app/admin/usuarios/page.tsx`
+- `src/app/admin/parametros/page.tsx`
+- `src/app/admin/simulacoes/page.tsx`
+- `src/components/calculator/CalculatorClient.tsx`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- `npm run build` aprovado com 19 rotas.
+- Verificação local da home em `http://localhost:3001/` confirmando:
+  - title SEO correto;
+  - headline principal renderizada;
+  - CTA principal para `/cadastro`;
+  - CTA de login para `/login`.
+
+Nao foi possivel validar ainda:
+
+- Rotas finais de contato, politica de privacidade e solicitacao de analise, pois ainda nao existem no produto.
+- Depoimentos reais da Global RPX, que permanecem como placeholder.
+
+Proxima etapa recomendada:
+
+- Definir o destino real dos CTAs comerciais de contato/analise e implementar as respectivas rotas ou integracoes.
+
 ### 2026-06-16 - Base de usuarios desacoplada em `app_users`
 
 - Nova migration `003_app_users.sql` criada e aplicada no Supabase remoto.

@@ -10,7 +10,7 @@ export default async function CalculatorPage() {
       <PageHeader
         eyebrow="Cliente"
         title="Calculadora"
-        description="Crie cotacoes preliminares e compare o valor de importacao direta com o valor comprando via RPX."
+        description="Crie cotações preliminares e compare o valor de importação direta com o valor comprando via RPX."
       />
       <CalculatorClient userEmail={appUser.email} />
     </>

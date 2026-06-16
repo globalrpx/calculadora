@@ -10,24 +10,24 @@ export default function TermsPage() {
           <p className="text-sm font-semibold uppercase text-rpx-red">Termos de uso</p>
           <h1 className="mt-2 text-3xl font-bold text-rpx-ink">Termos da Plataforma Global RPX</h1>
           <p className="mt-4 text-sm leading-6 text-slate-600">
-            Estes termos regulam o uso inicial da plataforma para cadastro, calculos preliminares,
-            cotacoes e acesso a simulacoes disponibilizadas pela Global RPX.
+            Estes termos regulam o uso inicial da plataforma para cadastro, cálculos preliminares,
+            cotações e acesso a simulações disponibilizadas pela Global RPX.
           </p>
         </div>
         <div className="mt-8 grid gap-6 text-sm leading-7 text-slate-700">
           <section>
             <h2 className="text-lg font-bold text-rpx-navy">Uso da plataforma</h2>
             <p className="mt-2">
-              O usuario deve informar dados verdadeiros e manter suas credenciais em seguranca. O
+              O usuário deve informar dados verdadeiros e manter suas credenciais em segurança. O
               acesso pode ser revisado pela Global RPX quando houver uso indevido ou necessidade
               operacional.
             </p>
           </section>
           <section>
-            <h2 className="text-lg font-bold text-rpx-navy">Estimativas e cotacoes</h2>
+            <h2 className="text-lg font-bold text-rpx-navy">Estimativas e cotações</h2>
             <p className="mt-2">
-              Os calculos exibidos sao preliminares e nao substituem analise fiscal, logistica ou
-              operacional. Valores, classificacoes e condicoes podem mudar apos validacao pela equipe
+              Os cálculos exibidos são preliminares e não substituem análise fiscal, logística ou
+              operacional. Valores, classificações e condições podem mudar após validação pela equipe
               RPX.
             </p>
           </section>
@@ -35,14 +35,14 @@ export default function TermsPage() {
             <h2 className="text-lg font-bold text-rpx-navy">Dados informados</h2>
             <p className="mt-2">
               Dados de contato, produto, fornecedor e anexos enviados podem ser usados pela Global
-              RPX para atendimento, analise de viabilidade e preparacao de simulacoes relacionadas.
+              RPX para atendimento, análise de viabilidade e preparação de simulações relacionadas.
             </p>
           </section>
           <section>
-            <h2 className="text-lg font-bold text-rpx-navy">Atualizacoes</h2>
+            <h2 className="text-lg font-bold text-rpx-navy">Atualizações</h2>
             <p className="mt-2">
               Estes termos podem ser atualizados conforme a plataforma evoluir. Novos recursos podem
-              ter condicoes especificas apresentadas no momento de uso.
+              ter condições específicas apresentadas no momento de uso.
             </p>
           </section>
         </div>

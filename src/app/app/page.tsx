@@ -5,14 +5,14 @@ export default function ClientHomePage() {
   return (
     <>
       <PageHeader
-        eyebrow="Area do cliente"
+        eyebrow="Área do cliente"
         title="Bem-vindo a Global RPX"
-        description="Acompanhe suas cotacoes preliminares e simulacoes preparadas pelo time RPX."
+        description="Acompanhe suas cotações preliminares e simulações preparadas pelo time RPX."
       />
       <div className="grid gap-4 md:grid-cols-3">
-        <Card title="Cotacoes recentes" value="0" description="Historico real sera exibido na etapa da calculadora." />
-        <Card title="Simulacoes disponiveis" value="0" description="Resultados publicados pela RPX aparecerao aqui." />
-        <Card title="Proxima acao" value="Calculadora" description="Criar nova cotacao sera liberado na proxima fase." />
+        <Card title="Cotações recentes" value="0" description="Histórico real será exibido na etapa da calculadora." />
+        <Card title="Simulações disponíveis" value="0" description="Resultados publicados pela RPX aparecerão aqui." />
+        <Card title="Próxima ação" value="Calculadora" description="Criar nova cotação será liberado na próxima fase." />
       </div>
     </>
   );

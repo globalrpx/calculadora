@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Global RPX",
-  description: "Plataforma Global RPX para cotacoes, simulacoes e operacao de importacao."
+  description: "Plataforma Global RPX para cotações, simulações e operação de importação."
 };
 
 export default function RootLayout({

@@ -6,10 +6,10 @@ const navItems = [
   { href: "/admin/clientes", label: "Clientes" },
   { href: "/admin/fornecedores", label: "Fornecedores" },
   { href: "/admin/despachantes", label: "Despachantes" },
-  { href: "/admin/usuarios", label: "Usuarios" },
-  { href: "/admin/parametros", label: "Parametros" },
-  { href: "/admin/cotacoes", label: "Cotacoes" },
-  { href: "/admin/simulacoes", label: "Simulacoes" }
+  { href: "/admin/usuarios", label: "Usuários" },
+  { href: "/admin/parametros", label: "Parâmetros" },
+  { href: "/admin/cotacoes", label: "Cotações" },
+  { href: "/admin/simulacoes", label: "Simulações" }
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

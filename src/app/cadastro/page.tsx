@@ -18,12 +18,12 @@ export default async function SignUpPage({
           <p className="text-sm font-semibold uppercase text-rpx-red">Cadastro gratuito</p>
           <h1 className="mt-2 text-3xl font-bold text-rpx-ink">Crie sua conta</h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Acesse a calculadora e acompanhe suas cotacoes preliminares.
+            Acesse a calculadora e acompanhe suas cotações preliminares.
           </p>
         </div>
         {params.error ? (
           <div className="mt-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            Nao foi possivel concluir o cadastro. Verifique os dados informados.
+            Não foi possível concluir o cadastro. Verifique os dados informados.
           </div>
         ) : null}
         <form action={signUpAction} className="mt-6 grid gap-4">

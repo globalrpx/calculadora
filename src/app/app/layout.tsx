@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/auth/get-session-profile";
 const navItems = [
   { href: "/app", label: "Resumo" },
   { href: "/app/calculadora", label: "Calculadora" },
-  { href: "/app/simulacoes", label: "Simulacoes" }
+  { href: "/app/simulacoes", label: "Simulações" }
 ];
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {

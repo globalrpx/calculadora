@@ -6,7 +6,7 @@ export default function SuppliersPage() {
   return (
     <>
       <PageHeader title="Fornecedores" action={<Button>Novo fornecedor</Button>} />
-      <TablePlaceholder columns={["Nome", "Pais", "Cidade", "Contato"]} />
+      <TablePlaceholder columns={["Nome", "País", "Cidade", "Contato"]} />
     </>
   );
 }

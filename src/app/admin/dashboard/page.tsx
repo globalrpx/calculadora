@@ -7,13 +7,13 @@ export default function AdminDashboardPage() {
       <PageHeader
         eyebrow="Painel administrativo"
         title="Dashboard RPX"
-        description="Visao inicial estatica para validar a fundacao administrativa."
+        description="Visão inicial estática para validar a fundação administrativa."
       />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card title="Clientes cadastrados" value="0" description="Cadastro real sera conectado depois." />
-        <Card title="Cotacoes recebidas" value="0" description="Aguardando modulo calculadora." />
-        <Card title="Simulacoes em aberto" value="0" description="Fluxo interno futuro." />
-        <Card title="Simulacoes publicadas" value="0" description="Historico do cliente futuro." />
+        <Card title="Clientes cadastrados" value="0" description="Cadastro real será conectado depois." />
+        <Card title="Cotações recebidas" value="0" description="Aguardando módulo calculadora." />
+        <Card title="Simulações em aberto" value="0" description="Fluxo interno futuro." />
+        <Card title="Simulações publicadas" value="0" description="Histórico do cliente futuro." />
       </div>
     </>
   );

@@ -5,7 +5,7 @@ import { TablePlaceholder } from "@/components/ui/TablePlaceholder";
 export default function UsersPage() {
   return (
     <>
-      <PageHeader title="Usuarios" action={<Button>Novo usuario</Button>} />
+      <PageHeader title="Usuários" action={<Button>Novo usuário</Button>} />
       <TablePlaceholder columns={["Nome", "E-mail", "Perfil", "Cliente"]} />
     </>
   );

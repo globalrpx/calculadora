@@ -128,11 +128,11 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
     const hasSupplierCard = supplierContactImageNames.length > 0;
 
     if (!hasSupplierDetails && !hasSupplierCard) {
-      return "Informe nome, e-mail e telefone do fornecedor ou anexe uma foto do cartao de visitas.";
+      return "Informe nome, e-mail e telefone do fornecedor ou anexe uma foto do cartão de visitas.";
     }
 
     if (hasSupplierDetails && !/^\S+@\S+\.\S+$/.test(supplierEmail.trim())) {
-      return "Informe um e-mail valido para o fornecedor.";
+      return "Informe um e-mail válido para o fornecedor.";
     }
 
     return "";
@@ -172,7 +172,7 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
       }, 180);
     } catch {
       setValidationMessage(
-        "Nao foi possivel atualizar os parametros da cotacao. Tente novamente em instantes."
+        "Não foi possível atualizar os parâmetros da cotação. Tente novamente em instantes."
       );
     } finally {
       setIsLoadingExchangeRate(false);
@@ -236,18 +236,18 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
     const summary = [
       `Produto: ${quote.productName}`,
       `HS/NCM: ${quote.hsCode}`,
-      `FOB unitario: ${formatUsd(quote.fobUnitUsd)}`,
+      `FOB unitário: ${formatUsd(quote.fobUnitUsd)}`,
       `Quantidade: ${quote.quantity}`,
       `FOB total: ${formatUsd(quote.fobTotalUsd)}`,
-      `Fornecedor: ${quote.supplierName || "Cartao de visitas anexado"}`,
+      `Fornecedor: ${quote.supplierName || "Cartão de visitas anexado"}`,
       quote.supplierEmail ? `E-mail do fornecedor: ${quote.supplierEmail}` : "",
       quote.supplierPhone ? `Telefone do fornecedor: ${quote.supplierPhone}` : "",
       "",
-      `Custo estimado unitario via RPX: ${formatBrl(quote.unitCostRpxBrl)}`,
+      `Custo estimado unitário via RPX: ${formatBrl(quote.unitCostRpxBrl)}`,
       `Custo estimado total via RPX: ${formatBrl(quote.totalCostRpxBrl)}`,
-      `Valor importacao direta: ${formatBrl(quote.totalCostDirectBrl)}`,
+      `Valor importação direta: ${formatBrl(quote.totalCostDirectBrl)}`,
       `Valor fazendo via RPX: ${formatBrl(quote.totalCostRpxBrl)}`,
-      `Diferenca estimada fazendo via RPX: ${formatBrl(quote.savingsBrl)} (${formatPercent(quote.savingsPercent)})`,
+      `Diferença estimada fazendo via RPX: ${formatBrl(quote.savingsBrl)} (${formatPercent(quote.savingsPercent)})`,
       "",
       "Estimativa preliminar sujeita à validação fiscal, logística e operacional."
     ].join("\n");
@@ -280,7 +280,7 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
     },
     {
       key: "actions",
-      header: "Acoes",
+      header: "Ações",
       render: (quote) => (
         <div className="flex flex-wrap gap-2">
           <button className="font-semibold text-rpx-blue" onClick={() => setSelectedQuote(quote)}>
@@ -301,8 +301,8 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
     <div className="grid gap-6">
       <div className="flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-soft">
         {[
-          ["new", "Nova cotacao"],
-          ["history", "Historico"]
+          ["new", "Nova cotação"],
+          ["history", "Histórico"]
         ].map(([key, label]) => (
           <button
             key={key}
@@ -326,9 +326,9 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
               </div>
               <div className="grid gap-5 md:grid-cols-2">
               <FormField label="Nome do produto">
-                <TextInput value={input.productName} onChange={(event) => updateInput("productName", event.target.value)} placeholder="Ex: Garrafa termica inox" />
+                <TextInput value={input.productName} onChange={(event) => updateInput("productName", event.target.value)} placeholder="Ex: Garrafa térmica inox" />
               </FormField>
-              <FormField label="HS Code ou NCM sugerido" help="Classificacao preliminar, sujeita a validacao fiscal.">
+              <FormField label="HS Code ou NCM sugerido" help="Classificação preliminar, sujeita a validação fiscal.">
                 <TextInput value={input.hsCode} onChange={(event) => updateInput("hsCode", event.target.value)} placeholder="Ex: 9617.00.10" />
                 {ncmSuggestions.length > 0 ? (
                   <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-soft">
@@ -351,7 +351,7 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
                   </div>
                 ) : null}
               </FormField>
-              <FormField label="FOB unitario em dolar">
+              <FormField label="FOB unitário em dólar">
                 <NumberInput value={input.fobUnitUsd} onChange={(event) => updateInput("fobUnitUsd", event.target.value)} />
               </FormField>
               <FormField label="Quantidade">
@@ -380,7 +380,7 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
                   placeholder="+86 138 0000 0000"
                 />
               </FormField>
-              <FormField label="Imagens do produto" help="Voce pode selecionar ate 5 imagens para compor a cotacao.">
+              <FormField label="Imagens do produto" help="Você pode selecionar até 5 imagens para compor a cotação.">
                 <input
                   className="w-full min-w-0 text-sm text-slate-600 file:mr-3 file:min-h-10 file:rounded-md file:border-0 file:bg-rpx-sky file:px-3 file:text-sm file:font-bold file:text-rpx-blue"
                   type="file"
@@ -393,8 +393,8 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
                 />
               </FormField>
               <FormField
-                label="Foto do cartao ou contato do fornecedor"
-                help="Anexe o cartao de visita, anotacao ou outra referencia de contato recebida do fornecedor."
+                label="Foto do cartão ou contato do fornecedor"
+                help="Anexe o cartão de visita, anotação ou outra referência de contato recebida do fornecedor."
               >
                 <input
                   className="w-full min-w-0 text-sm text-slate-600 file:mr-3 file:min-h-10 file:rounded-md file:border-0 file:bg-rpx-sky file:px-3 file:text-sm file:font-bold file:text-rpx-blue"
@@ -437,7 +437,7 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
               ) : null}
               <div className="mt-5 flex justify-end">
               <Button type="button" onClick={runCalculation} disabled={isCollapsing || isLoadingExchangeRate}>
-                {isLoadingExchangeRate ? "Atualizando cotacao..." : "Fazer cálculo"}
+                {isLoadingExchangeRate ? "Atualizando cotação..." : "Fazer cálculo"}
                 </Button>
               </div>
             </section>
@@ -464,16 +464,16 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
                     {formatBrl(calculatedResult.totalCostRpxBrl)}
                   </p>
                   <p className="mt-2 text-sm text-slate-600">
-                    Custo unitario estimado: {formatBrl(calculatedResult.unitCostRpxBrl)}
+                    Custo unitário estimado: {formatBrl(calculatedResult.unitCostRpxBrl)}
                   </p>
                 </section>
                 <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
-                  <p className="text-xs font-bold uppercase text-slate-500">Referencia de importacao direta</p>
+                  <p className="text-xs font-bold uppercase text-slate-500">Referência de importação direta</p>
                   <p className="mt-3 text-2xl font-black text-rpx-ink">
                     {formatBrl(calculatedResult.totalCostDirectBrl)}
                   </p>
                   <p className="mt-2 text-sm text-slate-600">
-                    Custo unitario estimado: {formatBrl(calculatedResult.unitCostDirectBrl)}
+                    Custo unitário estimado: {formatBrl(calculatedResult.unitCostDirectBrl)}
                   </p>
                 </section>
                 <section
@@ -484,13 +484,13 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
                   }`}
                 >
                   <h2 className={`text-xs font-bold uppercase ${calculatedResult.savingsBrl > 0 ? "text-emerald-700" : "text-slate-500"}`}>
-                    Diferenca estimada com a RPX
+                    Diferença estimada com a RPX
                   </h2>
                   <p className="mt-3 text-2xl font-black">{formatBrl(calculatedResult.savingsBrl)}</p>
                   <p className={`mt-2 text-sm leading-6 ${calculatedResult.savingsBrl > 0 ? "text-emerald-800" : "text-slate-600"}`}>
                     {calculatedResult.savingsBrl > 0
-                      ? `Economia estimada de ${formatPercent(calculatedResult.savingsPercent)} em relacao a referencia direta.`
-                      : "Resultado neutro. Validar condicoes comerciais antes de apresentar beneficio."}
+                      ? `Economia estimada de ${formatPercent(calculatedResult.savingsPercent)} em relação à referência direta.`
+                      : "Resultado neutro. Validar condições comerciais antes de apresentar benefício."}
                   </p>
                 </section>
                 <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
@@ -510,13 +510,13 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
       ) : (
         <section className="grid gap-5">
           {quotes.length === 0 ? (
-            <EmptyState title="Nenhuma cotacao salva para este usuario" description="Salve uma cotacao para ver o historico separado por cliente." />
+            <EmptyState title="Nenhuma cotação salva para este usuário" description="Salve uma cotação para ver o histórico separado por cliente." />
           ) : (
             <DataTable columns={columns} rows={quotes} />
           )}
           {selectedQuote ? (
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
-              <h2 className="text-xl font-bold text-rpx-ink">Detalhe da cotacao</h2>
+              <h2 className="text-xl font-bold text-rpx-ink">Detalhe da cotação</h2>
               <div className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-2">
                 <p>
                   <b>Produto:</b> {selectedQuote.productName}
@@ -525,7 +525,7 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
                   <b>HS/NCM:</b> {selectedQuote.hsCode}
                 </p>
                 <p>
-                  <b>FOB unitario:</b> {formatUsd(selectedQuote.fobUnitUsd)}
+                  <b>FOB unitário:</b> {formatUsd(selectedQuote.fobUnitUsd)}
                 </p>
                 <p>
                   <b>Quantidade:</b> {selectedQuote.quantity}
@@ -534,10 +534,10 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
                   <b>Valor fazendo via RPX:</b> {formatBrl(selectedQuote.totalCostRpxBrl)}
                 </p>
                 <p>
-                  <b>Valor importacao direta:</b> {formatBrl(selectedQuote.totalCostDirectBrl)}
+                  <b>Valor importação direta:</b> {formatBrl(selectedQuote.totalCostDirectBrl)}
                 </p>
                 <p>
-                  <b>Diferenca via RPX:</b> {formatBrl(selectedQuote.savingsBrl)} ({formatPercent(selectedQuote.savingsPercent)})
+                  <b>Diferença via RPX:</b> {formatBrl(selectedQuote.savingsBrl)} ({formatPercent(selectedQuote.savingsPercent)})
                 </p>
                 <p>
                   <b>Imagens do produto:</b> {selectedQuote.images.length ? selectedQuote.images.join(", ") : "Nenhuma"}
