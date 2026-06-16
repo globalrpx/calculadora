@@ -74,14 +74,16 @@ Validado:
 - `npm run typecheck` aprovado.
 - `npm run lint` aprovado sem erros.
 - Verificacao local em `http://localhost:3001/login` confirmou um link `href="/"` no logo.
+- Deploy automatico Vercel concluido com sucesso.
+- Verificacao online em `https://calculadora-global-rpx-s-projects.vercel.app/login` confirmou o clique no logo navegando para `/`.
 
 Nao foi possivel validar ainda:
 
-- Deploy automatico da Vercel desta alteracao antes do push.
+- Nada nesta entrega.
 
 Proxima etapa recomendada:
 
-- Confirmar deploy automatico e testar o clique no ambiente online.
+- Seguir para a proxima melhoria de UX ou para a migration da calculadora.
 
 ### 2026-06-16 - Deploy Vercel de producao para teste online
 
