@@ -57,6 +57,38 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-06-16 - Vinculo Supabase e migration fundacional aplicada
+
+- Supabase CLI autenticado fora do ambiente Codex com a conta `globalrpx`.
+- Projeto local vinculado ao Supabase remoto `Calculadora Global RPX`.
+- Project ref vinculado: `wrcgjooqbgxnjztuzfpo`.
+- Migration fundacional `001_foundation.sql` aplicada no banco remoto.
+- Estrutura inicial criada/confirmada:
+  - extensao `pgcrypto`;
+  - tabela `clients`;
+  - tabela `profiles`;
+  - funcao `public.is_admin()`;
+  - RLS e policies iniciais de leitura para perfis e clientes.
+
+Arquivos principais:
+
+- `supabase/migrations/001_foundation.sql`
+- `state.md`
+
+Validado:
+
+- `supabase projects list` retornando o projeto como `ACTIVE_HEALTHY` e `linked: true`.
+- `supabase migration list` com migration local `001` correspondente a remote `001`.
+- `supabase db push` finalizado com sucesso.
+
+Nao foi possivel validar ainda:
+
+- Fluxo real de login Supabase no app, pois ainda faltam variaveis `.env.local` e usuarios/perfis reais.
+
+Proxima etapa recomendada:
+
+- Configurar `.env.local` com URL e anon key do Supabase, criar usuarios de teste e inserir registros em `clients`/`profiles`.
+
 ### 2026-06-16 - Publicacao inicial no GitHub
 
 - `.gitignore` revisado para ignorar artefatos locais, dependencias, builds, arquivos de ambiente e logs de package managers.
