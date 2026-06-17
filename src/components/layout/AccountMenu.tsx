@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { signOutAction } from "@/lib/actions/auth";
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -64,7 +63,7 @@ export function AccountMenu({
           >
             Minha conta
           </Link>
-          <form action={signOutAction}>
+          <form action="/logout" method="post">
             <button
               type="submit"
               className="block w-full rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-rpx-sky hover:text-rpx-blue"
