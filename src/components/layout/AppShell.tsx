@@ -5,6 +5,13 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import type { AppUser } from "@/lib/types";
 import type { NavItem } from "@/lib/navigation";
 
+function getGreetingName(appUser: AppUser) {
+  const fallback = appUser.email.split("@")[0];
+  const [firstName] = (appUser.name || fallback).trim().split(/\s+/);
+
+  return firstName || fallback;
+}
+
 export function AppShell({
   appUser,
   navItems,
@@ -14,7 +21,7 @@ export function AppShell({
   navItems: NavItem[];
   children: React.ReactNode;
 }) {
-  const greetingName = (appUser.name || appUser.email.split("@")[0]).trim();
+  const greetingName = getGreetingName(appUser);
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-rpx-mist">

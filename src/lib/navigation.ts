@@ -5,7 +5,7 @@ export type NavItem = {
 };
 
 export const clientNavItems: NavItem[] = [
-  { href: "/app", label: "Resumo" },
+  { href: "/app", label: "Dashboard" },
   { href: "/app/calculadora", label: "Calculadora" },
   { href: "/app/simulacoes", label: "Simulações" }
 ];

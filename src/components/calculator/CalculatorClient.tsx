@@ -5,19 +5,13 @@ import { Button } from "@/components/ui/Button";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FormField, NumberInput, TextInput } from "@/components/ui/FormField";
+import {
+  duplicateClientQuoteAction,
+  requestFullSimulationAction,
+  saveClientQuoteAction
+} from "@/lib/actions/client-quotes";
 import { calculateQuote, formatBrl, formatPercent, formatUsd, type QuoteInput, type QuoteResult } from "@/lib/calculator/calculate-quote";
-
-type QuoteRecord = QuoteInput &
-  QuoteResult & {
-    id: string;
-    createdAt: string;
-    status: "submitted";
-    images: string[];
-    supplierContactImages: string[];
-    supplierName?: string;
-    supplierEmail?: string;
-    supplierPhone?: string;
-  };
+import type { ClientQuoteRecord } from "@/lib/client/types";
 
 type NcmOption = {
   code: string;
@@ -34,7 +28,11 @@ const initialInput: QuoteInput = {
   directImportFactor: 2.2
 };
 
-export function CalculatorClient({ userEmail }: { userEmail: string }) {
+export function CalculatorClient({
+  initialQuotes
+}: {
+  initialQuotes: ClientQuoteRecord[];
+}) {
   const [activeTab, setActiveTab] = useState<"new" | "history">("new");
   const [input, setInput] = useState<QuoteInput>(initialInput);
   const [supplierName, setSupplierName] = useState("");
@@ -44,14 +42,19 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
   const [supplierContactImageNames, setSupplierContactImageNames] = useState<string[]>([]);
   const [calculatedResult, setCalculatedResult] = useState<QuoteResult | null>(null);
   const [isCollapsing, setIsCollapsing] = useState(false);
+  const [fullSimulationModalOpen, setFullSimulationModalOpen] = useState(false);
+  const [simulationModalMessage, setSimulationModalMessage] = useState(
+    "O time da Global RPX vai entrar em contato para explicar como funciona a simulação completa, validar as informações da cotação e orientar os próximos passos."
+  );
+  const [isRequestingSimulation, setIsRequestingSimulation] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
-  const [quotes, setQuotes] = useState<QuoteRecord[]>([]);
-  const [selectedQuote, setSelectedQuote] = useState<QuoteRecord | null>(null);
+  const [quotes, setQuotes] = useState<ClientQuoteRecord[]>(initialQuotes);
+  const [selectedQuote, setSelectedQuote] = useState<ClientQuoteRecord | null>(null);
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [ncmOptions, setNcmOptions] = useState<NcmOption[]>([]);
   const [selectedNcm, setSelectedNcm] = useState<NcmOption | null>(null);
   const [isLoadingExchangeRate, setIsLoadingExchangeRate] = useState(false);
 
-  const storageKey = `global-rpx-quotes:${userEmail}`;
   const ncmSuggestions = useMemo(() => {
     const query = input.hsCode.trim().toLowerCase();
 
@@ -68,11 +71,6 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
       })
       .slice(0, 8);
   }, [input.hsCode, ncmOptions]);
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(storageKey);
-    setQuotes(stored ? JSON.parse(stored) : []);
-  }, [storageKey]);
 
   useEffect(() => {
     fetch("/data/ncm.json")
@@ -166,15 +164,31 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
       const calculationInput = { ...input, usedDollar: data.rate };
       setInput(calculationInput);
       setIsCollapsing(true);
-      window.setTimeout(() => {
-        setCalculatedResult(calculateQuote(calculationInput));
-        setIsCollapsing(false);
-      }, 180);
+      const result = calculateQuote(calculationInput);
+      const savedQuote = await saveClientQuoteAction({
+        ...calculationInput,
+        ...result,
+        id: editingQuoteId ?? undefined,
+        images: imageNames,
+        supplierContactImages: supplierContactImageNames,
+        supplierName: supplierName.trim(),
+        supplierEmail: supplierEmail.trim(),
+        supplierPhone: supplierPhone.trim()
+      });
+
+      setQuotes((currentQuotes) => {
+        const withoutSaved = currentQuotes.filter((quote) => quote.id !== savedQuote.id);
+        return [savedQuote, ...withoutSaved];
+      });
+      setSelectedQuote(savedQuote);
+      setEditingQuoteId(savedQuote.id);
+      setCalculatedResult(result);
     } catch {
       setValidationMessage(
-        "Não foi possível atualizar os parâmetros da cotação. Tente novamente em instantes."
+        "Não foi possível salvar ou atualizar os parâmetros da cotação. Tente novamente em instantes."
       );
     } finally {
+      setIsCollapsing(false);
       setIsLoadingExchangeRate(false);
     }
   }
@@ -188,31 +202,7 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
     }, 180);
   }
 
-  function saveQuote() {
-    if (!calculatedResult) {
-      return;
-    }
-
-    const record: QuoteRecord = {
-      ...input,
-      ...calculatedResult,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      status: "submitted",
-      images: imageNames,
-      supplierContactImages: supplierContactImageNames,
-      supplierName: supplierName.trim(),
-      supplierEmail: supplierEmail.trim(),
-      supplierPhone: supplierPhone.trim()
-    };
-    const nextQuotes = [record, ...quotes];
-    setQuotes(nextQuotes);
-    window.localStorage.setItem(storageKey, JSON.stringify(nextQuotes));
-    setSelectedQuote(record);
-    setActiveTab("history");
-  }
-
-  function duplicateQuote(quote: QuoteRecord) {
+  function loadQuoteToForm(quote: ClientQuoteRecord, quoteId: string | null) {
     setInput({
       productName: quote.productName,
       hsCode: quote.hsCode,
@@ -228,11 +218,23 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
     setSupplierEmail(quote.supplierEmail ?? "");
     setSupplierPhone(quote.supplierPhone ?? "");
     setCalculatedResult(null);
+    setSelectedQuote(quote);
+    setEditingQuoteId(quoteId);
     setValidationMessage("");
     setActiveTab("new");
   }
 
-  function copyQuote(quote: QuoteRecord) {
+  async function duplicateQuote(quote: ClientQuoteRecord) {
+    try {
+      const duplicatedQuote = await duplicateClientQuoteAction(quote.id);
+      setQuotes((currentQuotes) => [duplicatedQuote, ...currentQuotes]);
+      loadQuoteToForm(duplicatedQuote, duplicatedQuote.id);
+    } catch {
+      setValidationMessage("Não foi possível duplicar a cotação. Tente novamente em instantes.");
+    }
+  }
+
+  function copyQuote(quote: ClientQuoteRecord) {
     const summary = [
       `Produto: ${quote.productName}`,
       `HS/NCM: ${quote.hsCode}`,
@@ -255,7 +257,43 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
     navigator.clipboard.writeText(summary);
   }
 
-  const columns: DataTableColumn<QuoteRecord>[] = [
+  async function requestFullSimulation() {
+    if (!editingQuoteId) {
+      setSimulationModalMessage("Faça o cálculo e salve a cotação antes de solicitar a simulação completa.");
+      setFullSimulationModalOpen(true);
+      return;
+    }
+
+    setIsRequestingSimulation(true);
+
+    try {
+      const response = await requestFullSimulationAction(editingQuoteId);
+      const message = response.alreadyExists
+        ? "Já existe uma solicitação de simulação completa em andamento para esta cotação. O time da Global RPX entrará em contato assim que avançar na análise."
+        : "Solicitação recebida. O time da Global RPX vai entrar em contato para explicar como funciona a simulação completa, validar as informações da cotação e orientar os próximos passos.";
+
+      setSimulationModalMessage(message);
+      setQuotes((currentQuotes) =>
+        currentQuotes.map((quote) =>
+          quote.id === editingQuoteId
+            ? {
+                ...quote,
+                status: "simulation_requested",
+                hasSimulationRequest: true
+              }
+            : quote
+        )
+      );
+      setFullSimulationModalOpen(true);
+    } catch {
+      setSimulationModalMessage("Não foi possível solicitar a simulação completa agora. Tente novamente em instantes.");
+      setFullSimulationModalOpen(true);
+    } finally {
+      setIsRequestingSimulation(false);
+    }
+  }
+
+  const columns: DataTableColumn<ClientQuoteRecord>[] = [
     {
       key: "createdAt",
       header: "Data",
@@ -285,6 +323,9 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
         <div className="flex flex-wrap gap-2">
           <button className="font-semibold text-rpx-blue" onClick={() => setSelectedQuote(quote)}>
             Abrir
+          </button>
+          <button className="font-semibold text-rpx-blue" onClick={() => loadQuoteToForm(quote, quote.id)}>
+            Refazer
           </button>
           <button className="font-semibold text-rpx-blue" onClick={() => duplicateQuote(quote)}>
             Duplicar
@@ -445,22 +486,26 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
 
           {calculatedResult ? (
             <section className={`${isCollapsing ? "rpx-slide-up" : "rpx-slide-down"} grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-soft`}>
-              <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-center">
-                <div>
-                  <p className="text-xs font-bold uppercase text-rpx-red">Etapa 2</p>
-                  <h2 className="mt-1 text-xl font-bold text-rpx-ink">Resultado da cotação</h2>
+              <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase text-rpx-red">Resultado da cotação</p>
+                  <p className="mt-1 max-w-3xl break-words text-base font-semibold leading-6 text-rpx-ink">
+                    Produto: {input.productName.trim()} - NCM: {input.hsCode.trim()} - Qtde: {input.quantity}
+                  </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
                   <Button type="button" variant="secondary" onClick={redoCalculation}>
                     Refazer cálculo
                   </Button>
-                  <Button onClick={saveQuote}>Salvar cotação</Button>
+                  <Button type="button" onClick={requestFullSimulation} disabled={isRequestingSimulation}>
+                    {isRequestingSimulation ? "Solicitando..." : "Solicitar simulação completa"}
+                  </Button>
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
                   <p className="text-xs font-bold uppercase text-slate-500">Estimativa com a RPX</p>
-                  <p className="mt-3 text-2xl font-black text-rpx-ink">
+                  <p className="mt-3 text-2xl font-black text-rpx-blue">
                     {formatBrl(calculatedResult.totalCostRpxBrl)}
                   </p>
                   <p className="mt-2 text-sm text-slate-600">
@@ -469,7 +514,7 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
                 </section>
                 <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
                   <p className="text-xs font-bold uppercase text-slate-500">Referência de importação direta</p>
-                  <p className="mt-3 text-2xl font-black text-rpx-ink">
+                  <p className="mt-3 text-2xl font-black text-orange-600">
                     {formatBrl(calculatedResult.totalCostDirectBrl)}
                   </p>
                   <p className="mt-2 text-sm text-slate-600">
@@ -504,6 +549,22 @@ export function CalculatorClient({ userEmail }: { userEmail: string }) {
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
                 Estimativa preliminar sujeita à validação fiscal, logística e operacional.
               </div>
+              {fullSimulationModalOpen ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
+                  <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
+                    <p className="text-xs font-bold uppercase text-rpx-red">Simulação completa</p>
+                    <h2 className="mt-2 text-xl font-bold text-rpx-ink">Nosso time vai entrar em contato</h2>
+                    <p className="mt-3 text-sm leading-6 text-slate-600">
+                      {simulationModalMessage}
+                    </p>
+                    <div className="mt-5 flex justify-end">
+                      <Button type="button" onClick={() => setFullSimulationModalOpen(false)}>
+                        Entendi
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </section>
           ) : null}
         </div>

@@ -1,6 +1,6 @@
 # State - Plataforma Global RPX
 
-Ultima atualizacao: 2026-06-16
+Ultima atualizacao: 2026-06-17
 
 ## Como usar este arquivo
 
@@ -43,9 +43,9 @@ Stack alvo:
 
 ## Status atual
 
-Fase atual: Fundacao autenticada com Supabase real, cadastro publico inicial e primeira base dinamica do painel administrativo.
+Fase atual: Fundacao autenticada com Supabase real, calculadora persistida e primeira base dinamica do painel administrativo.
 
-Estado: fundacao implementada, calculadora dinamica em memoria/localStorage, autenticacao real funcionando, base de usuarios da aplicacao desacoplada do provedor via `app_users` e modulo administrativo inicial conectado ao banco para dashboard, clientes, cotacoes e usuarios.
+Estado: fundacao implementada, calculadora dinamica persistindo cotacoes reais em `quotes`, pedidos de simulacao completa persistindo em `simulations`, autenticacao real funcionando, base de usuarios da aplicacao desacoplada do provedor via `app_users` e modulo administrativo inicial conectado ao banco para dashboard, clientes, cotacoes e usuarios.
 
 Servidor de preview atual:
 
@@ -56,6 +56,57 @@ http://127.0.0.1:3001
 Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As dependencias do app Next agora estao instaladas e o build passou; o ambiente ainda nao possui npm convencional no PATH, entao a estabilizacao usou um npm temporario.
 
 ## Entregue ate agora
+
+### 2026-06-17 - Persistencia real da calculadora e simulacoes do cliente
+
+- Calculadora da area do cliente deixou de depender do historico em `localStorage` no fluxo principal.
+- Clique em `Fazer calculo` agora:
+  - consulta a taxa de cambio;
+  - calcula a cotacao;
+  - salva a cotacao real na tabela `quotes`;
+  - exibe o resultado salvo na tela.
+- Historico da aba `Historico` agora carrega cotacoes reais do Supabase, isoladas pelo `client_id` do usuario autenticado.
+- Acoes do historico ajustadas:
+  - abrir detalhe;
+  - refazer cotacao existente atualizando o registro original;
+  - duplicar cotacao criando novo registro;
+  - copiar resumo.
+- Botao `Solicitar simulacao completa` agora cria registro real em `simulations` com status `aguardando`.
+- Fluxo impede duplicar solicitacao pendente/em andamento para a mesma cotacao.
+- Pagina `/app/simulacoes` passou a listar simulacoes reais do cliente, com status, cotacao relacionada e espaco para arquivo futuro.
+- Dashboard do cliente passou a mostrar total real de cotacoes e simulacoes.
+- Migration `006_client_quotes_persistence.sql` aplicada no Supabase remoto, adicionando campos, policies RLS e indice unico parcial para solicitacoes pendentes por cotacao.
+
+Arquivos principais:
+
+- `supabase/migrations/006_client_quotes_persistence.sql`
+- `src/lib/actions/client-quotes.ts`
+- `src/lib/client/quotes.ts`
+- `src/lib/client/types.ts`
+- `src/components/calculator/CalculatorClient.tsx`
+- `src/app/app/calculadora/page.tsx`
+- `src/app/app/simulacoes/page.tsx`
+- `src/app/app/page.tsx`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- `supabase db push --yes` aplicado com sucesso no projeto remoto.
+- Teste local no navegador:
+  - calculo de cotacao salva em `quotes`;
+  - historico persiste apos navegacao;
+  - solicitacao de simulacao cria item em `/app/simulacoes`;
+  - dashboard do cliente atualiza totalizadores.
+
+Nao foi possivel validar ainda:
+
+- upload real de imagens para Supabase Storage; nesta etapa foram preservados nomes/metadados no payload.
+- fluxo administrativo completo de producao/publicacao do PDF da simulacao.
+
+Proxima etapa recomendada:
+
+- Evoluir o modulo administrativo de cotacoes/simulacoes para consumir esses registros, produzir/uploadar o PDF e publicar a simulacao para o cliente.
 
 ### 2026-06-16 - Ajuste de zoom aparente no mobile da area restrita
 

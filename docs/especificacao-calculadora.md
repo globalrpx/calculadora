@@ -69,9 +69,10 @@ Subareas:
    - Custo estimado por importacao direta.
    - Economia estimada.
 10. Sistema exibe os totalizadores apenas depois da validacao.
-11. Cliente salva a cotacao.
+11. Sistema salva a cotacao automaticamente no banco ao concluir o calculo.
 12. Cotacao aparece no historico.
-13. Admin RPX consegue visualizar a cotacao no painel administrativo.
+13. Cliente pode solicitar uma simulacao completa a partir do resultado.
+14. Admin RPX consegue visualizar a cotacao e a solicitacao no painel administrativo.
 
 ## Campos da Nova Cotacao
 
@@ -185,8 +186,9 @@ Esses valores devem migrar para `calculation_parameters` no Supabase.
 - Organizar os totalizadores em duas colunas no desktop e uma coluna no mobile.
 - Usar numeros com tamanho moderado para evitar blocos apertados.
 - Alterar dados depois do calculo deve invalidar o resultado anterior e exigir novo clique em `Fazer calculo`.
-- O topo da Etapa 2 deve exibir `Salvar cotacao` e `Refazer calculo`.
+- O topo da Etapa 2 deve exibir `Solicitar simulacao completa` e `Refazer calculo`.
 - `Refazer calculo` recolhe a Etapa 2 e reabre a Etapa 1 preservando os dados preenchidos.
+- `Solicitar simulacao completa` cria uma solicitacao vinculada a cotacao, sem duplicar solicitacoes pendentes para a mesma cotacao.
 
 ## Regras de Calculo
 
@@ -541,14 +543,16 @@ Fluxo:
 
 - Carregar parametros do Supabase.
 - Calcular resultados.
-- Fazer upload de imagens.
-- Salvar cotacao.
-- Redirecionar para detalhe.
+- Salvar cotacao automaticamente ao fazer o calculo.
+- Exibir resultado salvo na propria tela.
+- Permitir pedido de simulacao completa a partir da cotacao.
+- Fazer upload de imagens em etapa posterior do Storage.
 
 ### Etapa 5 - Historico
 
 - Listar cotacoes do cliente.
 - Abrir detalhe.
+- Refazer cotacao existente atualizando o registro original.
 - Copiar resumo.
 - Duplicar cotacao.
 
