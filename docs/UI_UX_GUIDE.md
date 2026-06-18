@@ -19,12 +19,12 @@ Caracteristicas:
 - Sidebar em desktop.
 - Grade responsiva com Tailwind.
 - Formularios simples e focados em operacao.
+- CRUD de Clientes como referencia atual para listagens administrativas.
 
 ## Oportunidades de melhoria
 
-- Adicionar estado ativo real na navegacao do `AppShell`.
-- Criar menu mobile compacto; hoje a sidebar apenas muda de grade.
-- Padronizar feedback de carregamento, erro e sucesso.
+- Continuar refinando navegacao e estados ativos conforme novos modulos.
+- Padronizar loading/skeletons quando os fluxos ficarem mais complexos.
 - Reduzir textos placeholder desatualizados.
 - Melhorar acessibilidade de uploads e autocomplete NCM.
 - Evitar tabelas largas como unica experiencia no celular.
@@ -37,21 +37,22 @@ Existentes:
 
 - `Button`, `ButtonLink`
 - `Card`
+- `ConfirmDialog`
 - `DataTable`
+- `DismissibleAlert`
 - `EmptyState`
 - `FormField`, `TextInput`, `NumberInput`
 - `PageHeader`
 - `AppShell`
+- `StatusBadge`
 
 A criar quando houver uso:
 
 - `FileUpload` com preview, progresso e erro.
 - `Autocomplete` generico.
-- `StatusBadge`.
 - `StatCard` compacto.
 - `FormError` e `FieldError`.
 - `Toast`.
-- `ConfirmDialog`.
 - `PageActions`.
 - `FilterBar`.
 - `Pagination`.
@@ -118,4 +119,3 @@ Diretrizes:
 - Botoes com texto ou icone acessivel.
 - Autocomplete navegavel por teclado.
 - Nao depender apenas de cor para status.
-

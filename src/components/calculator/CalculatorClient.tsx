@@ -49,7 +49,7 @@ export function CalculatorClient({
   const [isRequestingSimulation, setIsRequestingSimulation] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
   const [quotes, setQuotes] = useState<ClientQuoteRecord[]>(initialQuotes);
-  const [selectedQuote, setSelectedQuote] = useState<ClientQuoteRecord | null>(null);
+  const [detailQuote, setDetailQuote] = useState<ClientQuoteRecord | null>(null);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [ncmOptions, setNcmOptions] = useState<NcmOption[]>([]);
   const [selectedNcm, setSelectedNcm] = useState<NcmOption | null>(null);
@@ -180,7 +180,6 @@ export function CalculatorClient({
         const withoutSaved = currentQuotes.filter((quote) => quote.id !== savedQuote.id);
         return [savedQuote, ...withoutSaved];
       });
-      setSelectedQuote(savedQuote);
       setEditingQuoteId(savedQuote.id);
       setCalculatedResult(result);
     } catch {
@@ -202,6 +201,20 @@ export function CalculatorClient({
     }, 180);
   }
 
+  function cancelQuoteEditing() {
+    setInput(initialInput);
+    setSupplierName("");
+    setSupplierEmail("");
+    setSupplierPhone("");
+    setImageNames([]);
+    setSupplierContactImageNames([]);
+    setCalculatedResult(null);
+    setEditingQuoteId(null);
+    setSelectedNcm(null);
+    setValidationMessage("");
+    setActiveTab("history");
+  }
+
   function loadQuoteToForm(quote: ClientQuoteRecord, quoteId: string | null) {
     setInput({
       productName: quote.productName,
@@ -218,7 +231,6 @@ export function CalculatorClient({
     setSupplierEmail(quote.supplierEmail ?? "");
     setSupplierPhone(quote.supplierPhone ?? "");
     setCalculatedResult(null);
-    setSelectedQuote(quote);
     setEditingQuoteId(quoteId);
     setValidationMessage("");
     setActiveTab("new");
@@ -232,29 +244,6 @@ export function CalculatorClient({
     } catch {
       setValidationMessage("Não foi possível duplicar a cotação. Tente novamente em instantes.");
     }
-  }
-
-  function copyQuote(quote: ClientQuoteRecord) {
-    const summary = [
-      `Produto: ${quote.productName}`,
-      `HS/NCM: ${quote.hsCode}`,
-      `FOB unitário: ${formatUsd(quote.fobUnitUsd)}`,
-      `Quantidade: ${quote.quantity}`,
-      `FOB total: ${formatUsd(quote.fobTotalUsd)}`,
-      `Fornecedor: ${quote.supplierName || "Cartão de visitas anexado"}`,
-      quote.supplierEmail ? `E-mail do fornecedor: ${quote.supplierEmail}` : "",
-      quote.supplierPhone ? `Telefone do fornecedor: ${quote.supplierPhone}` : "",
-      "",
-      `Custo estimado unitário via RPX: ${formatBrl(quote.unitCostRpxBrl)}`,
-      `Custo estimado total via RPX: ${formatBrl(quote.totalCostRpxBrl)}`,
-      `Valor importação direta: ${formatBrl(quote.totalCostDirectBrl)}`,
-      `Valor fazendo via RPX: ${formatBrl(quote.totalCostRpxBrl)}`,
-      `Diferença estimada fazendo via RPX: ${formatBrl(quote.savingsBrl)} (${formatPercent(quote.savingsPercent)})`,
-      "",
-      "Estimativa preliminar sujeita à validação fiscal, logística e operacional."
-    ].join("\n");
-
-    navigator.clipboard.writeText(summary);
   }
 
   async function requestFullSimulation() {
@@ -321,7 +310,7 @@ export function CalculatorClient({
       header: "Ações",
       render: (quote) => (
         <div className="flex flex-wrap gap-2">
-          <button className="font-semibold text-rpx-blue" onClick={() => setSelectedQuote(quote)}>
+          <button className="font-semibold text-rpx-blue" onClick={() => setDetailQuote(quote)}>
             Abrir
           </button>
           <button className="font-semibold text-rpx-blue" onClick={() => loadQuoteToForm(quote, quote.id)}>
@@ -329,9 +318,6 @@ export function CalculatorClient({
           </button>
           <button className="font-semibold text-rpx-blue" onClick={() => duplicateQuote(quote)}>
             Duplicar
-          </button>
-          <button className="font-semibold text-rpx-blue" onClick={() => copyQuote(quote)}>
-            Copiar
           </button>
         </div>
       )
@@ -476,9 +462,14 @@ export function CalculatorClient({
                   {validationMessage}
                 </div>
               ) : null}
-              <div className="mt-5 flex justify-end">
-              <Button type="button" onClick={runCalculation} disabled={isCollapsing || isLoadingExchangeRate}>
-                {isLoadingExchangeRate ? "Atualizando cotação..." : "Fazer cálculo"}
+              <div className="mt-5 flex flex-wrap justify-end gap-2">
+                {editingQuoteId ? (
+                  <Button type="button" variant="secondary" onClick={cancelQuoteEditing}>
+                    Cancelar
+                  </Button>
+                ) : null}
+                <Button type="button" onClick={runCalculation} disabled={isCollapsing || isLoadingExchangeRate}>
+                  {isLoadingExchangeRate ? "Atualizando cotação..." : "Fazer cálculo"}
                 </Button>
               </div>
             </section>
@@ -575,47 +566,105 @@ export function CalculatorClient({
           ) : (
             <DataTable columns={columns} rows={quotes} />
           )}
-          {selectedQuote ? (
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
-              <h2 className="text-xl font-bold text-rpx-ink">Detalhe da cotação</h2>
-              <div className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-2">
-                <p>
-                  <b>Produto:</b> {selectedQuote.productName}
-                </p>
-                <p>
-                  <b>HS/NCM:</b> {selectedQuote.hsCode}
-                </p>
-                <p>
-                  <b>FOB unitário:</b> {formatUsd(selectedQuote.fobUnitUsd)}
-                </p>
-                <p>
-                  <b>Quantidade:</b> {selectedQuote.quantity}
-                </p>
-                <p>
-                  <b>Valor fazendo via RPX:</b> {formatBrl(selectedQuote.totalCostRpxBrl)}
-                </p>
-                <p>
-                  <b>Valor importação direta:</b> {formatBrl(selectedQuote.totalCostDirectBrl)}
-                </p>
-                <p>
-                  <b>Diferença via RPX:</b> {formatBrl(selectedQuote.savingsBrl)} ({formatPercent(selectedQuote.savingsPercent)})
-                </p>
-                <p>
-                  <b>Imagens do produto:</b> {selectedQuote.images.length ? selectedQuote.images.join(", ") : "Nenhuma"}
-                </p>
-                <p>
-                  <b>Contato do fornecedor:</b>{" "}
-                  {selectedQuote.supplierContactImages?.length ? selectedQuote.supplierContactImages.join(", ") : "Nenhum"}
-                </p>
-                <p>
-                  <b>Fornecedor:</b> {selectedQuote.supplierName || "Identificado por cartão anexado"}
-                </p>
-                <p>
-                  <b>E-mail:</b> {selectedQuote.supplierEmail || "-"}
-                </p>
-                <p>
-                  <b>Telefone:</b> {selectedQuote.supplierPhone || "-"}
-                </p>
+          {detailQuote ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6">
+              <div className="max-h-full w-full max-w-5xl overflow-y-auto rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
+                <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase text-rpx-red">Detalhe da cotação</p>
+                    <p className="mt-1 max-w-3xl break-words text-base font-semibold leading-6 text-rpx-ink">
+                      Produto: {detailQuote.productName} - NCM: {detailQuote.hsCode} - Qtde: {detailQuote.quantity}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      Criada em {new Date(detailQuote.createdAt).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        setDetailQuote(null);
+                        loadQuoteToForm(detailQuote, detailQuote.id);
+                      }}
+                    >
+                      Refazer cálculo
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => setDetailQuote(null)}>
+                      Fechar
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
+                    <p className="text-xs font-bold uppercase text-slate-500">Estimativa com a RPX</p>
+                    <p className="mt-3 text-2xl font-black text-rpx-blue">
+                      {formatBrl(detailQuote.totalCostRpxBrl)}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      Custo unitário estimado: {formatBrl(detailQuote.unitCostRpxBrl)}
+                    </p>
+                  </section>
+                  <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
+                    <p className="text-xs font-bold uppercase text-slate-500">Referência de importação direta</p>
+                    <p className="mt-3 text-2xl font-black text-orange-600">
+                      {formatBrl(detailQuote.totalCostDirectBrl)}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      Custo unitário estimado: {formatBrl(detailQuote.unitCostDirectBrl)}
+                    </p>
+                  </section>
+                  <section
+                    className={`rounded-lg border p-5 ${
+                      detailQuote.savingsBrl > 0
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+                        : "border-slate-200 bg-white text-rpx-ink"
+                    }`}
+                  >
+                    <p className={`text-xs font-bold uppercase ${detailQuote.savingsBrl > 0 ? "text-emerald-700" : "text-slate-500"}`}>
+                      Diferença estimada com a RPX
+                    </p>
+                    <p className="mt-3 text-2xl font-black">{formatBrl(detailQuote.savingsBrl)}</p>
+                    <p className={`mt-2 text-sm leading-6 ${detailQuote.savingsBrl > 0 ? "text-emerald-800" : "text-slate-600"}`}>
+                      {detailQuote.savingsBrl > 0
+                        ? `Economia estimada de ${formatPercent(detailQuote.savingsPercent)} em relação à referência direta.`
+                        : "Resultado neutro. Validar condições comerciais antes de apresentar benefício."}
+                    </p>
+                  </section>
+                  <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
+                    <p className="text-xs font-bold uppercase text-slate-500">Valor FOB informado</p>
+                    <p className="mt-3 text-2xl font-black text-rpx-ink">
+                      {formatUsd(detailQuote.fobTotalUsd)}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">
+                      FOB unitário: {formatUsd(detailQuote.fobUnitUsd)}
+                    </p>
+                  </section>
+                </div>
+
+                <div className="mt-5 grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 md:grid-cols-2">
+                  <p>
+                    <b className="text-rpx-ink">Fornecedor:</b> {detailQuote.supplierName || "Identificado por cartão anexado"}
+                  </p>
+                  <p>
+                    <b className="text-rpx-ink">E-mail:</b> {detailQuote.supplierEmail || "-"}
+                  </p>
+                  <p>
+                    <b className="text-rpx-ink">Telefone:</b> {detailQuote.supplierPhone || "-"}
+                  </p>
+                  <p>
+                    <b className="text-rpx-ink">Imagens do produto:</b> {detailQuote.images.length ? detailQuote.images.join(", ") : "Nenhuma"}
+                  </p>
+                  <p className="md:col-span-2">
+                    <b className="text-rpx-ink">Contato do fornecedor:</b>{" "}
+                    {detailQuote.supplierContactImages?.length ? detailQuote.supplierContactImages.join(", ") : "Nenhum"}
+                  </p>
+                </div>
+
+                <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
+                  Estimativa preliminar sujeita à validação fiscal, logística e operacional.
+                </div>
               </div>
             </div>
           ) : null}

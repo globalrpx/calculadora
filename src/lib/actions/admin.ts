@@ -3,6 +3,18 @@
 import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { ClientFormFieldErrors, ClientFormState, ClientFormValues } from "@/lib/admin/client-form-state";
+import {
+  simulationStatusValues,
+  type SimulationFormFieldErrors,
+  type SimulationFormState,
+  type SimulationFormValues
+} from "@/lib/admin/simulation-form-state";
+
+const duplicateEmailMessage = "Este e-mail já está cadastrado. Use outro e-mail ou edite o cliente existente.";
+const reviewFieldsMessage = "Revise os campos destacados antes de continuar.";
+const unexpectedClientSaveMessage = "Não foi possível salvar o cliente. Tente novamente em instantes.";
+const unexpectedSimulationSaveMessage = "Não foi possível salvar a simulação. Tente novamente em instantes.";
 
 async function requireAdminActionAccess() {
   const session = await getSessionProfile();
@@ -34,49 +46,312 @@ function readClientFields(formData: FormData) {
   };
 }
 
-export async function createClientAction(formData: FormData) {
+function hasFieldErrors(fieldErrors: Record<string, string | undefined>) {
+  return Object.values(fieldErrors).some(Boolean);
+}
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function buildClientFormValues(fields: ReturnType<typeof readClientFields>): ClientFormValues {
+  return {
+    id: fields.clientId || undefined,
+    companyName: fields.companyName,
+    contactName: fields.contactName,
+    contactEmail: fields.contactEmail,
+    contactPhone: fields.contactPhone
+  };
+}
+
+function buildClientFormError(
+  fields: ReturnType<typeof readClientFields>,
+  fieldErrors: ClientFormFieldErrors,
+  message = reviewFieldsMessage
+): ClientFormState {
+  return {
+    success: false,
+    message,
+    fieldErrors,
+    values: buildClientFormValues(fields)
+  };
+}
+
+function validateClientFields(fields: ReturnType<typeof readClientFields>, options: { passwordRequired: boolean }) {
+  const fieldErrors: ClientFormFieldErrors = {};
+
+  if (!fields.contactName) {
+    fieldErrors.contactName = "Informe o nome do cliente.";
+  }
+
+  if (!fields.contactEmail) {
+    fieldErrors.contactEmail = "Informe o e-mail do cliente.";
+  } else if (!isValidEmail(fields.contactEmail)) {
+    fieldErrors.contactEmail = "Informe um e-mail válido.";
+  }
+
+  if (options.passwordRequired || fields.password || fields.confirmPassword) {
+    if (!fields.password) {
+      fieldErrors.password = "Informe uma senha de acesso.";
+    } else if (fields.password.length < 6) {
+      fieldErrors.password = "A senha deve ter pelo menos 6 caracteres.";
+    }
+
+    if (!fields.confirmPassword) {
+      fieldErrors.confirmPassword = "Confirme a senha de acesso.";
+    } else if (fields.password && fields.password !== fields.confirmPassword) {
+      fieldErrors.confirmPassword = "As senhas não conferem.";
+    }
+  }
+
+  return fieldErrors;
+}
+
+function isDuplicateEmailError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as { code?: string; message?: string; name?: string; status?: number };
+  const message = `${candidate.message ?? ""} ${candidate.name ?? ""}`.toLowerCase();
+
+  return (
+    candidate.code === "23505" ||
+    candidate.status === 422 ||
+    message.includes("duplicate") ||
+    message.includes("already") ||
+    message.includes("registered") ||
+    message.includes("exists") ||
+    message.includes("unique") ||
+    message.includes("email")
+  );
+}
+
+async function findDuplicatedClientEmail(adminSupabase: ReturnType<typeof createAdminClient>, email: string, currentClientId?: string) {
+  const { data, error } = await adminSupabase
+    .from("app_users")
+    .select("id, client_id")
+    .ilike("email", email)
+    .is("deleted_at", null)
+    .limit(10);
+
+  if (error) {
+    return { error };
+  }
+
+  const duplicated = data?.some((user) => user.client_id !== currentClientId) ?? false;
+  return { duplicated };
+}
+
+function buildSafeAdminClientsRedirect(rawRedirectTo: string, feedback: string) {
+  const fallback = "/admin/clientes";
+  const redirectTo = rawRedirectTo.startsWith("/admin/clientes") ? rawRedirectTo : fallback;
+  const [pathname, query = ""] = redirectTo.split("?");
+  const params = new URLSearchParams(query);
+
+  params.delete("created");
+  params.delete("updated");
+  params.delete("deleted");
+  params.delete("error");
+  params.set(feedback, "1");
+
+  const nextQuery = params.toString();
+  return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+}
+
+function readSimulationFields(formData: FormData): SimulationFormValues {
+  return {
+    id: String(formData.get("simulationId") ?? "").trim() || undefined,
+    clientId: String(formData.get("clientId") ?? "").trim(),
+    quoteId: String(formData.get("quoteId") ?? "").trim(),
+    title: String(formData.get("title") ?? "").trim(),
+    status: String(formData.get("status") ?? "").trim(),
+    clientNotes: String(formData.get("clientNotes") ?? "").trim(),
+    quoteFileUrl: String(formData.get("quoteFileUrl") ?? "").trim()
+  };
+}
+
+function isValidFileReference(value: string) {
+  if (!value) {
+    return true;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return /^[a-zA-Z0-9/_:.\-\s]+$/.test(value) && !value.includes("..");
+  }
+}
+
+function validateSimulationFields(fields: SimulationFormValues, options: { requireClient: boolean; requireTitle: boolean }) {
+  const fieldErrors: SimulationFormFieldErrors = {};
+
+  if (options.requireClient && !fields.clientId) {
+    fieldErrors.clientId = "Selecione um cliente.";
+  }
+
+  if (options.requireTitle && !fields.title) {
+    fieldErrors.title = "Informe o título da simulação.";
+  }
+
+  if (!simulationStatusValues.includes(fields.status as (typeof simulationStatusValues)[number])) {
+    fieldErrors.status = "Selecione um status válido.";
+  }
+
+  if (fields.quoteFileUrl && !isValidFileReference(fields.quoteFileUrl)) {
+    fieldErrors.quoteFileUrl = "Informe uma URL válida ou um caminho de arquivo válido.";
+  }
+
+  return fieldErrors;
+}
+
+function buildSimulationFormError(
+  fields: SimulationFormValues,
+  fieldErrors: SimulationFormFieldErrors,
+  message = reviewFieldsMessage
+): SimulationFormState {
+  return {
+    success: false,
+    message,
+    fieldErrors,
+    values: fields
+  };
+}
+
+export async function createClientAction(_previousState: ClientFormState, formData: FormData): Promise<ClientFormState> {
   await requireAdminActionAccess();
 
-  const { companyName, contactName, contactEmail, contactPhone } = readClientFields(formData);
+  const fields = readClientFields(formData);
+  const { companyName, contactName, contactEmail, contactPhone, password } = fields;
+  const fieldErrors = validateClientFields(fields, {
+    passwordRequired: true
+  });
 
-  if (!contactName || !contactEmail) {
-    redirect("/admin/clientes/novo?error=invalid-fields");
+  if (hasFieldErrors(fieldErrors)) {
+    return buildClientFormError(fields, fieldErrors);
   }
 
   const adminSupabase = createAdminClient();
 
-  const { error } = await adminSupabase.from("clients").insert({
-    company_name: companyName,
-    trade_name: companyName,
-    contact_name: contactName,
-    contact_email: contactEmail,
-    contact_phone: contactPhone,
-    source: "admin",
-    status: "active"
+  const duplicatedEmail = await findDuplicatedClientEmail(adminSupabase, contactEmail);
+
+  if (duplicatedEmail.error) {
+    return buildClientFormError(fields, {}, unexpectedClientSaveMessage);
+  }
+
+  if (duplicatedEmail.duplicated) {
+    return buildClientFormError(fields, {
+      contactEmail: duplicateEmailMessage
+    });
+  }
+
+  const { data: createdUser, error: createUserError } = await adminSupabase.auth.admin.createUser({
+    email: contactEmail,
+    password,
+    email_confirm: true,
+    user_metadata: {
+      name: contactName,
+      company: companyName,
+      phone: contactPhone,
+      role: "client"
+    }
   });
 
-  if (error) {
-    redirect(`/admin/clientes/novo?error=${encodeURIComponent(error.message)}`);
+  if (createUserError || !createdUser.user) {
+    if (isDuplicateEmailError(createUserError)) {
+      return buildClientFormError(fields, {
+        contactEmail: duplicateEmailMessage
+      });
+    }
+
+    return buildClientFormError(fields, {}, unexpectedClientSaveMessage);
+  }
+
+  const { data: client, error: clientError } = await adminSupabase
+    .from("clients")
+    .insert({
+      company_name: companyName,
+      trade_name: companyName,
+      contact_name: contactName,
+      contact_email: contactEmail,
+      contact_phone: contactPhone,
+      source: "admin",
+      status: "active"
+    })
+    .select("id")
+    .single();
+
+  if (clientError || !client) {
+    await adminSupabase.auth.admin.deleteUser(createdUser.user.id);
+
+    if (isDuplicateEmailError(clientError)) {
+      return buildClientFormError(fields, {
+        contactEmail: duplicateEmailMessage
+      });
+    }
+
+    return buildClientFormError(fields, {}, unexpectedClientSaveMessage);
+  }
+
+  const { error: appUserError } = await adminSupabase.from("app_users").insert({
+    name: contactName,
+    email: contactEmail,
+    phone: contactPhone,
+    role: "client",
+    status: "active",
+    client_id: client.id,
+    auth_provider: "supabase",
+    auth_provider_user_id: createdUser.user.id
+  });
+
+  if (appUserError) {
+    await adminSupabase.from("clients").delete().eq("id", client.id);
+    await adminSupabase.auth.admin.deleteUser(createdUser.user.id);
+
+    if (isDuplicateEmailError(appUserError)) {
+      return buildClientFormError(fields, {
+        contactEmail: duplicateEmailMessage
+      });
+    }
+
+    return buildClientFormError(fields, {}, unexpectedClientSaveMessage);
   }
 
   redirect("/admin/clientes?created=1");
 }
 
-export async function updateClientAction(formData: FormData) {
+export async function updateClientAction(_previousState: ClientFormState, formData: FormData): Promise<ClientFormState> {
   await requireAdminActionAccess();
 
-  const { clientId, companyName, contactName, contactEmail, contactPhone, password, confirmPassword } = readClientFields(formData);
+  const fields = readClientFields(formData);
+  const { clientId, companyName, contactName, contactEmail, contactPhone, password } = fields;
+  const fieldErrors = validateClientFields(fields, {
+    passwordRequired: false
+  });
 
-  if (!clientId || !contactName || !contactEmail) {
-    redirect(`/admin/clientes/${clientId || ""}?error=invalid-fields`);
+  if (!clientId) {
+    return buildClientFormError(fields, {}, unexpectedClientSaveMessage);
   }
 
-  if ((password || confirmPassword) && (password.length < 6 || password !== confirmPassword)) {
-    redirect(`/admin/clientes/${clientId}?error=password-invalid`);
+  if (hasFieldErrors(fieldErrors)) {
+    return buildClientFormError(fields, fieldErrors);
   }
 
   const adminSupabase = createAdminClient();
   const updatedAt = new Date().toISOString();
+
+  const duplicatedEmail = await findDuplicatedClientEmail(adminSupabase, contactEmail, clientId);
+
+  if (duplicatedEmail.error) {
+    return buildClientFormError(fields, {}, unexpectedClientSaveMessage);
+  }
+
+  if (duplicatedEmail.duplicated) {
+    return buildClientFormError(fields, {
+      contactEmail: duplicateEmailMessage
+    });
+  }
 
   const { error } = await adminSupabase
     .from("clients")
@@ -92,7 +367,13 @@ export async function updateClientAction(formData: FormData) {
     .is("deleted_at", null);
 
   if (error) {
-    redirect(`/admin/clientes/${clientId}?error=${encodeURIComponent(error.message)}`);
+    if (isDuplicateEmailError(error)) {
+      return buildClientFormError(fields, {
+        contactEmail: duplicateEmailMessage
+      });
+    }
+
+    return buildClientFormError(fields, {}, unexpectedClientSaveMessage);
   }
 
   const { data: linkedUsers, error: linkedUsersError } = await adminSupabase
@@ -102,7 +383,7 @@ export async function updateClientAction(formData: FormData) {
     .is("deleted_at", null);
 
   if (linkedUsersError) {
-    redirect(`/admin/clientes/${clientId}?error=${encodeURIComponent(linkedUsersError.message)}`);
+    return buildClientFormError(fields, {}, unexpectedClientSaveMessage);
   }
 
   if (linkedUsers && linkedUsers.length > 0) {
@@ -120,7 +401,13 @@ export async function updateClientAction(formData: FormData) {
       .is("deleted_at", null);
 
     if (updateAppUsersError) {
-      redirect(`/admin/clientes/${clientId}?error=${encodeURIComponent(updateAppUsersError.message)}`);
+      if (isDuplicateEmailError(updateAppUsersError)) {
+        return buildClientFormError(fields, {
+          contactEmail: duplicateEmailMessage
+        });
+      }
+
+      return buildClientFormError(fields, {}, unexpectedClientSaveMessage);
     }
 
     for (const linkedUser of linkedUsers) {
@@ -154,12 +441,18 @@ export async function updateClientAction(formData: FormData) {
         );
 
         if (updateAuthUserError) {
-          redirect(`/admin/clientes/${clientId}?error=${encodeURIComponent(updateAuthUserError.message)}`);
+          if (isDuplicateEmailError(updateAuthUserError)) {
+            return buildClientFormError(fields, {
+              contactEmail: duplicateEmailMessage
+            });
+          }
+
+          return buildClientFormError(fields, {}, unexpectedClientSaveMessage);
         }
       }
     }
   } else if (password) {
-    redirect(`/admin/clientes/${clientId}?error=linked-user-not-found`);
+    return buildClientFormError(fields, {}, "Não existe usuário vinculado a este cliente para redefinir a senha.");
   }
 
   redirect("/admin/clientes?updated=1");
@@ -169,6 +462,7 @@ export async function softDeleteClientAction(formData: FormData) {
   await requireAdminActionAccess();
 
   const clientId = String(formData.get("clientId") ?? "").trim();
+  const redirectTo = String(formData.get("redirectTo") ?? "").trim();
 
   if (!clientId) {
     redirect("/admin/clientes?error=missing-client");
@@ -219,7 +513,115 @@ export async function softDeleteClientAction(formData: FormData) {
     }
   }
 
-  redirect("/admin/clientes?deleted=1");
+  redirect(buildSafeAdminClientsRedirect(redirectTo, "deleted"));
+}
+
+export async function createAdminSimulationAction(
+  _previousState: SimulationFormState,
+  formData: FormData
+): Promise<SimulationFormState> {
+  const adminUser = await requireAdminActionAccess();
+  const fields = readSimulationFields(formData);
+  const fieldErrors = validateSimulationFields(fields, {
+    requireClient: true,
+    requireTitle: true
+  });
+
+  if (hasFieldErrors(fieldErrors)) {
+    return buildSimulationFormError(fields, fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const clientId = fields.clientId;
+  const quoteId: string | null = fields.quoteId || null;
+
+  if (quoteId) {
+    const { data: quote, error: quoteError } = await adminSupabase
+      .from("quotes")
+      .select("id, client_id")
+      .eq("id", quoteId)
+      .maybeSingle();
+
+    if (quoteError || !quote) {
+      return buildSimulationFormError(fields, {
+        quoteId: "Cotação vinculada não encontrada."
+      });
+    }
+
+    if (quote.client_id !== clientId) {
+      return buildSimulationFormError(fields, {
+        quoteId: "A cotação selecionada pertence a outro cliente."
+      });
+    }
+  } else {
+    const { data: client, error: clientError } = await adminSupabase
+      .from("clients")
+      .select("id")
+      .eq("id", clientId)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (clientError || !client) {
+      return buildSimulationFormError(fields, {
+        clientId: "Cliente não encontrado."
+      });
+    }
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await adminSupabase.from("simulations").insert({
+    client_id: clientId,
+    quote_id: quoteId,
+    created_by_app_user_id: adminUser.id,
+    title: fields.title,
+    status: fields.status,
+    client_notes: fields.clientNotes || null,
+    quote_file_url: fields.quoteFileUrl || null,
+    requested_at: now
+  });
+
+  if (error) {
+    return buildSimulationFormError(fields, {}, unexpectedSimulationSaveMessage);
+  }
+
+  redirect("/admin/simulacoes?created=1");
+}
+
+export async function updateAdminSimulationAction(
+  _previousState: SimulationFormState,
+  formData: FormData
+): Promise<SimulationFormState> {
+  await requireAdminActionAccess();
+  const fields = readSimulationFields(formData);
+  const fieldErrors = validateSimulationFields(fields, {
+    requireClient: false,
+    requireTitle: false
+  });
+
+  if (!fields.id) {
+    return buildSimulationFormError(fields, {}, unexpectedSimulationSaveMessage);
+  }
+
+  if (hasFieldErrors(fieldErrors)) {
+    return buildSimulationFormError(fields, fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("simulations")
+    .update({
+      status: fields.status,
+      client_notes: fields.clientNotes || null,
+      quote_file_url: fields.quoteFileUrl || null,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", fields.id);
+
+  if (error) {
+    return buildSimulationFormError(fields, {}, unexpectedSimulationSaveMessage);
+  }
+
+  redirect("/admin/simulacoes?updated=1");
 }
 
 export async function createAdminUserAction(formData: FormData) {

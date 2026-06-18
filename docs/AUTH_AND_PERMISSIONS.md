@@ -1,13 +1,32 @@
 # Global RPX - Autenticacao e Permissoes
 
-## Implementacao atual
+## Implementacao Atual
 
-O sistema possui dois modos:
+O provedor principal de autenticacao e o Supabase Auth. Quando as variaveis publicas do Supabase nao existem, o sistema usa modo mock por cookie como fallback local/preview.
 
-1. **Mock**: ativado quando as variaveis publicas do Supabase nao existem.
-2. **Supabase Auth**: ativado quando URL e anon key estao configuradas.
+Fonte de verdade da aplicacao:
 
-No mock, a sessao usa o cookie HTTP-only:
+- `app_users`: perfil da aplicacao, role, status, `client_id`, provedor de auth e vinculo com usuario do Supabase.
+- `profiles`: legado da fundacao inicial. Nao deve ser usado como fonte principal em novas implementacoes.
+
+## Variaveis e Service Role
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+Regras:
+
+- `NEXT_PUBLIC_*` podem ser usadas pelo client.
+- `SUPABASE_SERVICE_ROLE_KEY` so pode ser usada server-side.
+- Nunca importar service role em Client Components.
+- Operacoes privilegiadas devem ficar em Server Actions, Route Handlers ou funcoes server-only.
+
+## Modo Mock / Preview
+
+No fallback mock, a sessao usa o cookie HTTP-only:
 
 ```text
 global_rpx_mock_user
@@ -19,133 +38,138 @@ Usuarios mock:
 - `cliente2@gmail.com`
 - `admin@globalrpx.com`
 
-## Tipos de usuario
+Esse modo nao e o fluxo principal quando Supabase real esta configurado.
+
+## Roles Atuais
 
 ### Cliente
 
-Role atual: `client`.
+Role: `client`.
 
 Pode:
 
 - Acessar `/app` e descendentes.
-- Criar cotacoes do proprio cliente.
+- Acessar `/conta`.
+- Criar cotacoes para o proprio `client_id`.
 - Ver apenas o proprio historico.
-- Ver simulacoes publicadas para o proprio cliente.
-- Anexar imagens e dados de fornecedor.
+- Solicitar simulacao completa a partir de cotacao propria.
+- Ver simulacoes/solicitacoes vinculadas ao proprio cliente.
 
 Nao pode:
 
 - Acessar `/admin`.
 - Ver dados de outro cliente.
-- Ver fatores, markup cambial ou notas internas.
-- Alterar validacao Brasil, impostos ou parametros.
+- Ver fatores, markup cambial, PTAX interna ou notas internas.
+- Alterar validacao Brasil, impostos, parametros ou status administrativo.
 - Publicar simulacoes.
 
 ### Administrador RPX
 
-Role atual: `admin`.
+Role: `admin`.
 
 Pode:
 
 - Acessar `/admin` e descendentes.
-- Ver e gerenciar todos os clientes.
-- Ver todas as cotacoes.
-- Validar NCM, impostos e status.
-- Gerenciar parametros.
-- Criar e publicar simulacoes.
-- Gerenciar usuarios e fornecedores.
+- Ver dashboard administrativo.
+- Gerenciar Clientes pelo CRUD administrativo.
+- Ver cotacoes e simulacoes em bases administrativas iniciais.
+- Gerenciar usuarios admin em base inicial.
+- Futuramente, validar NCM, impostos, parametros e publicar simulacoes.
 
 Nao deve:
 
 - Executar operacoes privilegiadas pelo browser usando service role.
-- Alterar dados sem registro de autoria quando a funcao for sensivel.
+- Confiar em dados sensiveis vindos do client sem validacao server-side.
+- Alterar dados sensiveis sem rastreabilidade quando a funcao exigir auditoria.
 
-## Telas protegidas
+## Redirecionamento Esperado
+
+- Usuario deslogado tentando acessar rota interna vai para `/login`.
+- `admin` autenticado vai para `/admin/dashboard`.
+- `client` autenticado vai para `/app`.
+- Admin tentando acessar `/app` volta para `/admin/dashboard`.
+- Cliente tentando acessar `/admin` volta para `/app`.
+- Usuario inativo ou com `deleted_at` em `app_users` nao deve acessar rotas internas.
+
+## Telas Protegidas
 
 Cliente:
 
 - `/app`
 - `/app/calculadora`
 - `/app/simulacoes`
-- Futuras rotas `/app/cotacoes/*` e `/app/simulacoes/*`.
+- `/conta`
 
 Admin:
 
 - `/admin`
 - `/admin/dashboard`
 - `/admin/clientes`
-- `/admin/fornecedores`
-- `/admin/despachantes`
-- `/admin/usuarios`
-- `/admin/parametros`
+- `/admin/clientes/novo`
+- `/admin/clientes/[id]`
 - `/admin/cotacoes`
 - `/admin/simulacoes`
+- `/admin/usuarios`
+- `/admin/fornecedores`
+- `/admin/despachantes`
+- `/admin/parametros`
 
-## Camadas de protecao
+## Camadas de Protecao
 
-1. `middleware.ts` chama `updateSession`.
-2. O middleware exige sessao nas rotas internas.
-3. Layouts chamam `requireRole`.
-4. Supabase RLS deve aplicar isolamento no banco.
-5. Storage policies devem repetir o isolamento.
+1. Middleware atualiza sessao Supabase.
+2. Rotas internas exigem sessao.
+3. Layouts e paginas usam `requireRole`.
+4. Queries administrativas devem validar role server-side.
+5. Server Actions sensiveis devem validar permissao no servidor.
+6. RLS aplica isolamento no banco.
+7. Storage policies devem repetir o isolamento por `client_id` quando Storage real for consolidado.
 
 Middleware e interface nao substituem RLS.
 
-## Regras recomendadas no Supabase
+## Regras de Banco e RLS
 
-### Perfil
+- Toda tabela de negocio que possui dados de cliente deve ter `client_id`.
+- `client_id` deve vir da sessao/perfil da aplicacao, nunca de payload confiado.
+- Cliente le e altera apenas registros do proprio `client_id`, quando a action/policy permitir.
+- Admin passa por verificacao server-side e/ou funcao `is_admin()`.
+- A funcao `is_admin()` atual usa `app_users`, role `admin`, status `active` e vinculo com `auth.uid()`.
+- Soft delete/inativacao usa `deleted_at` quando aplicavel.
 
-- Usuario autenticado pode ler o proprio perfil.
-- Admin pode ler todos os perfis.
-- Edicao de role deve ocorrer somente por operacao administrativa server-side.
+## CRUD Administrativo de Clientes
 
-### Dados de cliente
+O CRUD de Clientes e a referencia atual:
 
-- Toda tabela de negocio deve possuir `client_id`.
-- Inserts de cliente devem validar `client_id = current_client_id()`.
-- Updates e deletes seguem a mesma regra.
-- Admin passa pela politica `is_admin()`.
+- Criacao administrativa cria usuario no Supabase Auth, registro em `clients` e registro em `app_users`.
+- Edicao sincroniza dados do cliente, `app_users` e Auth quando aplicavel.
+- Senha e opcional na edicao.
+- Inativacao usa soft delete em `clients` e inativa usuario vinculado em `app_users`.
+- Validacao server-side e fonte de verdade.
+- Erros previsiveis aparecem inline por campo.
 
-### Cotacoes
+Detalhes de padrao ficam em `docs/spec-cruds.md`.
 
-- Cliente cria, le e atualiza apenas cotacoes proprias em estados permitidos.
-- Apos `submitted`, limitar campos que o cliente pode alterar ou criar uma nova versao.
-- Admin altera status e campos de validacao.
+## Arquivos e Storage
 
-### Simulacoes
+Storage real para imagens/anexos esta preparado como direcao de arquitetura, mas ainda precisa ser consolidado com bucket, metadados e policies.
 
-- Cliente le apenas simulacoes `published`.
-- Admin possui acesso completo.
-- Notas internas nunca entram em views ou selects do cliente.
-
-### Arquivos
-
-Estrutura:
+Direcao esperada:
 
 ```text
 quote-images/{client_id}/{quote_id}/{type}/{file}
 ```
 
-Policies verificam:
+Policies devem verificar:
 
-- Usuario pertence ao `client_id` do caminho.
-- Admin pode acessar todos.
-- Tipos e tamanho sao validados no servidor.
-
-## Fluxos futuros de Auth
-
-- Convite de usuarios por e-mail.
-- Recuperacao de senha.
-- Confirmacao de e-mail.
-- Desativacao sem apagar historico.
-- Eventual MFA para administradores.
-- Roles mais granulares: `admin`, `commercial`, `operations`, `tax`, `client`.
+- usuario pertence ao `client_id` do caminho;
+- admin pode acessar conforme regra operacional;
+- tipo e tamanho sao validados no servidor.
 
 ## Cuidados
 
 - Nunca confiar em role enviada pelo cliente.
 - Nunca usar `SUPABASE_SERVICE_ROLE_KEY` em Client Components.
-- Evitar armazenar dados sensiveis em localStorage.
-- Registrar `created_by`, `updated_by` e historico de status.
-- Testar RLS com dois clientes diferentes antes do deploy.
-
+- Nao usar `profiles` como fonte principal.
+- Evitar dados sensiveis em localStorage.
+- Nao expor fatores, markup cambial, PTAX interna ou notas internas ao cliente.
+- Testar RLS com dois clientes diferentes antes de producao.
+- Seguir `agents.md` para classificacao de risco e aprovacao antes de mudancas sensiveis.

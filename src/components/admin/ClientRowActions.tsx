@@ -4,10 +4,12 @@ import { ConfirmDialog, ConfirmSubmitButton } from "@/components/ui/ConfirmDialo
 
 export function ClientRowActions({
   clientId,
-  clientLabel
+  clientLabel,
+  redirectTo
 }: {
   clientId: string;
   clientLabel: string;
+  redirectTo: string;
 }) {
   return (
     <div className="flex items-center gap-3 whitespace-nowrap">
@@ -15,13 +17,14 @@ export function ClientRowActions({
         Editar
       </Link>
       <ConfirmDialog
-        triggerLabel="Excluir"
-        title="Excluir cliente"
-        description={`Isso vai desativar o cliente ${clientLabel} e bloquear o acesso do usuário vinculado, quando existir. Deseja continuar?`}
+        triggerLabel="Inativar"
+        title="Inativar cliente"
+        description={`Tem certeza que deseja inativar o cliente ${clientLabel}? O acesso do usuário vinculado será bloqueado, quando existir.`}
       >
         <form action={softDeleteClientAction}>
           <input type="hidden" name="clientId" value={clientId} />
-          <ConfirmSubmitButton />
+          <input type="hidden" name="redirectTo" value={redirectTo} />
+          <ConfirmSubmitButton label="Inativar" />
         </form>
       </ConfirmDialog>
     </div>

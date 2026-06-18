@@ -1,6 +1,6 @@
 # State - Plataforma Global RPX
 
-Ultima atualizacao: 2026-06-17
+Ultima atualizacao: 2026-06-18
 
 ## Como usar este arquivo
 
@@ -45,7 +45,7 @@ Stack alvo:
 
 Fase atual: Fundacao autenticada com Supabase real, calculadora persistida e primeira base dinamica do painel administrativo.
 
-Estado: fundacao implementada, calculadora dinamica persistindo cotacoes reais em `quotes`, pedidos de simulacao completa persistindo em `simulations`, autenticacao real funcionando, base de usuarios da aplicacao desacoplada do provedor via `app_users` e modulo administrativo inicial conectado ao banco para dashboard, clientes, cotacoes e usuarios.
+Estado: fundacao implementada, calculadora dinamica persistindo cotacoes reais em `quotes`, pedidos de simulacao completa persistindo em `simulations`, autenticacao real funcionando, base de usuarios da aplicacao desacoplada do provedor via `app_users` e modulo administrativo inicial conectado ao banco para dashboard, clientes, cotacoes, simulacoes e usuarios.
 
 Servidor de preview atual:
 
@@ -56,6 +56,473 @@ http://127.0.0.1:3001
 Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As dependencias do app Next agora estao instaladas e o build passou; o ambiente ainda nao possui npm convencional no PATH, entao a estabilizacao usou um npm temporario.
 
 ## Entregue ate agora
+
+### 2026-06-18 - Simulacoes admin basico
+
+- `/admin/simulacoes` deixou de ser placeholder e passou a listar registros reais de `simulations`.
+- Listagem administrativa agora possui filtros ocultaveis por cliente, produto, HS/NCM, fornecedor, status e periodo.
+- Adicionados totalizador, paginacao, ordenacao por whitelist em colunas reais de `simulations`, badge de status e coluna de acoes.
+- Criadas rotas `/admin/simulacoes/nova` e `/admin/simulacoes/[id]`.
+- Criacao administrativa ficou limitada aos campos existentes: cliente, cotacao opcional, titulo, status, observacoes e referencia de arquivo.
+- Detalhe/edicao permite atualizar status, observacoes para o cliente e URL/caminho de arquivo existente.
+- Dados ricos de produto, FOB, fornecedor e calculo aparecem quando a simulacao possui cotacao vinculada.
+- Queries administrativas validam role admin no servidor e Server Actions validam acesso admin antes de persistir.
+- Nenhuma migration, upload real, exclusao/inativacao de simulacao ou alteracao no fluxo do cliente/calculadora foi feita.
+
+Arquivos principais:
+
+- `src/app/admin/simulacoes/page.tsx`
+- `src/app/admin/simulacoes/nova/page.tsx`
+- `src/app/admin/simulacoes/[id]/page.tsx`
+- `src/components/admin/SimulationFilters.tsx`
+- `src/components/admin/SimulationForm.tsx`
+- `src/lib/admin/simulation-form-state.ts`
+- `src/lib/admin/queries.ts`
+- `src/lib/actions/admin.ts`
+- `docs/ROUTES_AND_SCREENS.md`
+- `docs/spec-cruds.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- `npm run build` aprovado.
+- `git diff --check` aprovado.
+- Teste manual em `http://localhost:3005/admin/simulacoes` confirmou listagem real, totalizador, filtros ocultaveis, ordenacao por `title`, status com badge e links de acao.
+- Teste manual em `http://localhost:3005/admin/simulacoes/[id]` confirmou detalhe com resumo, dados da cotacao vinculada e formulario restrito de edicao.
+- Teste manual em `http://localhost:3005/admin/simulacoes/nova` confirmou formulario de criacao basica e validacao inline sem criar registro.
+- Teste rapido em `http://localhost:3005/admin/clientes` confirmou que o CRUD de Clientes segue renderizando com botao Novo e filtros.
+
+Nao foi possivel validar ainda:
+
+- Paginacao depende de haver mais de 20 simulacoes no ambiente.
+- Upload real de arquivo nao foi validado porque segue fora do escopo desta fase.
+
+Proxima etapa recomendada:
+
+- Avancar para o proximo CRUD administrativo aprovado.
+
+### 2026-06-18 - Cotações admin read-only padronizado
+
+- `/admin/cotacoes` passou a seguir o padrão visual e funcional do CRUD de Clientes, sem botão `Novo`.
+- Listagem administrativa de cotações agora possui filtros ocultáveis, totalizador, paginação, ordenação por whitelist, status/situação com badge e ação `Abrir`.
+- Ordenação foi limitada a colunas reais e seguras de `quotes`; cliente ficou fora da ordenação nesta fase.
+- Criada rota `/admin/cotacoes/[id]` com detalhe administrativo read-only da cotação.
+- Detalhe exibe produto, HS/NCM, valores calculados, cliente, fornecedor, datas, situação, simulações vinculadas e URLs/metadados de imagens quando existirem.
+- Queries administrativas de cotações passaram a validar role admin no servidor.
+- Nenhuma migration foi criada e nenhum fluxo da área do cliente/calculadora foi alterado.
+
+Arquivos principais:
+
+- `src/app/admin/cotacoes/page.tsx`
+- `src/app/admin/cotacoes/[id]/page.tsx`
+- `src/components/admin/QuoteFilters.tsx`
+- `src/components/admin/CrudHeaderWithFilters.tsx`
+- `src/lib/admin/queries.ts`
+- `docs/spec-cruds.md`
+- `docs/ROUTES_AND_SCREENS.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- `npm run build` aprovado.
+- `git diff --check` aprovado.
+
+Nao foi possivel validar ainda:
+
+- Paginacao depende de haver mais de 20 cotacoes no ambiente.
+- Teste manual completo no navegador em `/admin/cotacoes`, `/admin/cotacoes/[id]` e `/admin/clientes` nao foi concluido porque a sessao do navegador nao estava autenticada como admin no Supabase real. O fallback mock em servidor auxiliar nao conseguiu renderizar as paginas administrativas dinamicas porque essas queries exigem configuracao Supabase.
+
+Proxima etapa recomendada:
+
+- Padronizar Simulações admin usando dados reais de `simulations`.
+
+### 2026-06-18 - Atualizacao documental do estado real do projeto
+
+- Documentacao principal foi atualizada para refletir Supabase real, autenticacao funcionando, `app_users` como fonte de verdade, persistencia de cotacoes em `quotes`, solicitacoes em `simulations` e CRUD administrativo de Clientes completo.
+- `README.md`, `docs/CURRENT_STATUS.md`, `docs/AI_CONTEXT.md`, `docs/FOLDER_STRUCTURE.md`, `docs/ROUTES_AND_SCREENS.md`, `docs/DATABASE_MODEL.md` e `docs/AUTH_AND_PERMISSIONS.md` deixaram de tratar o estado inicial de 12/06 como atual.
+- Docs opcionais foram ajustados apenas onde havia conflito relevante com o estado atual.
+- Nenhum codigo de aplicacao, migration ou configuracao de build/deploy foi alterado nesta entrega.
+
+Arquivos principais:
+
+- `README.md`
+- `docs/CURRENT_STATUS.md`
+- `docs/AI_CONTEXT.md`
+- `docs/FOLDER_STRUCTURE.md`
+- `docs/ROUTES_AND_SCREENS.md`
+- `docs/DATABASE_MODEL.md`
+- `docs/AUTH_AND_PERMISSIONS.md`
+- `docs/TECH_STACK.md`
+- `docs/API_AND_SUPABASE_PLAN.md`
+- `docs/UI_UX_GUIDE.md`
+- `docs/FEATURES_BACKLOG.md`
+- `state.md`
+
+Validado:
+
+- Revisao local dos documentos atualizados.
+- `git diff --check` aprovado.
+
+Nao foi possivel validar ainda:
+
+- Nao aplicavel a runtime, pois a entrega e exclusivamente documental.
+
+Proxima etapa recomendada:
+
+- Refinar os CRUDs administrativos de Cotacoes, Usuarios e Simulacoes seguindo `docs/spec-cruds.md`.
+
+### 2026-06-18 - Validacao inline no formulario administrativo de Clientes
+
+- Formulario de novo cliente passou a preservar dados nao sensiveis quando o submit falha.
+- Senha e confirmacao sao limpas apos erro por seguranca, mantendo os erros inline visiveis.
+- Server Actions de criacao e edicao de cliente passaram a retornar estado estruturado para erros previsiveis.
+- Validacao server-side agora exibe erros por campo para nome, e-mail, senha e confirmacao.
+- E-mail duplicado e tratado em duas camadas:
+  - checagem previa em `app_users` com `deleted_at is null`;
+  - fallback para erros de Supabase Auth, Postgres e constraint unica.
+- Formulario de edicao manteve senha opcional e valida senha apenas quando um dos campos de senha for preenchido.
+- Campos com erro ganharam destaque visual, texto inline e atributos de acessibilidade.
+- `docs/spec-cruds.md` foi atualizado com o padrao real de validacao inline nos CRUDs administrativos.
+
+Arquivos principais:
+
+- `src/lib/actions/admin.ts`
+- `src/lib/admin/client-form-state.ts`
+- `src/components/admin/ClientForm.tsx`
+- `src/components/ui/FormField.tsx`
+- `docs/spec-cruds.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- Teste local no navegador confirmou:
+  - campos obrigatorios com erro inline;
+  - e-mail invalido com erro inline;
+  - senha curta e confirmacao diferente com erro inline;
+  - preservacao de nome, empresa, e-mail e telefone apos erro;
+  - limpeza de senha e confirmacao apos erro;
+  - e-mail duplicado no cadastro exibido no campo E-mail;
+  - edicao com senha opcional;
+  - edicao com senha invalida exibindo erro inline;
+  - e-mail duplicado na edicao exibido no campo E-mail.
+
+Nao foi possivel validar ainda:
+
+- Fluxo de erro por constraint unica vindo diretamente do banco sem a checagem previa, pois isso exigiria simular corrida de concorrencia ou alterar o banco durante o teste.
+
+Proxima etapa recomendada:
+
+- Replicar o mesmo padrao de formulario com `fieldErrors` nos proximos CRUDs administrativos.
+
+### 2026-06-18 - Data e hora na coluna Cadastro dos CRUDs
+
+- Coluna `Cadastro` no CRUD administrativo de Clientes passou a exibir data e hora.
+- Formato padrao definido: `dd/mm/aaaa - HH:mm`.
+- `docs/spec-cruds.md` foi atualizado para tornar esse formato padrao nos proximos CRUDs.
+
+Arquivos principais:
+
+- `src/app/admin/clientes/page.tsx`
+- `docs/spec-cruds.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- Teste local no navegador confirmou exibicao no formato com data e hora.
+
+Nao foi possivel validar ainda:
+
+- Deploy em producao desta mudanca pontual.
+
+Proxima etapa recomendada:
+
+- Reutilizar o mesmo formato em qualquer coluna futura de data de cadastro.
+
+### 2026-06-18 - Ordenacao e inativacao padronizada no CRUD de Clientes
+
+- Modulo administrativo de Clientes passou a ter ordenacao por coluna na listagem.
+- Ordenacao usa query params `sort` e `direction`, com whitelist server-side antes de chegar ao Supabase.
+- Whitelist validada contra os campos reais da camada de dados:
+  - `company_name`;
+  - `contact_name`;
+  - `contact_email`;
+  - `source`;
+  - `status`;
+  - `created_at`.
+- Aliases publicos de sort foram mantidos seguros:
+  - `responsible_name` -> `contact_name`;
+  - `email` -> `contact_email`.
+- Links de ordenacao, filtros, paginacao e inativacao preservam o estado da listagem quando aplicavel.
+- Acao da linha mudou de `Excluir` para `Inativar`, mantendo soft delete em `clients` e inativacao do usuario vinculado em `app_users`.
+- Status passou a usar o componente compartilhado `StatusBadge`.
+- Queries administrativas de Clientes agora validam perfil admin server-side.
+- `docs/spec-cruds.md` foi atualizado para refletir exatamente o padrao implementado.
+
+Arquivos principais:
+
+- `src/app/admin/clientes/page.tsx`
+- `src/components/admin/ClientFilters.tsx`
+- `src/components/admin/ClientRowActions.tsx`
+- `src/components/ui/DataTable.tsx`
+- `src/components/ui/StatusBadge.tsx`
+- `src/lib/admin/queries.ts`
+- `src/lib/actions/admin.ts`
+- `docs/spec-cruds.md`
+- `state.md`
+
+Validado:
+
+- Whitelist de ordenacao revisada contra schema/types/actions atuais.
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- `npm run build` aprovado.
+- Teste local no navegador confirmou listagem, ordenacao por URL, modal de inativacao e badge de status.
+
+Nao foi possivel validar ainda:
+
+- Inativacao com submit real nao foi executada para evitar alterar dados de cliente durante o teste.
+- Paginacao para pagina 2 depende de haver mais de 20 clientes ativos no ambiente.
+
+Proxima etapa recomendada:
+
+- Replicar o padrao em Cotacoes, Simulacoes e Usuarios quando esses CRUDs forem refinados.
+
+### 2026-06-18 - Espacamento padrao abaixo dos filtros de CRUD
+
+- `CrudHeaderWithFilters` passou a aplicar margem inferior padrao quando o painel de filtros esta aberto.
+- O ajuste evita que filtros fiquem grudados no totalizador/listagem em Clientes e nos proximos CRUDs que reutilizarem o componente.
+
+Arquivos principais:
+
+- `src/components/admin/CrudHeaderWithFilters.tsx`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- Teste local no navegador confirmou gap de 32px entre filtros e totalizador.
+
+Nao foi possivel validar ainda:
+
+- Deploy em producao desta mudanca pontual.
+
+Proxima etapa recomendada:
+
+- Manter este espaçamento como padrao nos proximos CRUDs administrativos.
+
+### 2026-06-18 - Spec dos CRUDs administrativos
+
+- `docs/spec-cruds.md` foi atualizado como especificacao oficial dos CRUDs administrativos.
+- O modulo de Clientes foi documentado como referencia tecnica, visual e funcional para proximos CRUDs.
+- A spec cobre estrutura de arquivos, listagem, filtros, acoes por linha, criacao, edicao, soft delete, detalhes, dados/actions, Supabase, padrao visual e regras para novos modulos.
+- Nenhum modulo novo foi implementado nesta etapa.
+
+Arquivos principais:
+
+- `docs/spec-cruds.md`
+
+Validado:
+
+- Revisao local do documento gerado.
+- `git diff --check` sem problemas.
+
+Nao foi possivel validar ainda:
+
+- Nao aplicavel a runtime, pois a entrega e apenas documental.
+
+Proxima etapa recomendada:
+
+- Usar esta spec como base antes de evoluir os CRUDs de Cotacoes, Usuarios e Simulacoes.
+
+### 2026-06-17 - Totalizador e paginacao em Clientes
+
+- Modulo administrativo de Clientes passou a buscar registros paginados no banco.
+- Listagem exibe sempre ate 20 clientes por pagina.
+- Totalizador considera os filtros ativos e mostra quantidade total encontrada.
+- Rodape de paginacao preserva filtros ao navegar entre paginas.
+
+Arquivos principais:
+
+- `src/app/admin/clientes/page.tsx`
+- `src/lib/admin/queries.ts`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- Teste local no navegador confirmou totalizador e exibicao da primeira pagina.
+
+Nao foi possivel validar ainda:
+
+- Navegacao para pagina 2, pois a base local/remota atual tem menos de 20 clientes no filtro testado.
+- Deploy em producao desta mudanca pontual.
+
+Proxima etapa recomendada:
+
+- Reaplicar o mesmo padrao de totalizador/paginacao nos proximos CRUDs administrativos.
+
+### 2026-06-17 - Header contextual da sidebar
+
+- Sidebar das areas internas passou a exibir um titulo contextual acima dos menus.
+- Usuarios admin veem `Painel Administrativo`.
+- Usuarios cliente veem `Area do cliente`.
+- Menu mobile recebeu o mesmo titulo contextual ao abrir o drawer.
+
+Arquivos principais:
+
+- `src/components/layout/AppShell.tsx`
+- `src/components/layout/MobileNav.tsx`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- Teste local no navegador confirmou `Painel Administrativo` na sidebar admin.
+
+Nao foi possivel validar ainda:
+
+- Visual do drawer mobile apos esta mudanca.
+- Deploy em producao desta mudanca pontual.
+
+Proxima etapa recomendada:
+
+- Validar em viewport mobile no proximo ciclo visual.
+
+### 2026-06-17 - Remocao dos menus administrativos futuros
+
+- Itens administrativos ainda nao implementados foram removidos da navegacao.
+- Bloco `Em breve` deixou de aparecer no sidebar e no menu mobile.
+- Permanecem visiveis apenas os modulos atuais: Dashboard, Clientes, Cotacoes, Simulacoes e Usuarios.
+
+Arquivos principais:
+
+- `src/lib/navigation.ts`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- Teste local no navegador confirmou sidebar sem `Em breve`, `Fornecedores`, `Despachantes` e `Parametros`.
+
+Nao foi possivel validar ainda:
+
+- Deploy em producao desta mudanca pontual.
+
+Proxima etapa recomendada:
+
+- Reintroduzir esses menus apenas quando os respectivos modulos forem implementados.
+
+### 2026-06-17 - Senha no cadastro administrativo de cliente
+
+- Cadastro de novo cliente no painel administrativo passou a exigir `Senha` e `Confirmar senha`.
+- Server action de criacao agora valida senha minima e confirmacao antes de salvar.
+- Criacao administrativa de cliente agora tambem cria usuario no Supabase Auth e registro vinculado em `app_users` com role `client`.
+- Em caso de falha ao criar cliente/app_user, o usuario de Auth criado na tentativa e removido para evitar cadastro orfao.
+- Formulario de edicao manteve o comportamento anterior de senha opcional para redefinicao.
+
+Arquivos principais:
+
+- `src/components/admin/ClientForm.tsx`
+- `src/app/admin/clientes/novo/page.tsx`
+- `src/lib/actions/admin.ts`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- Teste local no navegador confirmou campos obrigatorios `Senha` e `Confirmar senha` em `/admin/clientes/novo`.
+
+Nao foi possivel validar ainda:
+
+- Criacao real de um novo cliente para evitar gerar dados de teste no banco remoto.
+- Deploy em producao desta mudanca pontual.
+
+Proxima etapa recomendada:
+
+- Validar um cadastro real controlado no ambiente online apos o proximo deploy.
+
+### 2026-06-17 - Destaque de menu ativo nos modulos internos
+
+- Navegacao lateral e mobile das areas internas passou a aplicar classe `active` no item correspondente a rota atual.
+- Itens de modulo tambem ficam ativos em subrotas, mantendo o contexto visual dentro do modulo.
+- Dashboard do cliente em `/app` permanece ativo apenas na rota exata, evitando conflito com `/app/calculadora` e `/app/simulacoes`.
+
+Arquivos principais:
+
+- `src/components/layout/NavLinks.tsx`
+- `src/components/layout/AppShell.tsx`
+- `src/components/layout/MobileNav.tsx`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- Teste local no navegador confirmou classe `active` no item `Simulacoes` em `/app/simulacoes`.
+
+Nao foi possivel validar ainda:
+
+- Deploy em producao desta mudanca pontual.
+
+Proxima etapa recomendada:
+
+- Validar navegacao ativa no ambiente online no proximo deploy agrupado.
+
+### 2026-06-17 - Modal de detalhe no historico de cotacoes
+
+- Acao `Abrir` do historico da calculadora passou a exibir a cotacao em modal.
+- Modal usa a mesma linguagem visual do resultado da cotacao, com cards de totalizadores, referencia direta em laranja e economia em card verde quando positiva.
+- Detalhes de fornecedor e anexos foram mantidos dentro do modal.
+- Acao `Copiar` foi removida da listagem do historico.
+
+Arquivos principais:
+
+- `src/components/calculator/CalculatorClient.tsx`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- Teste local no navegador confirmou abertura e fechamento do modal pelo historico.
+
+Nao foi possivel validar ainda:
+
+- Deploy em producao desta mudanca pontual.
+
+Proxima etapa recomendada:
+
+- Validar o modal online no proximo deploy agrupado.
+
+### 2026-06-17 - Cancelamento no modo de edicao da calculadora
+
+- Ao refazer/editar uma cotacao existente na calculadora, a Etapa 1 agora exibe o botao `Cancelar`.
+- O cancelamento limpa o modo de edicao, descarta alteracoes nao calculadas e retorna para a aba `Historico`.
+- O fluxo de nova cotacao permanece sem botao de cancelamento para manter a tela simples.
+
+Arquivos principais:
+
+- `src/components/calculator/CalculatorClient.tsx`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado sem erros.
+- Teste local no navegador confirmou o botao `Cancelar` em cotacao carregada para edicao e retorno para a aba `Historico`.
+
+Nao foi possivel validar ainda:
+
+- Deploy em producao desta mudanca pontual.
+
+Proxima etapa recomendada:
+
+- Validar no fluxo online depois do proximo deploy agrupado.
 
 ### 2026-06-17 - Persistencia real da calculadora e simulacoes do cliente
 

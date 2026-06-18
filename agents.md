@@ -11,6 +11,7 @@ Leia, nesta ordem:
 3. `docs/plano-fundacao-sistema.md`
 4. `docs/especificacao-calculadora.md`, quando a tarefa envolver calculadora, cotacoes, historico ou imagens.
 5. `docs/spec-cruds.md`, quando a tarefa envolver CRUDs administrativos, tabelas, filtros, formularios de cadastro/edicao ou exclusao.
+6. O documento tematico correspondente, quando a tarefa envolver banco, auth, rotas, stack, UI/UX ou roadmap.
 
 Depois de ler, confirme mentalmente:
 
@@ -18,6 +19,38 @@ Depois de ler, confirme mentalmente:
 - O que ja foi entregue.
 - O que ficou pendente.
 - Qual arquivo ou modulo a tarefa deve alterar.
+
+## Hierarquia da documentacao
+
+Fontes da verdade por tema:
+
+- `agents.md`: regras operacionais para agentes/desenvolvedores.
+- `state.md`: estado vivo e historico mais recente do projeto.
+- `docs/spec-cruds.md`: padrao oficial de CRUDs administrativos.
+- `docs/especificacao-calculadora.md`: padrao oficial da calculadora, cotacoes, historico, imagens e regras de calculo.
+- `docs/DATABASE_MODEL.md`: modelo de dados, tabelas, campos, status e RLS.
+- `docs/AUTH_AND_PERMISSIONS.md`: autenticacao, roles, `app_users`, permissoes e isolamento.
+- `docs/ROUTES_AND_SCREENS.md`: rotas, telas e status das paginas.
+- `docs/TECH_STACK.md`: stack, scripts, ambiente, Vercel e Supabase.
+- `docs/UI_UX_GUIDE.md`: padroes visuais.
+- `docs/FEATURES_BACKLOG.md`: roadmap e prioridades.
+- `README.md`: entrada rapida para humanos.
+
+Uso operacional de status:
+
+- `state.md` e a memoria viva e granular do projeto.
+- `state.md` deve ser atualizado ao final de toda entrega relevante.
+- `docs/CURRENT_STATUS.md` e um resumo executivo de alto nivel do estado atual.
+- `docs/CURRENT_STATUS.md` nao precisa ser atualizado em toda entrega pequena ou incremental.
+- Atualizar `docs/CURRENT_STATUS.md` quando houver mudanca de fase, marco importante, conclusao de modulo relevante, mudanca de arquitetura/modelo de dados, deploy significativo ou revisao documental ampla.
+- Em caso de divergencia, `state.md` prevalece como fonte mais recente.
+
+Regra de conflito:
+
+- `state.md` vence para estado atual.
+- Specs tematicas vencem para comportamento esperado do modulo.
+- Codigo e migrations representam a realidade implementada; divergencias com a documentacao devem ser apontadas antes de mudar.
+- Relatorios historicos datados nao devem ser tratados como estado atual.
 
 ## Principio do produto
 
@@ -56,7 +89,6 @@ Estrutura principal:
 
 ## Regras de implementacao
 
-- Em tarefas de construcao, antes de implementar, primeiro resumir o que foi entendido e apresentar um plano curto de execucao. So comecar os edits depois da aprovacao explicita do usuario.
 - Seguir o escopo da fase registrada em `state.md`.
 - Nao implementar funcionalidade completa quando o pedido for apenas fundacao ou front estatico.
 - Preferir componentes compartilhados para formulario, tabela, cards e estados vazios.
@@ -66,6 +98,42 @@ Estrutura principal:
 - Atualizar `state.md` ao final de cada entrega relevante.
 - Nao acionar deploy manual na Vercel a cada entrega. Fazer push no GitHub normalmente; aguardar pedido explicito do usuario para publicar/promover ou acompanhar deploy na Vercel durante rodadas de multiplos ajustes. O `vercel.json` deve manter `git.deploymentEnabled: false` para evitar deploy automatico por push.
 
+### Classificacao de risco
+
+Antes de editar, classifique a tarefa:
+
+- Baixo risco: texto, documentacao simples, ajuste visual isolado, espacamento ou correcao pequena sem impacto em dados.
+- Medio risco: CRUD, filtros, tabela, formulario, componente compartilhado, Server Action nao sensivel ou layout usado em multiplas telas.
+- Alto risco: auth, permissoes, RLS, migrations, modelo de dados, deploy, rotas principais, calculo da calculadora, contratos entre cliente/admin ou mudancas em `app_users`, `clients`, `quotes` ou `simulations`.
+
+Tarefas de baixo risco podem ser executadas com plano breve quando o pedido for claro. Tarefas de medio e alto risco exigem plano antes de editar, contendo entendimento, risco, impacto, arquivos provaveis e validacoes. So comecar a edicao depois de aprovacao explicita do usuario.
+
+### Contratos protegidos
+
+Nao alterar sem destacar no plano:
+
+- nomes de tabelas e colunas;
+- tipos TypeScript compartilhados;
+- rotas e query params;
+- status;
+- payloads;
+- Server Actions;
+- policies RLS;
+- comportamento de login;
+- regras de calculo;
+- estrutura de `quotes`, `simulations`, `clients` e `app_users`.
+
+### Pedidos ambiguos
+
+Quando o pedido for amplo, ambiguo ou puder afetar produto/arquitetura:
+
+- nao implementar de imediato;
+- transformar o pedido em requisitos;
+- separar impacto em produto, design, banco, permissoes e documentacao;
+- propor fases;
+- apontar riscos;
+- aguardar aprovacao.
+
 ### CRUDs administrativos
 
 Seguir o padrao definido em:
@@ -74,13 +142,30 @@ Seguir o padrao definido em:
 
 Minimos obrigatorios:
 
-- cabecalho com acao principal `Novo`;
-- filtros acima da listagem;
+- cabecalho com acao principal;
+- filtros ocultaveis acima da listagem;
 - tabela com rolagem horizontal apenas dentro do proprio container quando necessario;
-- coluna `Acoes` com `Editar` e `Excluir`;
-- nome principal clicavel para edicao;
-- soft delete com confirmacao em modal;
+- coluna de acoes;
+- nome principal clicavel quando fizer sentido;
+- status com badge compartilhado;
+- acoes sensiveis conforme o padrao do modulo, normalmente `Editar` e `Inativar` quando houver soft delete;
+- soft delete/inativacao com confirmacao em modal;
+- validacao inline em formularios;
+- preservacao de filtros, paginacao e ordenacao;
 - layout sem barra de rolagem horizontal na pagina inteira.
+
+Formularios administrativos devem seguir o padrao atual do modulo de Clientes:
+
+- validacao server-side como fonte de verdade;
+- validacao client-side apenas complementar;
+- Server Actions retornando estado estruturado com `fieldErrors`, `values` e `message`, quando aplicavel;
+- erros previsiveis inline no campo correto;
+- alerta geral no topo apenas como resumo;
+- preservacao de dados nao sensiveis apos erro;
+- senha e confirmacao limpas apos erro, quando houver dado sensivel;
+- e-mail duplicado exibido no campo E-mail;
+- erros tecnicos de Supabase/Auth/Postgres convertidos para mensagens amigaveis;
+- edicao mantendo senha opcional quando esse for o padrao do formulario.
 
 ## Auth e seguranca
 
@@ -93,10 +178,14 @@ Minimos obrigatorios:
 - `SUPABASE_SERVICE_ROLE_KEY` nunca deve ir para codigo client.
 - RLS deve proteger dados de cliente por `client_id`.
 - A base de usuarios da aplicacao deve ficar em tabela propria da app, independente do provedor de autenticacao. Usar `app_users` como fonte de verdade para perfis, papeis e futuros cadastros administrativos/exportacoes.
+- `profiles` nao deve ser usado como fonte principal da aplicacao.
+- Toda acao administrativa sensivel deve validar permissao no servidor.
+- UI nao e camada de seguranca.
+- Service role so pode ser usada em contexto server-side seguro.
 
-### Modo mock atual
+### Modo mock e preview
 
-Enquanto Supabase real nao estiver configurado, usar cookie local para simular sessao:
+O modo mock e o preview local sao fallback de desenvolvimento/demonstracao. Quando Supabase real estiver configurado, o app deve usar autenticacao e dados reais. No fallback mock, a sessao usa o cookie local:
 
 ```text
 global_rpx_mock_user
@@ -115,6 +204,16 @@ global-rpx-quotes:{email}
 ```
 
 Quando migrar para Supabase, preservar a ideia de isolamento por cliente usando `client_id` e RLS.
+
+### Migrations Supabase
+
+- Nao editar migrations ja aplicadas, salvo pedido explicito.
+- Criar nova migration incremental para mudancas de banco.
+- Explicar impacto de tabelas, campos, indices, status e policies.
+- Validar RLS e permissoes de cliente/admin.
+- Atualizar `state.md` ao final da entrega.
+- Atualizar `docs/DATABASE_MODEL.md` quando a modelagem mudar.
+- Nunca usar `SUPABASE_SERVICE_ROLE_KEY` no client.
 
 ## Calculadora
 
@@ -232,6 +331,24 @@ Atualmente o preview tambem simula:
 
 O preview nao substitui o app real em `src/app`.
 
+## Atualizacao documental obrigatoria
+
+Ao final de mudancas relevantes:
+
+- CRUD, filtros, tabela ou formulario administrativo: atualizar `docs/spec-cruds.md`.
+- Calculadora, cotacoes, historico ou imagens: atualizar `docs/especificacao-calculadora.md`.
+- Banco, tabelas, campos, status, RLS ou migrations: atualizar `docs/DATABASE_MODEL.md`.
+- Auth, roles, permissoes ou middleware: atualizar `docs/AUTH_AND_PERMISSIONS.md`.
+- Rotas ou telas: atualizar `docs/ROUTES_AND_SCREENS.md`.
+- Stack, scripts, ambiente ou deploy: atualizar `docs/TECH_STACK.md`.
+- Entrega relevante: sempre atualizar `state.md`.
+
+## Validacao minima
+
+- Baixo risco: revisar diff; rodar typecheck/lint se tocar TypeScript ou React.
+- Medio risco: rodar `npm run typecheck`, `npm run lint` e teste manual do fluxo afetado.
+- Alto risco: rodar `npm run typecheck`, `npm run lint`, `npm run build`, teste manual/browser, validacao de migrations/RLS quando houver banco e validar cenario admin/cliente quando envolver permissoes.
+
 ## Ao finalizar uma entrega
 
 Sempre atualizar `state.md` com:
@@ -244,3 +361,13 @@ Sempre atualizar `state.md` com:
 - Proxima etapa recomendada.
 
 Se a entrega mudar escopo, roadmap, stack, rotas ou modelo de dados, atualizar tambem este `agents.md` quando necessario.
+
+Na resposta final ao usuario, resumir:
+
+- o que foi feito;
+- arquivos alterados;
+- validacoes executadas;
+- o que nao foi possivel validar;
+- como testar, quando aplicavel;
+- proximas etapas recomendadas;
+- pendencias ou riscos.

@@ -23,12 +23,14 @@ export function CrudHeaderWithFilters({
   title,
   description,
   newHref,
+  newLabel = "Novo",
   filtersInitiallyOpen,
   children
 }: {
   title: string;
   description: string;
-  newHref: string;
+  newHref?: string;
+  newLabel?: string;
   filtersInitiallyOpen: boolean;
   children: React.ReactNode;
 }) {
@@ -59,13 +61,15 @@ export function CrudHeaderWithFilters({
                 <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rpx-red" />
               ) : null}
             </button>
-            <ButtonLink href={newHref} className="w-full sm:w-auto">
-              Novo
-            </ButtonLink>
+            {newHref ? (
+              <ButtonLink href={newHref} className="w-full sm:w-auto">
+                {newLabel}
+              </ButtonLink>
+            ) : null}
           </div>
         }
       />
-      {filtersOpen ? children : null}
+      {filtersOpen ? <div className="mb-8">{children}</div> : null}
     </>
   );
 }

@@ -10,30 +10,30 @@ Complexidade: **Baixa**, **Media** ou **Alta**.
 | Validacao estatica | Lint e typecheck executados sem erros finais | Concluido em 2026-06-12 |
 | Build de producao | `next build` gerou 17 rotas | Concluido em 2026-06-12 |
 | Tipagem Supabase SSR | Callbacks de cookies tipados com API oficial | Concluido em 2026-06-12 |
+| Supabase real e Auth | Autenticacao real com `app_users` como fonte da app | Concluido em 2026-06-18 |
+| Persistencia da calculadora | Cotacoes salvas em `quotes` e historico real | Concluido em 2026-06-18 |
+| Solicitacao de simulacao | Registros criados em `simulations` | Concluido em 2026-06-18 |
+| CRUD de clientes | Listagem, filtros, paginacao, ordenacao, criacao, edicao e inativacao | Concluido em 2026-06-18 |
 
 ## MVP obrigatorio
 
 | Item | Descricao | Prioridade | Complexidade | Dependencias |
 |---|---|---:|---:|---|
 | CI de qualidade | Automatizar `npm ci`, lint, typecheck e build | P0 | Media | Repositorio remoto |
-| Supabase real | Projeto, envs, migrations e Auth | P0 | Media | Conta Supabase |
-| Modelo de cotacoes | Criar tabelas e RLS de cotacoes/calculos | P0 | Alta | Modelo aprovado |
-| Persistencia da calculadora | Substituir localStorage por Supabase | P0 | Alta | Cotacoes + Auth |
+| Validacao RLS multi-cliente | Testar admin, cliente1 e cliente2 em ambiente real | P0 | Media | Supabase real |
 | Storage | Upload real de produto e cartao | P0 | Media | Bucket e policies |
-| Historico do cliente | Lista e detalhe persistidos | P0 | Media | Cotacoes |
-| Admin de cotacoes | Lista, detalhe e status Brasil | P0 | Alta | RLS admin |
+| Detalhe persistido do cliente | Criar rotas dedicadas de cotacao/simulacao | P0 | Media | Cotacoes |
+| Admin de cotacoes | Refinar lista, filtros, detalhe e status Brasil | P0 | Alta | RLS admin |
 | Parametros internos | Fatores e markup configuraveis | P0 | Media | `calculation_parameters` |
 | PTAX resiliente | Timeout, erro controlado e snapshot da taxa | P0 | Media | API atual |
 | Deploy Vercel | Preview e producao configurados | P0 | Baixa | Build e envs |
-| Testes de isolamento | Garantir cliente1 != cliente2 | P0 | Media | RLS |
 | Atualizacao segura do Next | Monitorar correcao do PostCSS sem downgrade incompatível | P1 | Baixa | Release compativel |
 
 ## Fase 2
 
 | Item | Descricao | Prioridade | Complexidade | Dependencias |
 |---|---|---:|---:|---|
-| CRUD de clientes | Cadastro, status e contatos | P1 | Media | Auth admin |
-| Gestao de usuarios | Convites e vinculo com cliente | P1 | Alta | Supabase Auth |
+| Refinar usuarios admin | Convites, vinculo com cliente e inativacao | P1 | Alta | Supabase Auth |
 | Base de fornecedores | Cadastro e reaproveitamento | P1 | Media | Modelo suppliers |
 | Produtos pesquisados | Reutilizar produto em cotacoes | P1 | Media | Products |
 | Filtros de cotacoes | Produto, status, cliente e periodo | P1 | Baixa | Dados persistidos |

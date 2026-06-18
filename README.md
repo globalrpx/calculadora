@@ -2,34 +2,39 @@
 
 Plataforma web para cotacoes preliminares de importacao, registro de produtos e fornecedores, simulacoes e relacionamento entre clientes e a equipe Global RPX.
 
-> O projeto atual usa **Next.js 15 com App Router**, nao Vite.
+> O projeto usa **Next.js 15 com App Router**, nao Vite.
 
-## Tecnologias
+## Estado Atual
+
+Resumo em 18 de junho de 2026:
+
+- Supabase real configurado e autenticacao real funcionando.
+- `app_users` e a fonte de verdade da aplicacao para usuario, role, status e vinculo com cliente.
+- Home, cadastro publico, login, conta, area do cliente e area administrativa existem.
+- Calculadora persiste cotacoes reais em `quotes`.
+- Historico da calculadora carrega dados reais do Supabase.
+- Solicitacao de simulacao completa cria registros reais em `simulations`.
+- Dashboard do cliente e dashboard admin usam dados dinamicos.
+- Admin de Clientes possui CRUD completo com filtros, paginacao, ordenacao, validacao inline e soft delete/inativacao.
+- Modo mock e `scripts/preview-server.mjs` continuam como fallback/apoio, nao como fluxo principal.
+
+Para o estado vivo e mais granular, consulte [state.md](state.md). Para regras de trabalho de agentes/desenvolvedores, consulte [agents.md](agents.md).
+
+## Stack
 
 - Next.js 15
 - React 19
 - TypeScript
 - Tailwind CSS
-- Supabase Auth, Postgres e Storage
+- Supabase Auth, Postgres e Storage preparado para anexos futuros
 - Vercel
 - API PTAX do Banco Central
-
-## Estado atual
-
-- Home, login e navegacao de cliente/admin.
-- Auth mock por cookie e estrutura para Supabase Auth.
-- Calculadora funcional com NCM, fornecedor, PTAX e comparativo.
-- Historico temporario em localStorage por usuario.
-- Painel administrativo ainda majoritariamente placeholder.
-- Supabase real e deploy ainda pendentes.
-
-Consulte [docs/CURRENT_STATUS.md](docs/CURRENT_STATUS.md) para o diagnostico completo.
 
 ## Requisitos
 
 - Node.js 20 LTS ou superior.
 - npm, pnpm ou yarn.
-- Projeto Supabase para executar o modo real.
+- Projeto Supabase com as migrations do repositorio aplicadas.
 
 ## Instalacao
 
@@ -46,17 +51,17 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-Sem URL e anon key, a aplicacao usa login mock.
+Sem URL e anon key publicas, a aplicacao usa o modo mock por cookie como fallback local.
 
-## Como rodar
+## Como Rodar
 
 ```bash
 npm run dev
 ```
 
-Acesse `http://localhost:3000`.
+Acesse `http://localhost:3000`, salvo porta diferente informada pelo Next.
 
-Outros comandos:
+Scripts principais:
 
 ```bash
 npm run typecheck
@@ -65,79 +70,63 @@ npm run build
 npm run start
 ```
 
-O lint, typecheck e build foram validados em 12 de junho de 2026. `next lint` esta depreciado e devera migrar para ESLint CLI antes do Next 16.
+Observacao: `next lint` ainda e o script atual do projeto, mas esta depreciado no caminho para o Next 16.
 
-## Usuarios mock
+## Supabase
 
-- `cliente1@gmail.com`
-- `cliente2@gmail.com`
-- `admin@globalrpx.com`
+As migrations atuais cobrem a fundacao de auth/perfis, `app_users`, base administrativa, `quotes`, `simulations`, soft delete e persistencia da calculadora.
 
-No modo mock, qualquer um desses usuarios pode entrar pelo atalho da tela de login.
+Regras importantes:
 
-## Preview temporario
+- `app_users` e a fonte de verdade da aplicacao.
+- `profiles` existe como legado/fundacao inicial, mas nao deve guiar novas implementacoes.
+- Dados de cliente devem respeitar isolamento por `client_id` e RLS.
+- `SUPABASE_SERVICE_ROLE_KEY` nunca deve ir para codigo client.
 
-Quando o ambiente Next nao estiver disponivel:
+## Preview Temporario
+
+Quando o ambiente Next nao puder ser usado:
 
 ```bash
 PORT=3002 node scripts/preview-server.mjs
 ```
 
-O preview nao substitui a aplicacao real e deve ser removido apos o fluxo Next estar publicado.
+O preview nao substitui a aplicacao real em `src/app` e deve ser tratado como ferramenta auxiliar.
 
-## Estrutura resumida
+## Estrutura Resumida
 
 ```text
-src/app/             rotas Next.js e API
-src/components/      layout, UI e calculadora
-src/lib/             auth, Supabase, calculos e PTAX
-supabase/migrations/ migrations SQL
+src/app/              rotas Next.js, layouts e API
+src/components/       layout, UI, admin, landing e calculadora
+src/lib/              actions, auth, Supabase, queries, calculos e helpers
+supabase/migrations/  migrations SQL versionadas
 public/data/          dataset NCM servido ao app
 scripts/              normalizacao NCM e preview temporario
 docs/                 documentacao de produto e tecnica
-state.md              estado vivo do projeto
-agents.md             instrucoes para novas sessoes
+state.md              memoria viva do projeto
+agents.md             regras para agentes/desenvolvedores
 ```
-
-## Supabase
-
-A migration atual cria apenas:
-
-- `clients`
-- `profiles`
-- RLS inicial de leitura.
-
-Execute `supabase/migrations/001_foundation.sql` no projeto de desenvolvimento. Antes do MVP, crie migrations adicionais conforme [docs/DATABASE_MODEL.md](docs/DATABASE_MODEL.md).
-
-## Vercel
-
-1. Importe o repositorio na Vercel.
-2. Selecione o preset Next.js.
-3. Configure as variaveis de ambiente.
-4. Garanta que as migrations foram executadas.
-5. Valide Auth, RLS e `/api/exchange-rate`.
-6. Publique primeiro como Preview.
 
 ## Documentacao
 
+- [Status atual](docs/CURRENT_STATUS.md)
+- [Contexto para IA/dev](docs/AI_CONTEXT.md)
 - [Visao do projeto](docs/PROJECT_OVERVIEW.md)
 - [Stack tecnica](docs/TECH_STACK.md)
 - [Estrutura de pastas](docs/FOLDER_STRUCTURE.md)
 - [Rotas e telas](docs/ROUTES_AND_SCREENS.md)
 - [Modelo de banco](docs/DATABASE_MODEL.md)
 - [Auth e permissoes](docs/AUTH_AND_PERMISSIONS.md)
-- [Backlog](docs/FEATURES_BACKLOG.md)
+- [Spec de CRUDs administrativos](docs/spec-cruds.md)
+- [Especificacao da calculadora](docs/especificacao-calculadora.md)
 - [Plano de API e Supabase](docs/API_AND_SUPABASE_PLAN.md)
 - [Guia de UI/UX](docs/UI_UX_GUIDE.md)
-- [Status atual](docs/CURRENT_STATUS.md)
-- [Relatorio de build](docs/BUILD_REPORT.md)
-- [Contexto para outra IA](docs/AI_CONTEXT.md)
+- [Backlog](docs/FEATURES_BACKLOG.md)
 
-## Proximos passos
+## Proximos Passos
 
-1. Padronizar Node 20 ou 22 LTS e criar CI.
-2. Configurar Supabase de desenvolvimento.
-3. Implementar tabelas e RLS da calculadora.
-4. Migrar localStorage e uploads para Supabase.
-5. Implementar fluxo real de cotacoes no admin.
-6. Publicar preview na Vercel.
+1. Refinar os CRUDs administrativos de Cotacoes, Usuarios e Simulacoes seguindo `docs/spec-cruds.md`.
+2. Evoluir Storage real para anexos/imagens e policies correspondentes.
+3. Implementar parametros administrativos versionados para fatores e markup cambial.
+4. Criar CI com lint, typecheck e build.
+5. Validar RLS com cenarios admin, cliente 1 e cliente 2 antes de producao.

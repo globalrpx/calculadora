@@ -11,7 +11,7 @@ O projeto e uma aplicacao **Next.js**, e nao React + Vite.
 | React DOM | `^19.0.0` | Renderizacao |
 | TypeScript | `^5.8.3` | Tipagem |
 | Tailwind CSS | `^3.4.17` | Estilos |
-| Supabase JS | `^2.49.4` | Auth, banco e Storage futuros |
+| Supabase JS | `^2.49.4` | Auth, banco e Storage preparado para anexos futuros |
 | Supabase SSR | `^0.6.1` | Sessao no servidor e middleware |
 | clsx | `^2.1.1` | Classes condicionais |
 | ESLint | `^9.25.1` | Analise estatica |
@@ -131,18 +131,22 @@ Nao e necessario definir comando customizado: a Vercel detecta `next build`.
 
 Atual:
 
-- Clientes browser e server preparados.
-- Middleware de sessao preparado.
-- Auth por e-mail/senha preparado.
-- Migration com `clients`, `profiles` e RLS inicial.
+- Clientes browser, server e admin preparados.
+- Middleware de sessao ativo.
+- Auth por e-mail/senha funcionando quando as envs estao configuradas.
+- `app_users` e a fonte de verdade da aplicacao para usuario, role, status e vinculo com cliente.
+- `profiles` existe como legado da fundacao inicial, mas nao deve orientar novas implementacoes.
+- Migrations atuais cobrem `clients`, `app_users`, `quotes`, `simulations`, soft delete e persistencia da calculadora.
+- Calculadora persiste cotacoes em `quotes`.
+- Solicitacoes de simulacao persistem em `simulations`.
 
 Futuro:
 
-- Cotacoes, itens, calculos e snapshots de parametros.
 - Fornecedores e contatos.
 - Imagens no Supabase Storage.
 - NCM, impostos e validacoes.
-- Simulacoes e historico de versoes.
+- Parametros administrativos versionados.
+- Historico de versoes de simulacoes.
 - Auditoria de alteracoes administrativas.
 
 ## Integracao externa atual

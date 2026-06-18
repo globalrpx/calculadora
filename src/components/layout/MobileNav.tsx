@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { NavLinks } from "@/components/layout/NavLinks";
 
 type NavItem = {
   href: string;
@@ -10,7 +10,7 @@ type NavItem = {
   disabled?: boolean;
 };
 
-export function MobileNav({ navItems }: { navItems: NavItem[] }) {
+export function MobileNav({ navItems, title = "Menu" }: { navItems: NavItem[]; title?: string }) {
   const [open, setOpen] = useState(false);
 
   const enabledItems = navItems.filter((item) => !item.disabled);
@@ -42,7 +42,7 @@ export function MobileNav({ navItems }: { navItems: NavItem[] }) {
               />
               <aside className="absolute left-0 top-0 z-10 flex h-full w-[280px] max-w-[85vw] flex-col border-r border-slate-200 bg-white p-4 shadow-soft">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Menu</p>
+                  <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</p>
                   <button
                     type="button"
                     aria-label="Fechar menu"
@@ -54,16 +54,11 @@ export function MobileNav({ navItems }: { navItems: NavItem[] }) {
                 </div>
 
                 <nav className="mt-4 grid gap-1">
-                  {enabledItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className="rounded-md px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-rpx-sky hover:text-rpx-blue"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+                  <NavLinks
+                    navItems={enabledItems}
+                    onNavigate={() => setOpen(false)}
+                    itemClassName="px-3 py-3 text-sm"
+                  />
                 </nav>
 
                 {disabledItems.length > 0 ? (

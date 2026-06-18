@@ -1,4 +1,17 @@
-# Global RPX - Modelo Inicial de Banco
+# Global RPX - Modelo de Banco
+
+## Escopo
+
+Este documento descreve o modelo atual implementado nas migrations e a direcao planejada. Para o estado vivo de entregas, consulte `state.md`.
+
+Migrations atuais:
+
+- `001_foundation.sql`
+- `002_public_signup_profiles.sql`
+- `003_app_users.sql`
+- `004_admin_foundation.sql`
+- `005_crud_soft_delete.sql`
+- `006_client_quotes_persistence.sql`
 
 ## Convencoes
 
@@ -6,334 +19,244 @@
 - IDs: `uuid` com `gen_random_uuid()`.
 - Datas: `timestamptz`.
 - Valores monetarios e taxas: `numeric`, nunca `float`.
-- Dados de cliente sempre vinculados por `client_id`.
-- Registros importantes usam `created_at`, `updated_at` e, quando aplicavel, `created_by`.
-- Parametros usados em calculos devem ser salvos como snapshot para preservar o historico.
+- Dados de cliente devem ser vinculados por `client_id`.
+- Registros operacionais usam `created_at`, `updated_at` e, quando aplicavel, usuario criador.
+- Migrations ja aplicadas nao devem ser editadas; criar migrations incrementais.
 
-## Modelo de relacionamentos
+## Relacionamentos Atuais
 
 ```mermaid
 erDiagram
-  CLIENTS ||--o{ PROFILES : has
-  CLIENTS ||--o{ SUPPLIERS : owns
-  CLIENTS ||--o{ PRODUCTS : researches
-  CLIENTS ||--o{ QUOTES : creates
-  PROFILES ||--o{ QUOTES : creates
-  SUPPLIERS ||--o{ QUOTES : supplies
-  PRODUCTS ||--o{ QUOTES : quoted
-  NCM_CODES ||--o{ PRODUCTS : classifies
-  QUOTES ||--|| QUOTE_CALCULATIONS : calculates
-  QUOTES ||--o{ QUOTE_ATTACHMENTS : contains
-  QUOTES ||--o{ QUOTE_STATUS_HISTORY : tracks
+  CLIENTS ||--o{ APP_USERS : has
+  CLIENTS ||--o{ QUOTES : owns
+  CLIENTS ||--o{ SIMULATIONS : owns
+  APP_USERS ||--o{ QUOTES : creates
+  APP_USERS ||--o{ SIMULATIONS : creates
   QUOTES ||--o{ SIMULATIONS : originates
-  SIMULATIONS ||--o{ SIMULATION_VERSIONS : versions
-  NCM_CODES ||--o{ TAX_RULES : has
 ```
 
-## Tabelas
+## Tabelas Atuais
 
 ### `clients`
 
-Organizacoes clientes.
+Clientes/empresas da plataforma.
 
-| Campo | Tipo | Regra |
+| Campo | Tipo | Regra atual |
 |---|---|---|
 | `id` | uuid | PK |
-| `company_name` | text | obrigatorio |
+| `company_name` | text | opcional desde `005_crud_soft_delete.sql` |
 | `trade_name` | text | opcional |
-| `document` | text | CNPJ/identificador |
+| `document` | text | opcional |
 | `contact_name` | text | opcional |
-| `contact_email` | citext/text | opcional |
+| `contact_email` | text | opcional |
 | `contact_phone` | text | opcional |
 | `status` | text | `active`, `inactive` |
+| `source` | text | `site`, `admin`; default `site` |
+| `deleted_at` | timestamptz | soft delete |
 | `created_at` | timestamptz | default `now()` |
 | `updated_at` | timestamptz | default `now()` |
 
-### `profiles`
+Uso atual:
 
-Complemento de `auth.users`.
+- CRUD administrativo de Clientes.
+- Vinculo com `app_users`.
+- Vinculo com `quotes` e `simulations`.
+- Soft delete/inativacao no admin.
 
-| Campo | Tipo | Regra |
+### `app_users`
+
+Fonte de verdade da aplicacao para usuario, role, status e vinculo com cliente.
+
+| Campo | Tipo | Regra atual |
 |---|---|---|
 | `id` | uuid | PK |
-| `auth_user_id` | uuid | unique, FK `auth.users` |
+| `name` | text | opcional |
+| `email` | text | obrigatorio |
+| `phone` | text | opcional |
+| `role` | text | `admin`, `client` |
+| `status` | text | `active`, `inactive` |
 | `client_id` | uuid | FK `clients`, nulo para admin |
-| `name` | text | nome |
-| `email` | text | espelho para consulta |
-| `role` | text | inicialmente `admin` ou `client` |
-| `status` | text | `active`, `invited`, `disabled` |
-| `created_at` | timestamptz | |
-| `updated_at` | timestamptz | |
+| `auth_provider` | text | ex.: `supabase` |
+| `auth_provider_user_id` | text | id do usuario no provedor |
+| `accepted_terms_at` | timestamptz | opcional |
+| `deleted_at` | timestamptz | soft delete/inativacao |
+| `created_at` | timestamptz | default `now()` |
+| `updated_at` | timestamptz | default `now()` |
 
-### `suppliers`
+Indices relevantes:
 
-Fornecedor cadastrado ou consolidado a partir de cotacoes.
+- e-mail unico por `lower(email)` apenas quando `deleted_at is null`;
+- combinacao unica de `auth_provider` e `auth_provider_user_id` quando ambos existem.
 
-| Campo | Tipo |
-|---|---|
-| `id` | uuid |
-| `client_id` | uuid |
-| `name` | text |
-| `country_code` | char(2) |
-| `city` | text |
-| `contact_name` | text |
-| `contact_email` | text |
-| `contact_phone` | text |
-| `website` | text |
-| `notes` | text |
-| `source` | text: `manual`, `quote`, `ocr` |
-| `validation_status` | text |
-| `created_by` | uuid |
-| `created_at` | timestamptz |
-| `updated_at` | timestamptz |
+Regra:
 
-Um fornecedor pode inicialmente ser privado do cliente. Futuramente, a RPX pode consolidar fornecedores em uma base global separada.
+- Novas implementacoes devem usar `app_users`, nao `profiles`, para perfil, role e status.
 
-### `products`
+### `profiles` legado
 
-Produto pesquisado, reutilizavel em novas cotacoes.
+Tabela criada na fundacao inicial como complemento de `auth.users`.
 
-| Campo | Tipo |
-|---|---|
-| `id` | uuid |
-| `client_id` | uuid |
-| `supplier_id` | uuid, opcional |
-| `name` | text |
-| `description` | text |
-| `suggested_ncm_code` | text |
-| `ncm_id` | uuid, opcional |
-| `ncm_validation_status` | text |
-| `created_by` | uuid |
-| `created_at` | timestamptz |
-| `updated_at` | timestamptz |
+Status atual:
 
-### `ncm_codes`
-
-Catalogo versionado de NCM/HS.
-
-| Campo | Tipo |
-|---|---|
-| `id` | uuid |
-| `code` | text unique |
-| `description` | text |
-| `chapter` | text |
-| `effective_from` | date |
-| `effective_to` | date, opcional |
-| `source_version` | text |
-| `active` | boolean |
-
-Para o MVP, o JSON publico pode continuar sendo usado; a tabela passa a ser importante quando houver impostos, versoes e validacao.
-
-### `tax_rules`
-
-Aliquotas e regras por NCM, com vigencia.
-
-| Campo | Tipo |
-|---|---|
-| `id` | uuid |
-| `ncm_id` | uuid |
-| `tax_type` | text: `II`, `IPI`, `PIS`, `COFINS`, `ICMS` |
-| `rate_percent` | numeric(8,4) |
-| `state_code` | char(2), opcional |
-| `effective_from` | date |
-| `effective_to` | date, opcional |
-| `source` | text |
-| `validation_status` | text |
-| `validated_by` | uuid, opcional |
-| `validated_at` | timestamptz, opcional |
+- Existe no banco por historico/migrations iniciais.
+- Nao deve ser fonte principal da aplicacao.
+- `003_app_users.sql` migrou a responsabilidade operacional para `app_users`.
+- A funcao `is_admin()` atual consulta `app_users`.
 
 ### `quotes`
 
-Cabecalho da cotacao preliminar.
+Cotacoes preliminares persistidas pela calculadora.
 
-| Campo | Tipo |
-|---|---|
-| `id` | uuid |
-| `client_id` | uuid |
-| `created_by` | uuid |
-| `product_id` | uuid, opcional |
-| `supplier_id` | uuid, opcional |
-| `product_name_snapshot` | text |
-| `suggested_ncm_code` | text |
-| `fob_unit_usd` | numeric(14,4) |
-| `quantity` | integer |
-| `status` | text |
-| `br_validation_status` | text |
-| `supplier_name_snapshot` | text |
-| `supplier_email_snapshot` | text |
-| `supplier_phone_snapshot` | text |
-| `notes` | text |
-| `submitted_at` | timestamptz |
-| `created_at` | timestamptz |
-| `updated_at` | timestamptz |
+| Campo | Tipo | Regra atual |
+|---|---|---|
+| `id` | uuid | PK |
+| `client_id` | uuid | FK `clients`, obrigatorio |
+| `created_by_app_user_id` | uuid | FK `app_users`, opcional |
+| `product_name` | text | obrigatorio |
+| `hs_code` | text | NCM/HS sugerido |
+| `supplier_name` | text | opcional |
+| `supplier_email` | text | opcional |
+| `supplier_phone` | text | opcional |
+| `fob_unit_usd` | numeric(12,2) | |
+| `quantity` | integer | |
+| `fob_total_usd` | numeric(14,2) | |
+| `used_dollar` | numeric(12,4) | taxa usada internamente |
+| `rpx_factor` | numeric(10,4) | snapshot do fator RPX |
+| `direct_import_factor` | numeric(10,4) | snapshot do fator importacao direta |
+| `unit_cost_rpx_brl` | numeric(14,2) | |
+| `total_cost_rpx_brl` | numeric(14,2) | |
+| `unit_cost_direct_brl` | numeric(14,2) | |
+| `total_cost_direct_brl` | numeric(14,2) | |
+| `savings_brl` | numeric(14,2) | |
+| `savings_percent` | numeric(10,4) | |
+| `status` | text | ver status abaixo |
+| `simulation_request_requested_at` | timestamptz | opcional |
+| `product_image_urls` | text[] | fase atual para imagens do produto |
+| `supplier_contact_image_urls` | text[] | fase atual para imagens de contato do fornecedor |
+| `calculation_payload` | jsonb | snapshot do payload de calculo |
+| `created_at` | timestamptz | default `now()` |
+| `updated_at` | timestamptz | default `now()` |
 
-Status sugeridos:
+Status atuais:
 
 - `draft`
 - `submitted`
-- `under_review`
-- `needs_information`
-- `validated`
-- `rejected`
-- `converted_to_simulation`
+- `simulation_requested`
+- `in_review`
+- `completed`
 
-### `quote_calculations`
+Observacao:
 
-Snapshot imutavel do calculo apresentado.
-
-| Campo | Tipo |
-|---|---|
-| `id` | uuid |
-| `quote_id` | uuid unique |
-| `client_id` | uuid |
-| `ptax_sell_rate` | numeric(12,6) |
-| `exchange_rate_markup_percent` | numeric(8,4) |
-| `exchange_rate_used` | numeric(12,6) |
-| `exchange_rate_quoted_at` | timestamptz |
-| `rpx_factor` | numeric(10,4) |
-| `direct_import_factor` | numeric(10,4) |
-| `fob_total_usd` | numeric(16,2) |
-| `unit_cost_rpx_brl` | numeric(16,2) |
-| `total_cost_rpx_brl` | numeric(16,2) |
-| `unit_cost_direct_brl` | numeric(16,2) |
-| `total_cost_direct_brl` | numeric(16,2) |
-| `savings_brl` | numeric(16,2) |
-| `savings_percent` | numeric(8,4) |
-| `formula_version` | text |
-| `created_at` | timestamptz |
-
-PTAX, markup e fatores sao internos e nao devem ser selecionados diretamente pela area do cliente.
-
-### `quote_attachments`
-
-Metadados de arquivos no Storage.
-
-| Campo | Tipo |
-|---|---|
-| `id` | uuid |
-| `quote_id` | uuid |
-| `client_id` | uuid |
-| `uploaded_by` | uuid |
-| `attachment_type` | text: `product`, `supplier_contact`, `invoice`, `other` |
-| `storage_path` | text |
-| `file_name` | text |
-| `content_type` | text |
-| `file_size` | bigint |
-| `created_at` | timestamptz |
-
-### `quote_status_history`
-
-Auditoria do fluxo Brasil.
-
-| Campo | Tipo |
-|---|---|
-| `id` | uuid |
-| `quote_id` | uuid |
-| `client_id` | uuid |
-| `from_status` | text |
-| `to_status` | text |
-| `comment` | text |
-| `changed_by` | uuid |
-| `created_at` | timestamptz |
-
-### `calculation_parameters`
-
-Parametros administrativos versionados.
-
-| Campo | Tipo |
-|---|---|
-| `id` | uuid |
-| `key` | text |
-| `numeric_value` | numeric |
-| `text_value` | text |
-| `active_from` | timestamptz |
-| `active_to` | timestamptz, opcional |
-| `created_by` | uuid |
-| `created_at` | timestamptz |
-
-Chaves iniciais:
-
-- `default_rpx_factor = 1.8`
-- `default_direct_import_factor = 2.2`
-- `exchange_rate_markup_percent = 3`
-- `max_product_images = 5`
-- `max_supplier_contact_images = 3`
+- Nesta fase, imagens ficam como arrays de URLs/texto em `quotes`.
+- Uma tabela dedicada de anexos/imagens e Storage privado seguem como evolucao futura.
 
 ### `simulations`
 
-Analise publicada ou em elaboracao.
+Solicitacoes/simulacoes vinculadas a clientes e, quando aplicavel, cotacoes.
 
-| Campo | Tipo |
-|---|---|
-| `id` | uuid |
-| `client_id` | uuid |
-| `quote_id` | uuid, opcional |
-| `title` | text |
-| `status` | text |
-| `current_version` | integer |
-| `published_at` | timestamptz, opcional |
-| `created_by` | uuid |
-| `created_at` | timestamptz |
-| `updated_at` | timestamptz |
+| Campo | Tipo | Regra atual |
+|---|---|---|
+| `id` | uuid | PK |
+| `client_id` | uuid | FK `clients`, obrigatorio |
+| `quote_id` | uuid | FK `quotes`, opcional |
+| `created_by_app_user_id` | uuid | FK `app_users`, opcional |
+| `title` | text | obrigatorio |
+| `status` | text | ver status abaixo |
+| `file_name` | text | opcional |
+| `storage_path` | text | opcional |
+| `quote_file_url` | text | opcional |
+| `requested_at` | timestamptz | opcional |
+| `client_notes` | text | opcional |
+| `published_at` | timestamptz | opcional |
+| `created_at` | timestamptz | default `now()` |
+| `updated_at` | timestamptz | default `now()` |
 
-Status: `draft`, `in_review`, `published`, `archived`.
+Status atuais:
 
-### `simulation_versions`
+- `draft`
+- `aguardando`
+- `em_producao`
+- `published`
+- `finalizado`
+- `cancelado`
 
-Snapshots editaveis/versionados da simulacao.
+Indice relevante:
 
-| Campo | Tipo |
-|---|---|
-| `id` | uuid |
-| `simulation_id` | uuid |
-| `version_number` | integer |
-| `input_data` | jsonb |
-| `result_data` | jsonb |
-| `internal_notes` | text |
-| `client_notes` | text |
-| `created_by` | uuid |
-| `created_at` | timestamptz |
+- `simulations_pending_quote_idx` impede mais de uma simulacao pendente por `quote_id` nos status `aguardando`, `em_producao` ou `draft`.
 
-## Regras de RLS
+## RLS Atual
 
-Funcoes auxiliares recomendadas:
+Funcoes/padroes:
 
-- `is_admin()`: perfil autenticado com role admin.
-- `current_client_id()`: retorna `profiles.client_id` do usuario.
+- `is_admin()` usa `app_users`, `auth.uid()`, role `admin`, status `active`.
+- Clientes autenticados leem dados vinculados ao proprio `client_id`.
+- Admin le/altera registros operacionais conforme policies e actions server-side.
+- Clientes podem inserir/atualizar proprias cotacoes quando role/status permitem.
+- Clientes podem inserir solicitacoes de simulacao proprias quando role/status permitem.
 
-Politicas:
+Cuidados:
 
-- Cliente le e altera apenas registros cujo `client_id = current_client_id()`.
-- Cliente nao pode alterar parametros, impostos ou status de validacao Brasil.
-- Cliente pode criar cotacao para o proprio `client_id`; o banco deve impedir `client_id` arbitrario.
-- Cliente le simulacao apenas quando `status = 'published'`.
-- Admin le e altera todos os registros operacionais.
-- Storage usa o primeiro segmento do caminho como `client_id`.
-- Campos internos de calculo devem ser expostos ao cliente por view segura ou query server-side com selecao explicita.
+- UI nao substitui RLS.
+- `client_id` nao deve ser confiado a partir do browser.
+- Actions administrativas devem validar permissao no servidor.
 
-## Exemplos de dados
+## Storage e Anexos
 
-```sql
-insert into clients (company_name, trade_name)
-values ('Cliente 1 Importadora Ltda', 'Cliente 1');
+Estado atual:
 
-insert into calculation_parameters (key, numeric_value, active_from)
-values
-  ('default_rpx_factor', 1.8, now()),
-  ('default_direct_import_factor', 2.2, now()),
-  ('exchange_rate_markup_percent', 3, now());
+- Supabase Storage esta previsto/preparado para anexos futuros.
+- Imagens da calculadora ainda usam arrays de URLs/texto em `quotes`.
+
+Evolucao planejada:
+
+- bucket privado para imagens/anexos;
+- tabela de metadados de anexos;
+- policies por `client_id`;
+- URLs assinadas para leitura temporaria quando necessario.
+
+Estrutura sugerida:
+
+```text
+quote-images/{client_id}/{quote_id}/product/{uuid}-{filename}
+quote-images/{client_id}/{quote_id}/supplier-contact/{uuid}-{filename}
 ```
 
-Exemplo conceitual de cotacao:
+## Modelo Planejado Ainda Nao Implementado
+
+As tabelas abaixo aparecem em specs/planos como evolucao, mas nao devem ser tratadas como implementadas no estado atual:
+
+- `suppliers`
+- `products`
+- `ncm_codes`
+- `tax_rules`
+- `quote_calculations` separada
+- `quote_attachments` ou `quote_images`
+- `quote_status_history`
+- `calculation_parameters`
+- `simulation_versions`
+
+Quando forem implementadas, criar migration incremental, atualizar este documento e validar RLS.
+
+## Exemplos Conceituais
+
+Cotacao:
 
 ```json
 {
-  "product_name_snapshot": "Garrafa termica inox",
-  "suggested_ncm_code": "9617.00.10",
+  "product_name": "Garrafa termica inox",
+  "hs_code": "9617.00.10",
   "fob_unit_usd": 12,
   "quantity": 1000,
-  "status": "submitted",
-  "br_validation_status": "pending"
+  "status": "submitted"
 }
 ```
 
+Solicitacao de simulacao:
+
+```json
+{
+  "quote_id": "uuid-da-cotacao",
+  "status": "aguardando",
+  "title": "Simulacao completa - Garrafa termica inox"
+}
+```

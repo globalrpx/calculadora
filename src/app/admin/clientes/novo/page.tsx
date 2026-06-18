@@ -18,7 +18,9 @@ export default async function NewClientPage({
       />
       {params.error ? (
         <DismissibleAlert variant="error">
-          Não foi possível salvar o cliente. Revise os dados e tente novamente.
+          {params.error === "password-invalid"
+            ? "A senha precisa ter pelo menos 6 caracteres e coincidir com a confirmação."
+            : "Não foi possível salvar o cliente. Revise os dados e tente novamente."}
         </DismissibleAlert>
       ) : null}
       <div className="max-w-2xl">
@@ -28,6 +30,8 @@ export default async function NewClientPage({
           description="Cadastre clientes diretamente pelo painel administrativo."
           submitLabel="Salvar cliente"
           cancelHref="/admin/clientes"
+          showPasswordFields
+          passwordFieldsRequired
         />
       </div>
     </>

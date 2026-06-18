@@ -10,18 +10,24 @@ Usar Supabase diretamente com RLS para consultas simples e Server Actions/Route 
 - Enviam notificacoes.
 - Precisam ocultar campos do cliente.
 
-## Dados que devem ser salvos
+## Estado atual e dados que devem ser salvos
 
-- Clientes e perfis.
+Implementado atualmente:
+
+- Clientes em `clients`.
+- Usuarios/perfis da aplicacao em `app_users`.
+- Cotacoes e snapshots principais em `quotes`.
+- Fatores usados, imagens como URLs/texto e payload de calculo em `quotes`.
+- Solicitacoes/simulacoes iniciais em `simulations`.
+
+Planejado ou parcial:
+
 - Produtos pesquisados.
 - Fornecedores e contatos.
-- Cotacoes e snapshots dos dados informados.
-- Resultado do calculo e versao da formula.
-- PTAX, taxa ajustada e fatores usados, somente como dados internos.
-- Anexos e metadados.
+- Anexos e metadados em Storage/tabela dedicada.
 - Status e historico de validacao Brasil.
 - Parametros administrativos versionados.
-- Simulacoes e versoes publicadas.
+- Versoes publicadas de simulacoes.
 - NCM validado e regras tributarias futuras.
 
 ## Operacoes necessarias
@@ -31,7 +37,7 @@ Usar Supabase diretamente com RLS para consultas simples e Server Actions/Route 
 - `signInWithPassword`.
 - `signOut`.
 - Criar/convidar usuario.
-- Consultar perfil atual.
+- Consultar usuario atual em `app_users`.
 - Desativar acesso sem excluir historico.
 
 ### Cotacoes
@@ -78,14 +84,14 @@ Atual:
 - Cache: `no-store`.
 - Ajuste atual: 3% aplicado server-side.
 
-Fluxo recomendado:
+Fluxo atual/recomendado:
 
 1. Cliente envia dados da cotacao.
 2. Server Action valida dados e permissao.
 3. Servidor busca PTAX.
 4. Servidor busca parametros ativos.
 5. Servidor calcula.
-6. Servidor salva cotacao e snapshot do calculo.
+6. Servidor salva cotacao e snapshot do calculo em `quotes`.
 7. Resposta ao cliente contem apenas os valores publicos.
 
 Melhorias:
@@ -98,7 +104,13 @@ Melhorias:
 
 ## Como salvar simulacoes
 
-Separar identidade e versao:
+Estado atual:
+
+- `simulations` ja registra solicitacoes/simulacoes vinculadas a cliente e cotacao.
+- A solicitacao de simulacao completa pelo cliente cria registro em `simulations`.
+- Indice unico parcial evita duplicar solicitacoes pendentes para a mesma cotacao.
+
+Evolucao recomendada: separar identidade e versao:
 
 - `simulations`: cabecalho, cliente, cotacao, status e versao atual.
 - `simulation_versions`: entradas, resultados e notas de cada versao.
@@ -127,16 +139,16 @@ Snapshots em `quotes` preservam o que foi informado mesmo se o cadastro do forne
 
 Regras obrigatorias:
 
-- Todas as tabelas de negocio possuem `client_id`.
-- `client_id` vem do perfil autenticado, nunca do payload confiado.
-- RLS compara com `current_client_id()`.
+- Todas as tabelas de negocio devem possuir `client_id`.
+- `client_id` vem de `app_users`, nunca do payload confiado.
+- RLS compara com o `client_id` do usuario autenticado em `app_users`.
 - Admin usa `is_admin()`.
 - Queries do cliente selecionam explicitamente apenas campos publicos.
 - Arquivos usam caminho iniciado por `client_id`.
 
 ## Supabase Storage
 
-Bucket privado:
+Storage para anexos/imagens ainda precisa ser consolidado. Direcao recomendada para bucket privado:
 
 ```text
 quote-images
@@ -172,4 +184,3 @@ POST /api/webhooks/supabase
 ```
 
 Nao criar uma API REST paralela para tudo sem necessidade; o App Router e o cliente Supabase ja cobrem grande parte do MVP.
-

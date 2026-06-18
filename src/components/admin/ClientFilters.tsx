@@ -2,12 +2,22 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { FormField, SelectInput, TextInput } from "@/components/ui/FormField";
-import type { AdminClientFilters } from "@/lib/admin/queries";
+import type { AdminClientFilters, AdminClientSort } from "@/lib/admin/queries";
 
-export function ClientFilters({ filters }: { filters: AdminClientFilters }) {
+export function ClientFilters({
+  filters,
+  sort,
+  clearHref
+}: {
+  filters: AdminClientFilters;
+  sort: AdminClientSort;
+  clearHref: string;
+}) {
   return (
     <Card title="Filtros" description="Refine a lista por contato, empresa, origem, status e período de cadastro.">
       <form className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <input type="hidden" name="sort" value={sort.sort} />
+        <input type="hidden" name="direction" value={sort.direction} />
         <FormField label="Nome">
           <TextInput name="name" defaultValue={filters.name ?? ""} placeholder="Responsável" />
         </FormField>
@@ -36,7 +46,7 @@ export function ClientFilters({ filters }: { filters: AdminClientFilters }) {
         </FormField>
         <div className="flex flex-col gap-3 md:col-span-2 md:flex-row xl:col-span-6 xl:justify-end">
           <Link
-            href="/admin/clientes"
+            href={clearHref}
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-rpx-blue/20 bg-white px-4 py-2 text-sm font-semibold text-rpx-blue transition hover:bg-rpx-sky"
           >
             Limpar
