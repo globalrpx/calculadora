@@ -15,14 +15,69 @@ function getGreetingName(appUser: AppUser) {
 export function AppShell({
   appUser,
   navItems,
+  variant = "client",
   children
 }: {
   appUser: AppUser;
   navItems: NavItem[];
+  variant?: "admin" | "client";
   children: React.ReactNode;
 }) {
   const greetingName = getGreetingName(appUser);
   const sidebarTitle = appUser.role === "admin" ? "Painel Administrativo" : "Área do cliente";
+  const enabledItems = navItems.filter((item) => !item.disabled);
+  const disabledItems = navItems.filter((item) => item.disabled);
+
+  if (variant === "admin") {
+    return (
+      <div className="min-h-screen w-full overflow-x-hidden bg-rpx-mist">
+        <header className="fixed inset-x-0 top-0 z-40 h-16 border-b border-slate-200 bg-white/95 backdrop-blur">
+          <div className="flex h-full w-full items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6 lg:px-8">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <MobileNav navItems={navItems} title={sidebarTitle} />
+              <Brand />
+            </div>
+            <div className="flex min-w-0 shrink items-center justify-end">
+              <AccountMenu greetingName={greetingName} />
+            </div>
+          </div>
+        </header>
+
+        <aside className="fixed left-0 top-16 z-30 hidden h-[calc(100vh-4rem)] w-72 overflow-y-auto border-r border-slate-200 bg-white p-3 lg:block">
+          <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            {sidebarTitle}
+          </p>
+          <nav className="grid gap-1">
+            <NavLinks
+              navItems={enabledItems}
+              itemClassName="px-3 py-2.5 text-sm"
+            />
+          </nav>
+          {disabledItems.length > 0 ? (
+            <div className="mt-5 border-t border-slate-200 pt-4">
+              <p className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Em breve</p>
+              <div className="mt-2 grid gap-1">
+                {disabledItems.map((item) => (
+                  <div
+                    key={item.href}
+                    className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-400"
+                  >
+                    {item.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </aside>
+
+        <main className="min-w-0 overflow-x-hidden pt-16 lg:pl-72">
+          <div className="min-h-[calc(100vh-4rem)] w-full px-4 py-6 sm:px-6 lg:px-8">
+            {children}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-rpx-mist">
@@ -44,24 +99,22 @@ export function AppShell({
           </p>
           <nav className="grid gap-1 sm:grid-cols-2 lg:grid-cols-1">
             <NavLinks
-              navItems={navItems.filter((item) => !item.disabled)}
+              navItems={enabledItems}
               itemClassName="px-3 py-2.5 text-sm"
             />
           </nav>
-          {navItems.some((item) => item.disabled) ? (
+          {disabledItems.length > 0 ? (
             <div className="mt-5 border-t border-slate-200 pt-4">
               <p className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Em breve</p>
               <div className="mt-2 grid gap-1 sm:grid-cols-2 lg:grid-cols-1">
-                {navItems
-                  .filter((item) => item.disabled)
-                  .map((item) => (
-                    <div
-                      key={item.href}
-                      className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-400"
-                    >
-                      {item.label}
-                    </div>
-                  ))}
+                {disabledItems.map((item) => (
+                  <div
+                    key={item.href}
+                    className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-400"
+                  >
+                    {item.label}
+                  </div>
+                ))}
               </div>
             </div>
           ) : null}

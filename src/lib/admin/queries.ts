@@ -33,8 +33,19 @@ export type AdminUserRow = {
   id: string;
   name: string | null;
   email: string;
+  role: string;
   status: string;
   created_at: string;
+  updated_at: string;
+};
+
+export type AdminUserFormValues = {
+  id: string;
+  name: string | null;
+  email: string;
+  status: string;
+  auth_provider: string | null;
+  auth_provider_user_id: string | null;
 };
 
 export type AdminQuoteRow = {
@@ -155,6 +166,14 @@ export type AdminSimulationFilters = {
   dateTo?: string;
 };
 
+export type AdminUserFilters = {
+  name?: string;
+  email?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
 export type AdminClientSortKey =
   | "company_name"
   | "responsible_name"
@@ -189,6 +208,13 @@ export type AdminSimulationSortKey = "created_at" | "title" | "status";
 
 export type AdminSimulationSort = {
   sort: AdminSimulationSortKey;
+  direction: AdminSortDirection;
+};
+
+export type AdminUserSortKey = "name" | "email" | "status" | "created_at";
+
+export type AdminUserSort = {
+  sort: AdminUserSortKey;
   direction: AdminSortDirection;
 };
 
@@ -229,6 +255,18 @@ export const adminSimulationSortColumns: Record<AdminSimulationSortKey, keyof Ad
 };
 
 export const defaultAdminSimulationSort: AdminSimulationSort = {
+  sort: "created_at",
+  direction: "desc"
+};
+
+export const adminUserSortColumns: Record<AdminUserSortKey, keyof AdminUserRow> = {
+  name: "name",
+  email: "email",
+  status: "status",
+  created_at: "created_at"
+};
+
+export const defaultAdminUserSort: AdminUserSort = {
   sort: "created_at",
   direction: "desc"
 };
@@ -528,16 +566,74 @@ export async function getAdminClientById(id: string) {
   return (data ?? null) as AdminClientFormValues | null;
 }
 
-export async function getAdminUsers() {
+export async function getAdminUsers(
+  filters: AdminUserFilters = {},
+  pagination: AdminClientPagination = {},
+  sort: AdminUserSort = defaultAdminUserSort
+) {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const page = Math.max(1, pagination.page ?? 1);
+  const perPage = Math.max(1, pagination.perPage ?? 20);
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
+  const sortColumn = adminUserSortColumns[sort.sort] ?? adminUserSortColumns[defaultAdminUserSort.sort];
+  const sortDirection = sort.direction === "asc" ? "asc" : "desc";
+
+  let query = supabase
+    .from("app_users")
+    .select("id, name, email, role, status, created_at, updated_at", {
+      count: "exact"
+    })
+    .eq("role", "admin")
+    .is("deleted_at", null)
+    .order(sortColumn, { ascending: sortDirection === "asc", nullsFirst: false })
+    .range(from, to);
+
+  if (filters.name) {
+    query = query.ilike("name", `%${filters.name}%`);
+  }
+
+  if (filters.email) {
+    query = query.ilike("email", `%${filters.email}%`);
+  }
+
+  if (filters.status) {
+    query = query.eq("status", filters.status);
+  }
+
+  if (filters.dateFrom) {
+    query = query.gte("created_at", `${filters.dateFrom}T00:00:00`);
+  }
+
+  if (filters.dateTo) {
+    query = query.lte("created_at", `${filters.dateTo}T23:59:59.999`);
+  }
+
+  const { data, count } = await query;
+
+  return {
+    rows: (data ?? []) as AdminUserRow[],
+    total: count ?? 0,
+    page,
+    perPage
+  };
+}
+
+export async function getAdminUserById(id: string) {
+  await requireRole("admin");
+
   const supabase = await createClient();
   const { data } = await supabase
     .from("app_users")
-    .select("id, name, email, status, created_at")
+    .select("id, name, email, status, auth_provider, auth_provider_user_id")
+    .eq("id", id)
     .eq("role", "admin")
     .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+    .maybeSingle();
 
-  return (data ?? []) as AdminUserRow[];
+  return (data ?? null) as AdminUserFormValues | null;
 }
 
 async function findAdminQuoteClientIds(clientFilter: string) {

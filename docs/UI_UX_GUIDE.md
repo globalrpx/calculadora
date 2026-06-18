@@ -89,7 +89,10 @@ Diretrizes:
 ## Painel administrativo
 
 - Interface densa e escaneavel.
+- Em desktop, usar header fixo no topo e sidebar fixa a esquerda para aumentar a area util.
+- O conteudo admin deve ocupar toda a largura restante com `w-full` e padding responsivo, sem centralizacao estreita.
 - Tabelas com filtros persistentes.
+- Rolagem horizontal deve ficar restrita ao container da tabela, nunca a pagina inteira.
 - Status visiveis por badges.
 - Acoes em menu por linha.
 - Detalhe da cotacao com duas areas claras:
@@ -98,6 +101,7 @@ Diretrizes:
 - Parametros com historico, vigencia e autor.
 - Nao usar cards decorativos para listas operacionais.
 - Destacar pendencias e SLA, nao apenas totais.
+- Em mobile, esconder a sidebar fixa e manter o menu/drawer atual.
 
 ## Area do cliente
 

@@ -73,7 +73,7 @@ Pode:
 - Ver dashboard administrativo.
 - Gerenciar Clientes pelo CRUD administrativo.
 - Ver cotacoes e simulacoes em bases administrativas iniciais.
-- Gerenciar usuarios admin em base inicial.
+- Gerenciar usuarios admin pelo CRUD administrativo.
 - Futuramente, validar NCM, impostos, parametros e publicar simulacoes.
 
 Nao deve:
@@ -108,8 +108,13 @@ Admin:
 - `/admin/clientes/novo`
 - `/admin/clientes/[id]`
 - `/admin/cotacoes`
+- `/admin/cotacoes/[id]`
 - `/admin/simulacoes`
+- `/admin/simulacoes/nova`
+- `/admin/simulacoes/[id]`
 - `/admin/usuarios`
+- `/admin/usuarios/novo`
+- `/admin/usuarios/[id]`
 - `/admin/fornecedores`
 - `/admin/despachantes`
 - `/admin/parametros`
@@ -147,6 +152,27 @@ O CRUD de Clientes e a referencia atual:
 - Erros previsiveis aparecem inline por campo.
 
 Detalhes de padrao ficam em `docs/spec-cruds.md`.
+
+## CRUD Administrativo de Usuarios Admin
+
+O modulo `/admin/usuarios` gerencia apenas usuarios administrativos da Global RPX nesta fase.
+
+Regras atuais:
+
+- lista somente `app_users.role = 'admin'`;
+- clientes continuam sendo gerenciados em `/admin/clientes`;
+- criacao administrativa cria usuario no Supabase Auth e registro correspondente em `app_users`;
+- edicao sincroniza nome/e-mail no Supabase Auth quando o usuario usa `auth_provider = 'supabase'`;
+- senha e obrigatoria na criacao e opcional na edicao;
+- inativacao usa `app_users.status = 'inactive'`;
+- reativacao usa `app_users.status = 'active'`;
+- inativacao nao preenche `deleted_at` nesta fase;
+- inativacao nao exclui fisicamente o usuario do Supabase Auth;
+- e-mail permanece reservado enquanto o registro existir sem `deleted_at`;
+- auto-inativacao do admin logado e bloqueada no servidor;
+- login de usuario inativo ja e bloqueado por `getSessionProfile()`.
+
+Service role permanece restrita a Server Actions/helpers server-side.
 
 ## Arquivos e Storage
 

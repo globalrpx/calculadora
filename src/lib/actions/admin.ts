@@ -3,6 +3,12 @@
 import { redirect } from "next/navigation";
 import { getSessionProfile } from "@/lib/auth/get-session-profile";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  adminUserStatusValues,
+  type AdminUserFormFieldErrors,
+  type AdminUserFormState,
+  type AdminUserFormValues
+} from "@/lib/admin/admin-user-form-state";
 import type { ClientFormFieldErrors, ClientFormState, ClientFormValues } from "@/lib/admin/client-form-state";
 import {
   simulationStatusValues,
@@ -12,9 +18,11 @@ import {
 } from "@/lib/admin/simulation-form-state";
 
 const duplicateEmailMessage = "Este e-mail já está cadastrado. Use outro e-mail ou edite o cliente existente.";
+const duplicateAdminEmailMessage = "Este e-mail já está cadastrado. Use outro e-mail ou edite o usuário existente.";
 const reviewFieldsMessage = "Revise os campos destacados antes de continuar.";
 const unexpectedClientSaveMessage = "Não foi possível salvar o cliente. Tente novamente em instantes.";
 const unexpectedSimulationSaveMessage = "Não foi possível salvar a simulação. Tente novamente em instantes.";
+const unexpectedAdminUserSaveMessage = "Não foi possível salvar o usuário admin. Tente novamente em instantes.";
 
 async function requireAdminActionAccess() {
   const session = await getSessionProfile();
@@ -46,6 +54,24 @@ function readClientFields(formData: FormData) {
   };
 }
 
+function readAdminUserFields(formData: FormData) {
+  const userId = String(formData.get("userId") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const status = String(formData.get("status") ?? "").trim() || "active";
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  return {
+    userId,
+    name,
+    email,
+    status,
+    password,
+    confirmPassword
+  };
+}
+
 function hasFieldErrors(fieldErrors: Record<string, string | undefined>) {
   return Object.values(fieldErrors).some(Boolean);
 }
@@ -61,6 +87,15 @@ function buildClientFormValues(fields: ReturnType<typeof readClientFields>): Cli
     contactName: fields.contactName,
     contactEmail: fields.contactEmail,
     contactPhone: fields.contactPhone
+  };
+}
+
+function buildAdminUserFormValues(fields: ReturnType<typeof readAdminUserFields>): AdminUserFormValues {
+  return {
+    id: fields.userId || undefined,
+    name: fields.name,
+    email: fields.email,
+    status: fields.status
   };
 }
 
@@ -107,6 +142,53 @@ function validateClientFields(fields: ReturnType<typeof readClientFields>, optio
   return fieldErrors;
 }
 
+function validateAdminUserFields(fields: ReturnType<typeof readAdminUserFields>, options: { passwordRequired: boolean }) {
+  const fieldErrors: AdminUserFormFieldErrors = {};
+
+  if (!fields.name) {
+    fieldErrors.name = "Informe o nome do usuário.";
+  }
+
+  if (!fields.email) {
+    fieldErrors.email = "Informe o e-mail do usuário.";
+  } else if (!isValidEmail(fields.email)) {
+    fieldErrors.email = "Informe um e-mail válido.";
+  }
+
+  if (!adminUserStatusValues.includes(fields.status as (typeof adminUserStatusValues)[number])) {
+    fieldErrors.status = "Selecione um status válido.";
+  }
+
+  if (options.passwordRequired || fields.password || fields.confirmPassword) {
+    if (!fields.password) {
+      fieldErrors.password = "Informe uma senha de acesso.";
+    } else if (fields.password.length < 6) {
+      fieldErrors.password = "A senha deve ter pelo menos 6 caracteres.";
+    }
+
+    if (!fields.confirmPassword) {
+      fieldErrors.confirmPassword = "Confirme a senha de acesso.";
+    } else if (fields.password && fields.password !== fields.confirmPassword) {
+      fieldErrors.confirmPassword = "As senhas não conferem.";
+    }
+  }
+
+  return fieldErrors;
+}
+
+function buildAdminUserFormError(
+  fields: ReturnType<typeof readAdminUserFields>,
+  fieldErrors: AdminUserFormFieldErrors,
+  message = reviewFieldsMessage
+): AdminUserFormState {
+  return {
+    success: false,
+    message,
+    fieldErrors,
+    values: buildAdminUserFormValues(fields)
+  };
+}
+
 function isDuplicateEmailError(error: unknown) {
   if (!error || typeof error !== "object") {
     return false;
@@ -143,6 +225,22 @@ async function findDuplicatedClientEmail(adminSupabase: ReturnType<typeof create
   return { duplicated };
 }
 
+async function findDuplicatedAppUserEmail(adminSupabase: ReturnType<typeof createAdminClient>, email: string, currentUserId?: string) {
+  const { data, error } = await adminSupabase
+    .from("app_users")
+    .select("id")
+    .ilike("email", email)
+    .is("deleted_at", null)
+    .limit(10);
+
+  if (error) {
+    return { error };
+  }
+
+  const duplicated = data?.some((user) => user.id !== currentUserId) ?? false;
+  return { duplicated };
+}
+
 function buildSafeAdminClientsRedirect(rawRedirectTo: string, feedback: string) {
   const fallback = "/admin/clientes";
   const redirectTo = rawRedirectTo.startsWith("/admin/clientes") ? rawRedirectTo : fallback;
@@ -152,6 +250,24 @@ function buildSafeAdminClientsRedirect(rawRedirectTo: string, feedback: string) 
   params.delete("created");
   params.delete("updated");
   params.delete("deleted");
+  params.delete("error");
+  params.set(feedback, "1");
+
+  const nextQuery = params.toString();
+  return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+}
+
+function buildSafeAdminUsersRedirect(rawRedirectTo: string, feedback: string) {
+  const fallback = "/admin/usuarios";
+  const redirectTo = rawRedirectTo.startsWith("/admin/usuarios") ? rawRedirectTo : fallback;
+  const [pathname, query = ""] = redirectTo.split("?");
+  const params = new URLSearchParams(query);
+
+  params.delete("created");
+  params.delete("updated");
+  params.delete("deactivated");
+  params.delete("reactivated");
+  params.delete("selfDeactivate");
   params.delete("error");
   params.set(feedback, "1");
 
@@ -624,46 +740,237 @@ export async function updateAdminSimulationAction(
   redirect("/admin/simulacoes?updated=1");
 }
 
-export async function createAdminUserAction(formData: FormData) {
+export async function createAdminUserAction(
+  _previousState: AdminUserFormState,
+  formData: FormData
+): Promise<AdminUserFormState> {
   await requireAdminActionAccess();
 
-  const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
+  const fields = readAdminUserFields(formData);
+  const fieldErrors = validateAdminUserFields(fields, {
+    passwordRequired: true
+  });
 
-  if (!name || !email || password.length < 6) {
-    redirect("/admin/usuarios?error=invalid-fields");
+  if (hasFieldErrors(fieldErrors)) {
+    return buildAdminUserFormError(fields, fieldErrors);
   }
 
   const adminSupabase = createAdminClient();
+  const duplicatedEmail = await findDuplicatedAppUserEmail(adminSupabase, fields.email);
+
+  if (duplicatedEmail.error) {
+    return buildAdminUserFormError(fields, {}, unexpectedAdminUserSaveMessage);
+  }
+
+  if (duplicatedEmail.duplicated) {
+    return buildAdminUserFormError(fields, {
+      email: duplicateAdminEmailMessage
+    });
+  }
 
   const { data: createdUser, error: createUserError } = await adminSupabase.auth.admin.createUser({
-    email,
-    password,
+    email: fields.email,
+    password: fields.password,
     email_confirm: true,
     user_metadata: {
-      name,
+      name: fields.name,
       role: "admin"
     }
   });
 
   if (createUserError || !createdUser.user) {
-    redirect(`/admin/usuarios?error=${encodeURIComponent(createUserError?.message ?? "create-user-failed")}`);
+    if (isDuplicateEmailError(createUserError)) {
+      return buildAdminUserFormError(fields, {
+        email: duplicateAdminEmailMessage
+      });
+    }
+
+    return buildAdminUserFormError(fields, {}, unexpectedAdminUserSaveMessage);
   }
 
   const { error: insertAppUserError } = await adminSupabase.from("app_users").insert({
-    name,
-    email,
+    name: fields.name,
+    email: fields.email,
     role: "admin",
-    status: "active",
+    status: fields.status,
     auth_provider: "supabase",
     auth_provider_user_id: createdUser.user.id
   });
 
   if (insertAppUserError) {
     await adminSupabase.auth.admin.deleteUser(createdUser.user.id);
-    redirect(`/admin/usuarios?error=${encodeURIComponent(insertAppUserError.message)}`);
+
+    if (isDuplicateEmailError(insertAppUserError)) {
+      return buildAdminUserFormError(fields, {
+        email: duplicateAdminEmailMessage
+      });
+    }
+
+    return buildAdminUserFormError(fields, {}, unexpectedAdminUserSaveMessage);
   }
 
   redirect("/admin/usuarios?created=1");
+}
+
+export async function updateAdminUserAction(
+  _previousState: AdminUserFormState,
+  formData: FormData
+): Promise<AdminUserFormState> {
+  await requireAdminActionAccess();
+
+  const fields = readAdminUserFields(formData);
+  const fieldErrors = validateAdminUserFields(fields, {
+    passwordRequired: false
+  });
+
+  if (!fields.userId) {
+    return buildAdminUserFormError(fields, {}, unexpectedAdminUserSaveMessage);
+  }
+
+  if (hasFieldErrors(fieldErrors)) {
+    return buildAdminUserFormError(fields, fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const duplicatedEmail = await findDuplicatedAppUserEmail(adminSupabase, fields.email, fields.userId);
+
+  if (duplicatedEmail.error) {
+    return buildAdminUserFormError(fields, {}, unexpectedAdminUserSaveMessage);
+  }
+
+  if (duplicatedEmail.duplicated) {
+    return buildAdminUserFormError(fields, {
+      email: duplicateAdminEmailMessage
+    });
+  }
+
+  const { data: existingUser, error: existingUserError } = await adminSupabase
+    .from("app_users")
+    .select("id, auth_provider, auth_provider_user_id")
+    .eq("id", fields.userId)
+    .eq("role", "admin")
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (existingUserError || !existingUser) {
+    return buildAdminUserFormError(fields, {}, unexpectedAdminUserSaveMessage);
+  }
+
+  if (existingUser.auth_provider === "supabase" && existingUser.auth_provider_user_id) {
+    const updatePayload: {
+      email: string;
+      password?: string;
+      user_metadata: {
+        name: string;
+        role: string;
+      };
+    } = {
+      email: fields.email,
+      user_metadata: {
+        name: fields.name,
+        role: "admin"
+      }
+    };
+
+    if (fields.password) {
+      updatePayload.password = fields.password;
+    }
+
+    const { error: updateAuthUserError } = await adminSupabase.auth.admin.updateUserById(
+      existingUser.auth_provider_user_id,
+      updatePayload
+    );
+
+    if (updateAuthUserError) {
+      if (isDuplicateEmailError(updateAuthUserError)) {
+        return buildAdminUserFormError(fields, {
+          email: duplicateAdminEmailMessage
+        });
+      }
+
+      return buildAdminUserFormError(fields, {}, unexpectedAdminUserSaveMessage);
+    }
+  }
+
+  const { error } = await adminSupabase
+    .from("app_users")
+    .update({
+      name: fields.name,
+      email: fields.email,
+      status: fields.status,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", fields.userId)
+    .eq("role", "admin")
+    .is("deleted_at", null);
+
+  if (error) {
+    if (isDuplicateEmailError(error)) {
+      return buildAdminUserFormError(fields, {
+        email: duplicateAdminEmailMessage
+      });
+    }
+
+    return buildAdminUserFormError(fields, {}, unexpectedAdminUserSaveMessage);
+  }
+
+  redirect("/admin/usuarios?updated=1");
+}
+
+export async function deactivateAdminUserAction(formData: FormData) {
+  const currentAdmin = await requireAdminActionAccess();
+  const userId = String(formData.get("userId") ?? "").trim();
+  const redirectTo = String(formData.get("redirectTo") ?? "").trim();
+
+  if (!userId) {
+    redirect("/admin/usuarios?error=missing-user");
+  }
+
+  if (userId === currentAdmin.id) {
+    redirect(buildSafeAdminUsersRedirect(redirectTo, "selfDeactivate"));
+  }
+
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("app_users")
+    .update({
+      status: "inactive",
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", userId)
+    .eq("role", "admin")
+    .is("deleted_at", null);
+
+  if (error) {
+    redirect(`/admin/usuarios?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect(buildSafeAdminUsersRedirect(redirectTo, "deactivated"));
+}
+
+export async function reactivateAdminUserAction(formData: FormData) {
+  await requireAdminActionAccess();
+  const userId = String(formData.get("userId") ?? "").trim();
+  const redirectTo = String(formData.get("redirectTo") ?? "").trim();
+
+  if (!userId) {
+    redirect("/admin/usuarios?error=missing-user");
+  }
+
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("app_users")
+    .update({
+      status: "active",
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", userId)
+    .eq("role", "admin")
+    .is("deleted_at", null);
+
+  if (error) {
+    redirect(`/admin/usuarios?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect(buildSafeAdminUsersRedirect(redirectTo, "reactivated"));
 }

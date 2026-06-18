@@ -31,7 +31,9 @@
 | `/admin/simulacoes` | Admin | Funcional | `simulations`, `quotes`, `clients` | CRUD administrativo básico com filtros, totalizador, paginação, ordenação segura, status e ações. |
 | `/admin/simulacoes/nova` | Admin | Funcional | `simulations`, `quotes`, `clients` | Criação administrativa básica usando campos existentes; sem upload real nesta fase. |
 | `/admin/simulacoes/[id]` | Admin | Funcional | `simulations`, `quotes`, `clients` | Detalhe e edição de status, observações e referência de arquivo. |
-| `/admin/usuarios` | Admin | Parcial | `app_users` | Base inicial de usuarios admin. |
+| `/admin/usuarios` | Admin | Funcional | `app_users` | CRUD de usuarios admin com filtros, totalizador, paginacao, ordenacao segura, status e acoes. |
+| `/admin/usuarios/novo` | Admin | Funcional | Supabase Auth + `app_users` | Criacao de usuario admin com senha obrigatoria e validacao inline. |
+| `/admin/usuarios/[id]` | Admin | Funcional | Supabase Auth + `app_users` | Edicao de usuario admin, status e senha opcional. |
 | `/admin/fornecedores` | Admin | Placeholder | Estatico/estrutura | CRUD futuro. |
 | `/admin/despachantes` | Admin | Placeholder | Estatico/estrutura | CRUD futuro. |
 | `/admin/parametros` | Admin | Placeholder | Estatico/estrutura | Parametros versionados futuros. |

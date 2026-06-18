@@ -151,6 +151,7 @@ Nem todo módulo administrativo precisa expor todas as operações no mesmo mome
 
 - Cotações admin é uma listagem read-only; não possui criação, edição de cálculo ou exclusão no painel.
 - Simulações admin possui criação e edição básica com os campos existentes em `simulations`, mas sem upload real, sem migration nova e sem exclusão/inativação nesta fase.
+- Usuários admin usa `status = inactive` para inativação nesta fase, sem preencher `deleted_at`, para permitir filtro por status, reativação e reserva de e-mail.
 
 Tipos do módulo devem ficar próximos da camada de dados, hoje em `src/lib/admin/queries.ts`, até que exista volume suficiente para justificar arquivos de tipos separados.
 
@@ -889,3 +890,12 @@ Checklist mínimo antes de considerar um CRUD administrativo pronto:
 - queries protegidas por perfil admin no server-side;
 - soft delete/inativação documentado quando não houver exclusão física;
 - documentação ou nota no `state.md` quando o módulo mudar o padrão.
+
+Nota para usuarios administrativos:
+
+- o CRUD de usuarios admin gerencia somente `app_users.role = 'admin'`;
+- clientes nao devem aparecer neste modulo;
+- inativacao de admin usa `status = inactive`, mantendo `deleted_at` nulo nesta fase;
+- reativacao volta `status = active`;
+- auto-inativacao deve ser bloqueada no servidor;
+- criacao e edicao devem sincronizar Supabase Auth e `app_users` quando `auth_provider = 'supabase'`.

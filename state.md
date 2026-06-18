@@ -57,6 +57,99 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-06-18 - Layout admin com header e sidebar fixos
+
+- Area administrativa passou a usar variante `admin` do `AppShell`.
+- Header admin ficou fixo no topo com altura consistente.
+- Sidebar admin ficou fixa a esquerda em desktop, preservando links ativos e titulo `Painel Administrativo`.
+- Conteudo admin passou a ocupar melhor a largura disponivel com `w-full` e padding responsivo, sem `max-w-7xl mx-auto`.
+- Mobile preserva o menu/drawer atual e nao exibe sidebar fixa.
+- Area do cliente permanece no layout anterior/client.
+- `/admin/usuarios` passou a exibir o botao `Novo usuário`.
+- `docs/AUTH_AND_PERMISSIONS.md` foi atualizado com rotas admin granulares.
+- Nenhuma query, action, migration, regra de auth/RLS, coluna, filtro, paginacao, calculo ou fluxo de cliente foi alterado.
+
+Arquivos principais:
+
+- `src/components/layout/AppShell.tsx`
+- `src/app/admin/layout.tsx`
+- `src/app/admin/usuarios/page.tsx`
+- `docs/AUTH_AND_PERMISSIONS.md`
+- `docs/UI_UX_GUIDE.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- `npm run build` aprovado.
+- Teste manual desktop no browser em `/admin/clientes`, `/admin/cotacoes`, `/admin/simulacoes` e `/admin/usuarios` confirmou header fixo, sidebar fixa, ausencia de overflow horizontal da pagina e tabelas com rolagem no proprio container quando necessario.
+- Teste manual desktop no browser em telas de detalhe/formulario (`/admin/cotacoes/[id]`, `/admin/simulacoes/[id]`, `/admin/usuarios/[id]`) confirmou que o header fixo nao cobre o conteudo e que o padding superior do `main` esta aplicado.
+- Inspecao responsiva confirmou que a sidebar fixa usa `hidden lg:block`, permanecendo fora do mobile, enquanto o menu/drawer existente segue disponivel via `MobileNav`.
+- Teste rapido da area cliente tentou abrir `/app` e `/app/calculadora` com sessao admin e confirmou redirecionamento para `/admin/dashboard`, preservando a segregacao por role.
+- `git diff --check` aprovado.
+
+Nao foi possivel validar ainda:
+
+- Renderizacao autenticada da area cliente com usuario `client` nao foi executada nesta rodada porque a sessao local ativa e de admin. A branch client do `AppShell` foi preservada e validada por typecheck/build.
+
+Proxima etapa recomendada:
+
+- Seguir para o proximo bloco funcional aprovado, mantendo o novo padrao de layout admin.
+
+### 2026-06-18 - Usuarios admin padronizado
+
+- `/admin/usuarios` passou a seguir o padrao visual e funcional do CRUD de Clientes.
+- Listagem administrativa agora gerencia somente `app_users.role = 'admin'`.
+- Adicionados filtros ocultaveis, totalizador, paginacao, ordenacao por whitelist, status com badge e coluna de acoes.
+- Criadas rotas `/admin/usuarios/novo` e `/admin/usuarios/[id]`.
+- Criacao de admin agora usa formulario dedicado com senha obrigatoria, confirmacao, validacao inline e e-mail duplicado no campo E-mail.
+- Edicao permite atualizar nome, e-mail, status e senha opcional.
+- Nome/e-mail/senha sao sincronizados com Supabase Auth quando o usuario usa `auth_provider = 'supabase'`.
+- Inativacao de admin usa `app_users.status = 'inactive'`, sem preencher `deleted_at` e sem excluir o usuario do Supabase Auth.
+- Reativacao volta `app_users.status = 'active'`.
+- Auto-inativacao do admin logado e bloqueada no servidor com mensagem amigavel.
+- Queries administrativas validam role admin no servidor e Server Actions validam acesso admin antes de persistir.
+- Nenhuma migration foi criada e o modulo de Clientes, Cotacoes e Simulacoes nao foi alterado.
+
+Arquivos principais:
+
+- `src/app/admin/usuarios/page.tsx`
+- `src/app/admin/usuarios/novo/page.tsx`
+- `src/app/admin/usuarios/[id]/page.tsx`
+- `src/components/admin/AdminUserFilters.tsx`
+- `src/components/admin/AdminUserForm.tsx`
+- `src/components/admin/AdminUserRowActions.tsx`
+- `src/lib/admin/admin-user-form-state.ts`
+- `src/lib/admin/queries.ts`
+- `src/lib/actions/admin.ts`
+- `docs/ROUTES_AND_SCREENS.md`
+- `docs/AUTH_AND_PERMISSIONS.md`
+- `docs/spec-cruds.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- `npm run build` aprovado.
+- Teste manual em `http://localhost:3005/admin/usuarios` confirmou listagem real, filtros ocultaveis, totalizador, ordenacao por whitelist, status com badge e acoes.
+- Teste manual em `http://localhost:3005/admin/usuarios/novo` confirmou formulario dedicado, validacao inline e preservacao de dados nao sensiveis.
+- Teste manual de e-mail duplicado confirmou erro no campo E-mail e limpeza de senha/confirmacao.
+- Teste manual em `http://localhost:3005/admin/usuarios/[id]` confirmou edicao com senha opcional e sincronizacao sem alterar senha quando vazia.
+- Teste manual de inativacao confirmou `status = inactive`, mensagem de sucesso e acao de reativar.
+- Teste manual de reativacao confirmou retorno para `status = active`.
+- Teste manual de auto-inativacao confirmou bloqueio com mensagem amigavel e conta logada permanecendo ativa.
+
+Nao foi possivel validar ainda:
+
+- Paginacao depende de haver mais de 20 usuarios admin no ambiente.
+- Login real com um admin inativado nao foi executado para evitar interromper acesso de usuarios existentes; o bloqueio por `status !== active` ja existe em `getSessionProfile()` e foi preservado.
+
+Proxima etapa recomendada:
+
+- Avancar para o proximo CRUD administrativo aprovado.
+
 ### 2026-06-18 - Simulacoes admin basico
 
 - `/admin/simulacoes` deixou de ser placeholder e passou a listar registros reais de `simulations`.
