@@ -7,7 +7,7 @@ import Link from "next/link";
 export default async function LoginPage({
   searchParams
 }: {
-  searchParams: Promise<{ error?: string; registered?: string }>;
+  searchParams: Promise<{ error?: string; registered?: string; passwordReset?: string }>;
 }) {
   const params = await searchParams;
   const showMockUsers = !hasSupabaseConfig();
@@ -33,6 +33,11 @@ export default async function LoginPage({
             Cadastro concluído. Sua conta já pode ser usada para entrar na plataforma.
           </div>
         ) : null}
+        {params.passwordReset === "success" ? (
+          <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            Senha redefinida com sucesso. Acesse com sua nova senha.
+          </div>
+        ) : null}
         <form action={signInAction} className="mt-6 grid gap-4">
           <label className="grid gap-2 text-sm font-semibold text-slate-700">
             E-mail
@@ -45,7 +50,12 @@ export default async function LoginPage({
             />
           </label>
           <label className="grid gap-2 text-sm font-semibold text-slate-700">
-            Senha
+            <span className="flex items-center justify-between gap-3">
+              Senha
+              <Link href="/esqueci-senha" className="text-xs font-semibold text-rpx-blue hover:underline">
+                Esqueci minha senha
+              </Link>
+            </span>
             <input
               required
               name="password"

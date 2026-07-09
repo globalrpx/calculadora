@@ -14,6 +14,9 @@
 | `/` | Publico | Funcional | Estatico/componentes | Home publica da plataforma. |
 | `/login` | Publico | Funcional | Supabase Auth ou mock fallback | Redireciona conforme role em `app_users`. |
 | `/cadastro` | Publico | Funcional | Supabase Auth + dados da app | Cadastro publico de cliente. |
+| `/esqueci-senha` | Publico | Funcional | Supabase Auth | Solicita link nativo de recuperacao de senha sem revelar se o e-mail existe. |
+| `/auth/callback` | Publico | Funcional | Supabase Auth | Troca o `code` do Supabase por sessao SSR e redireciona para path interno seguro. |
+| `/redefinir-senha` | Publico | Funcional | Supabase Auth + `app_users` | Permite definir nova senha a partir da sessao de recuperacao; exige conta ativa. |
 | `/termos` | Publico | Funcional | Estatico | Documento legal/termos. |
 | `/privacidade` | Publico | Funcional | Estatico | Politica de privacidade. |
 | `/logout` | Autenticado | Funcional | Auth/session | Encerra sessao. |
@@ -56,8 +59,7 @@
 | `/app/cotacoes` | Historico dedicado, separado da aba da calculadora. |
 | `/app/cotacoes/[id]` | Detalhe persistido da cotacao. |
 | `/app/simulacoes/[id]` | Detalhe publicado para cliente. |
-| `/auth/forgot-password` | Recuperacao de senha. |
-| `/auth/callback` | Callback de convite/recuperacao, se adotado. |
+| `/auth/forgot-password` | Alias futuro opcional para recuperacao de senha, se adotado. |
 
 ## Componentes Transversais
 

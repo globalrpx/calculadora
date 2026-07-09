@@ -59,6 +59,87 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Recuperacao de senha com Supabase Auth nativo
+
+- Adicionado fluxo publico de recuperacao de senha sem OTP proprio, sem tabela nova, sem migration e sem Resend API direta.
+- A tela de login ganhou link `Esqueci minha senha` e mensagem de sucesso para `/login?passwordReset=success`.
+- Criada rota publica `/esqueci-senha` para solicitar link de recuperacao com mensagem neutra, sem revelar se o e-mail existe.
+- Criado callback `/auth/callback` para trocar o `code` do Supabase por sessao SSR via `exchangeCodeForSession` e redirecionar apenas para path interno seguro.
+- Criada rota publica `/redefinir-senha` para definir nova senha quando houver sessao valida de recuperacao.
+- A confirmacao do reset valida senha minima de 8 caracteres, confirmacao igual, usuario Supabase presente e conta ativa em `app_users` com `deleted_at is null`.
+- Apos redefinir a senha, o fluxo chama `signOut` e redireciona para `/login?passwordReset=success`.
+- Padronizada a variavel `NEXT_PUBLIC_SITE_URL` para montar o `redirectTo` do Supabase, com fallback para `VERCEL_URL`, origem da requisicao ou `http://localhost:3000`.
+- Documentada a necessidade de liberar Redirect URLs no Supabase Dashboard.
+- Confirmado antes da edicao que nao havia callback de Auth existente nem variavel equivalente de URL publica no projeto.
+
+Arquivos principais:
+
+- `src/lib/actions/password-reset.ts`
+- `src/components/auth/PasswordResetForms.tsx`
+- `src/app/esqueci-senha/page.tsx`
+- `src/app/auth/callback/route.ts`
+- `src/app/redefinir-senha/page.tsx`
+- `src/app/login/page.tsx`
+- `.env.example`
+- `docs/AUTH_AND_PERMISSIONS.md`
+- `docs/ROUTES_AND_SCREENS.md`
+- `docs/TECH_STACK.md`
+- `state.md`
+
+Validado:
+
+- Verificacao previa de callback Auth existente.
+- Verificacao previa de variaveis equivalentes a URL publica.
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- Checagem HTTP local confirmou `/login`, `/esqueci-senha` e `/redefinir-senha` retornando 200.
+- Checagem HTTP local confirmou `/auth/callback` sem `code` redirecionando para `/login?error=auth-callback`.
+- Busca no novo fluxo confirmou ausencia de service role, Resend API, OTP, tabela/token proprio e campos de hash/reset customizados.
+
+Nao foi possivel validar ainda:
+
+- Envio real do e-mail e clique no link de recuperacao, pois depende da configuracao de Redirect URLs e template no Supabase Dashboard.
+
+Proxima etapa recomendada:
+
+- Configurar as Redirect URLs no Supabase Dashboard e fazer um teste real de e-mail: solicitar reset, clicar no link, redefinir senha e entrar com a nova senha.
+
+### 2026-07-09 - Plano documental de migracao das Simulacoes Finais
+
+- Analisada a pasta temporaria `temp/` como referencia da implementacao anterior do Rodrigo para Simulacoes Finais.
+- Confirmado que o projeto atual em `/Users/hugoferreira/htdocs/app-rpx` permanece como fonte da verdade.
+- Registrado que `temp/` nao deve ser copiada, importada, aplicada como migration, editada ou tratada como codigo ativo.
+- Criado `docs/FINAL_SIMULATIONS_MIGRATION_PLAN.md` com inventario do projeto atual, inventario de `temp/`, comparacao com a especificacao Narwal, diferencas criticas, riscos, estrategia recomendada, fases de implementacao e arquivos candidatos a reaproveitamento.
+- Criado `docs/OPEN_QUESTIONS.md` com duvidas criticas sobre modelo de dados, rotas, status, RLS, storage, calculos fiscais, despesas, NCM, encomenda, PDF, seeds e validacao.
+- A analise identificou divergencias importantes: `temp/` usa `profiles` como base de permissoes, bucket `simulation-documents` e tabela `simulation_documents`, enquanto o projeto atual usa `app_users`, `uploads` e bucket privado `app-uploads`.
+- Nenhum codigo de `src/`, migration, Supabase, layout, auth, middleware, `package.json` ou arquivo dentro de `temp/` foi alterado nesta etapa.
+
+Arquivos principais:
+
+- `docs/FINAL_SIMULATIONS_MIGRATION_PLAN.md`
+- `docs/OPEN_QUESTIONS.md`
+- `state.md`
+
+Validado:
+
+- Inspecao da estrutura atual do projeto.
+- Inspecao da estrutura de `temp/`.
+- Leitura dos documentos atuais em `docs/`.
+- Leitura dos documentos relevantes em `temp/docs/`.
+- Leitura de `state.md` e `temp/state.md`.
+- Comparacao de rotas, migrations, package.json e feature antiga de Simulacoes Finais.
+- Revisao de diff documental.
+- Confirmacao de `git status --short` restrito aos tres arquivos esperados.
+
+Nao foi possivel validar ainda:
+
+- Typecheck, lint, build e testes manuais, porque a entrega foi estritamente documental e nao alterou TypeScript, React, migrations ou runtime.
+- Formulas fiscais e comportamento final do motor, que dependem das perguntas abertas.
+
+Proxima etapa recomendada:
+
+- Revisar e aprovar as decisoes da Fase 0 em `docs/FINAL_SIMULATIONS_MIGRATION_PLAN.md`, principalmente tabela/rota final, status, RLS com `app_users`, estrategia de documentos/uploads e formulas fiscais minimas antes de criar qualquer migration.
+
 ### 2026-07-09 - Ajuste do autocomplete de produto na calculadora
 
 - Ajustado o clique nas sugestoes preliminares de NCM exibidas abaixo de `Nome do produto`.

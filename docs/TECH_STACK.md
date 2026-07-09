@@ -94,6 +94,7 @@ Esse preview serve apenas para demonstracao local. Ele duplica HTML, CSS, auth m
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SITE_URL=
 ```
 
 Regras:
@@ -101,6 +102,7 @@ Regras:
 - `NEXT_PUBLIC_SUPABASE_URL`: URL do projeto Supabase.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: chave publica usada com RLS.
 - `SUPABASE_SERVICE_ROLE_KEY`: somente em codigo server-side administrativo; nunca enviar ao browser.
+- `NEXT_PUBLIC_SITE_URL`: URL publica da aplicacao, usada para montar o `redirectTo` de recuperacao de senha do Supabase Auth. Em desenvolvimento, o fluxo usa a origem local da requisicao como fallback quando a variavel nao estiver definida.
 - Sem as duas variaveis publicas, o sistema ativa o login mock por cookie.
 
 Recomendacao futura:
@@ -124,6 +126,7 @@ Parametros comerciais devem preferencialmente ficar no banco, auditados, em vez 
 6. Configurar as variaveis em Development, Preview e Production.
 7. Executar o primeiro deploy.
 8. Validar login, middleware, PTAX e RLS no dominio da Vercel.
+9. Configurar no Supabase Auth as Redirect URLs `https://DOMINIO_PRODUCAO/auth/callback` e `http://localhost:3000/auth/callback` para recuperacao de senha.
 
 Nao e necessario definir comando customizado: a Vercel detecta `next build`.
 

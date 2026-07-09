@@ -15,14 +15,51 @@ Fonte de verdade da aplicacao:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SITE_URL=
 ```
 
 Regras:
 
 - `NEXT_PUBLIC_*` podem ser usadas pelo client.
 - `SUPABASE_SERVICE_ROLE_KEY` so pode ser usada server-side.
+- `NEXT_PUBLIC_SITE_URL` deve apontar para a URL publica da aplicacao e e usada para montar links de recuperacao de senha. Em desenvolvimento, o fluxo pode usar a origem local da requisicao como fallback.
 - Nunca importar service role em Client Components.
 - Operacoes privilegiadas devem ficar em Server Actions, Route Handlers ou funcoes server-only.
+
+## Recuperacao de Senha
+
+O fluxo de recuperacao de senha usa Supabase Auth nativo, sem tabela propria de tokens, sem codigo OTP proprio e sem Resend API direta na aplicacao.
+
+Rotas:
+
+- `/esqueci-senha`: formulario publico para solicitar o e-mail de recuperacao.
+- `/auth/callback`: callback que troca o `code` do Supabase por sessao SSR e redireciona para o proximo path interno.
+- `/redefinir-senha`: formulario publico acessado a partir do link de recuperacao para definir a nova senha.
+
+Regras:
+
+- A solicitacao de reset usa `supabase.auth.resetPasswordForEmail`.
+- A mensagem de solicitacao e neutra e nao revela se o e-mail existe.
+- O callback usa `supabase.auth.exchangeCodeForSession`.
+- A redefinicao exige usuario Supabase valido na sessao de recuperacao.
+- Antes de atualizar a senha, o servidor consulta `app_users` e exige `status = active` e `deleted_at is null`.
+- Usuario inexistente, inativo ou deletado em `app_users` nao conclui o reset.
+- A atualizacao usa `supabase.auth.updateUser({ password })` com anon key/cookies da sessao SSR.
+- Apos redefinir a senha, o sistema chama `signOut` e redireciona para `/login?passwordReset=success`.
+- `SUPABASE_SERVICE_ROLE_KEY` nao deve ser usada nesse fluxo.
+
+Configuracao obrigatoria no Supabase Dashboard:
+
+- Authentication > URL Configuration > Site URL: URL publica da aplicacao.
+- Authentication > URL Configuration > Redirect URLs:
+  - `https://DOMINIO_PRODUCAO/auth/callback`
+  - `http://localhost:3000/auth/callback` em desenvolvimento
+- Authentication > Email Templates: revisar o template `Reset Password`.
+
+SMTP/Resend:
+
+- Nao e necessario usar Resend API na aplicacao para a implementacao inicial.
+- Em producao, a entregabilidade pode ser melhorada configurando um provider SMTP no proprio Supabase.
 
 ## Modo Mock / Preview
 
