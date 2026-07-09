@@ -59,6 +59,59 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Ajuste do autocomplete de produto na calculadora
+
+- Ajustado o clique nas sugestoes preliminares de NCM exibidas abaixo de `Nome do produto`.
+- Ao selecionar uma sugestao pelo autocomplete do produto, o campo `Nome do produto` agora recebe a descricao completa do item selecionado.
+- O campo `HS Code ou NCM sugerido` continua recebendo o codigo NCM selecionado.
+- Ao selecionar uma sugestao diretamente pelo campo NCM, o comportamento permanece restrito ao NCM, sem sobrescrever o nome do produto.
+
+Arquivos principais:
+
+- `src/components/calculator/CalculatorClient.tsx`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+
+Nao foi possivel validar ainda:
+
+- Teste manual do clique no browser, porque a navegacao para `/app/calculadora` redirecionou para `/login` nesta sessao.
+
+Proxima etapa recomendada:
+
+- Testar logado como cliente: digitar `garra`, clicar em `Garrafas térmicas e outros recipientes isotérmicos` e confirmar que o input `Nome do produto` recebe a descricao completa.
+
+### 2026-07-09 - Reset real do botao Nova cotacao
+
+- Ajustado o botao/aba `Nova cotação` da calculadora para iniciar uma cotacao limpa quando clicado.
+- O reset limpa produto, NCM, fornecedor, arquivos selecionados, mensagens, resultado calculado e `editingQuoteId`.
+- `Cancelar` continua voltando para o historico, mas agora reaproveita a mesma rotina de reset.
+- `Refazer cálculo` continua preservando os dados da cotacao atual.
+- `tsconfig.json` passou a excluir a pasta local nao versionada `temp`, que estava entrando no typecheck apesar de nao pertencer ao app principal.
+
+Arquivos principais:
+
+- `src/components/calculator/CalculatorClient.tsx`
+- `tsconfig.json`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- Browser local em `/app/calculadora` confirmou que `Nova cotação` deixa a Etapa 1 visivel e o campo de produto limpo.
+
+Nao foi possivel validar ainda:
+
+- Reproducao manual exata do clique partindo de um resultado recem-calculado, porque a pagina recarregou ja sem o bloco de resultado antes do teste.
+
+Proxima etapa recomendada:
+
+- Fazer uma cotacao completa, chegar ao resultado e clicar `Nova cotação` para confirmar que volta ao formulario limpo.
+
 ### 2026-07-09 - Configuracao dinamica do fator RPX
 
 - Criada migration incremental para a tabela `public.config`.

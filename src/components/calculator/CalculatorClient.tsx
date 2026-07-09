@@ -244,9 +244,10 @@ export function CalculatorClient({
     setValidationMessage("");
   }
 
-  function selectNcm(option: NcmOption) {
+  function selectNcm(option: NcmOption, options: { updateProductName?: boolean } = {}) {
     setInput((current) => ({
       ...current,
+      productName: options.updateProductName ? option.description : current.productName,
       hsCode: option.code
     }));
     setSelectedNcm(option);
@@ -496,7 +497,7 @@ export function CalculatorClient({
     }, 180);
   }
 
-  function cancelQuoteEditing() {
+  function resetQuoteForm(nextTab: "new" | "history" = "new") {
     setInput(initialInput);
     setSupplierName("");
     setSupplierEmail("");
@@ -508,7 +509,23 @@ export function CalculatorClient({
     setSelectedNcm(null);
     setValidationMessage("");
     setUploadStatusMessage("");
-    setActiveTab("history");
+    setSubmissionStep("");
+    setIsCollapsing(false);
+    setFullSimulationModalOpen(false);
+    setActiveTab(nextTab);
+  }
+
+  function cancelQuoteEditing() {
+    resetQuoteForm("history");
+  }
+
+  function handleTabChange(nextTab: "new" | "history") {
+    if (nextTab === "new") {
+      resetQuoteForm("new");
+      return;
+    }
+
+    setActiveTab(nextTab);
   }
 
   function loadQuoteToForm(quote: ClientQuoteRecord, quoteId: string | null) {
@@ -630,7 +647,7 @@ export function CalculatorClient({
         ].map(([key, label]) => (
           <button
             key={key}
-            onClick={() => setActiveTab(key as "new" | "history")}
+            onClick={() => handleTabChange(key as "new" | "history")}
             className={`min-h-10 rounded-md px-4 text-sm font-bold transition ${
               activeTab === key ? "bg-rpx-blue text-white" : "text-slate-600 hover:bg-rpx-sky hover:text-rpx-blue"
             }`}
@@ -660,7 +677,7 @@ export function CalculatorClient({
                       <button
                         key={`product-${option.code}`}
                         className="block w-full border-b border-slate-100 px-3 py-3 text-left text-sm last:border-b-0 hover:bg-rpx-sky"
-                        onClick={() => selectNcm(option)}
+                        onClick={() => selectNcm(option, { updateProductName: true })}
                         type="button"
                       >
                         <span className="font-bold text-rpx-blue">{option.code}</span>
