@@ -127,6 +127,7 @@ Parametros comerciais devem preferencialmente ficar no banco, auditados, em vez 
 7. Executar o primeiro deploy.
 8. Validar login, middleware, PTAX e RLS no dominio da Vercel.
 9. Configurar no Supabase Auth as Redirect URLs `https://DOMINIO_PRODUCAO/auth/callback` e `http://localhost:3000/auth/callback` para recuperacao de senha.
+10. No template `Reset Password`, preferir link com `token_hash` para o callback: `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/redefinir-senha`.
 
 Nao e necessario definir comando customizado: a Vercel detecta `next build`.
 

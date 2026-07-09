@@ -40,7 +40,8 @@ Regras:
 
 - A solicitacao de reset usa `supabase.auth.resetPasswordForEmail`.
 - A mensagem de solicitacao e neutra e nao revela se o e-mail existe.
-- O callback usa `supabase.auth.exchangeCodeForSession`.
+- O callback aceita o fluxo PKCE com `code` via `supabase.auth.exchangeCodeForSession`.
+- O callback tambem aceita o formato robusto de template com `token_hash` e `type=recovery`, validando com `supabase.auth.verifyOtp`. Esse formato evita falhas de PKCE quando o e-mail e aberto em outro navegador, cliente de e-mail ou contexto sem o code verifier.
 - A redefinicao exige usuario Supabase valido na sessao de recuperacao.
 - Antes de atualizar a senha, o servidor consulta `app_users` e exige `status = active` e `deleted_at is null`.
 - Usuario inexistente, inativo ou deletado em `app_users` nao conclui o reset.
@@ -55,6 +56,27 @@ Configuracao obrigatoria no Supabase Dashboard:
   - `https://DOMINIO_PRODUCAO/auth/callback`
   - `http://localhost:3000/auth/callback` em desenvolvimento
 - Authentication > Email Templates: revisar o template `Reset Password`.
+
+Template recomendado para `Reset Password`:
+
+```html
+<h2>Redefina sua senha</h2>
+
+<p>
+  Recebemos uma solicitação para redefinir sua senha na plataforma Global RPX.
+  Clique no link abaixo para criar uma nova senha.
+</p>
+
+<p>
+  <a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/redefinir-senha">
+    Redefinir senha
+  </a>
+</p>
+
+<p>
+  Se você não solicitou essa alteração, pode ignorar este e-mail com segurança.
+</p>
+```
 
 SMTP/Resend:
 

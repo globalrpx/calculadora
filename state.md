@@ -59,6 +59,41 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Ajuste do callback de recuperacao de senha
+
+- Ajustado `/auth/callback` para aceitar tambem o formato robusto do Supabase com `token_hash` e `type=recovery`.
+- O callback passa a usar `supabase.auth.verifyOtp` para links de reset construidos pelo template com `token_hash`.
+- Mantido suporte ao fluxo com `code` via `exchangeCodeForSession`.
+- Documentado template recomendado de e-mail em portugues usando `token_hash`.
+- O motivo do ajuste foi a falha do link recebido por e-mail redirecionando para `/esqueci-senha?error=invalid_link`, compatível com ausencia/perda do code verifier PKCE.
+
+Arquivos principais:
+
+- `src/app/auth/callback/route.ts`
+- `docs/AUTH_AND_PERMISSIONS.md`
+- `docs/TECH_STACK.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck`
+- `npm run lint`
+- `npm run build`
+- Servidor local reiniciado apos limpeza de `.next`, removendo erro de cache/webpack do Next.
+- `GET /login` retorna 200 localmente.
+- `GET /esqueci-senha` retorna 200 localmente.
+- `GET /redefinir-senha` retorna 200 localmente.
+- `GET /auth/callback` sem parametros redireciona para `/login?error=auth-callback`.
+- `GET /auth/callback?token_hash=fake&type=recovery&next=/redefinir-senha` redireciona para `/esqueci-senha?error=invalid_link`, confirmando tratamento amigavel para token invalido.
+
+Nao foi possivel validar ainda:
+
+- Clique real em novo e-mail usando template `token_hash`, pois depende de atualizar o template no Supabase Dashboard.
+
+Proxima etapa recomendada:
+
+- Atualizar o template `Reset Password` no Supabase para usar o link com `token_hash`, solicitar novo e-mail e testar novamente.
+
 ### 2026-07-09 - Recuperacao de senha com Supabase Auth nativo
 
 - Adicionado fluxo publico de recuperacao de senha sem OTP proprio, sem tabela nova, sem migration e sem Resend API direta.

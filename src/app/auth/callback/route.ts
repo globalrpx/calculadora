@@ -12,16 +12,25 @@ function safeNextPath(value: string | null) {
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const tokenHash = requestUrl.searchParams.get("token_hash");
+  const type = requestUrl.searchParams.get("type");
   const next = safeNextPath(requestUrl.searchParams.get("next"));
 
-  if (!code) {
+  if (!code && !tokenHash) {
     return NextResponse.redirect(new URL("/login?error=auth-callback", requestUrl.origin));
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error } =
+    tokenHash && type === "recovery"
+      ? await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery"
+        })
+      : await supabase.auth.exchangeCodeForSession(code ?? "");
 
   if (error) {
+    console.error("Auth callback failed:", error.message);
     return NextResponse.redirect(new URL("/esqueci-senha?error=invalid_link", requestUrl.origin));
   }
 
