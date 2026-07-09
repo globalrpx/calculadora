@@ -11,9 +11,8 @@ build/
 supabase/.temp/
 coverage/
 temp/
+*.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-*.tsbuildinfo
-.vercel
