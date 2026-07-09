@@ -27,11 +27,20 @@ export type ClientSimulationRecord = {
   id: string;
   title: string;
   status: string;
-  quoteFileUrl: string | null;
   createdAt: string;
   quote: {
     id: string;
     productName: string;
     hsCode: string | null;
   } | null;
+  uploads: ClientSimulationUpload[];
+};
+
+export type ClientSimulationUpload = {
+  id: string;
+  original_name: string;
+  size_bytes: number;
+  extension: string | null;
+  mime_type: string | null;
+  created_at: string;
 };

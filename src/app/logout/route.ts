@@ -5,7 +5,7 @@ import { getSupabaseConfig } from "@/lib/supabase/config";
 
 async function signOut(request: NextRequest) {
   const redirectUrl = new URL("/", request.url);
-  const response = NextResponse.redirect(redirectUrl);
+  const response = NextResponse.redirect(redirectUrl, { status: 303 });
 
   if (!hasSupabaseConfig()) {
     response.cookies.delete(MOCK_AUTH_COOKIE);

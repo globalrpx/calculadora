@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/Button";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -12,11 +13,48 @@ import {
 } from "@/lib/actions/client-quotes";
 import { calculateQuote, formatBrl, formatPercent, formatUsd, type QuoteInput, type QuoteResult } from "@/lib/calculator/calculate-quote";
 import type { ClientQuoteRecord } from "@/lib/client/types";
+import { uploadClientQuoteFile } from "@/lib/uploads/actions";
 
 type NcmOption = {
   code: string;
   description: string;
 };
+
+type QuoteUploadDraft = {
+  id: string;
+  file: File;
+  originalName: string;
+  displayName: string;
+  sizeBytes: number;
+};
+
+type QuoteUploadKind = "product" | "supplier";
+
+const maxQuoteUploadFiles = 5;
+const maxQuoteUploadFileSizeBytes = 6 * 1024 * 1024;
+const quoteUploadAllowedExtensions = new Set(["pdf", "jpg", "jpeg", "png", "webp", "gif"]);
+const quoteUploadDangerousExtensions = new Set(["exe", "bat", "cmd", "sh", "js", "php", "html", "htm", "svg", "msi", "scr", "zip", "doc", "docx", "xls", "xlsx"]);
+const quoteUploadAllowedMimeTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp", "image/gif"]);
+
+const productSearchStopWords = new Set([
+  "com",
+  "das",
+  "dos",
+  "para",
+  "por",
+  "sem",
+  "uma",
+  "uns",
+  "produto",
+  "produtos",
+  "item",
+  "itens",
+  "kit",
+  "peca",
+  "pecas",
+  "unidade",
+  "unidades"
+]);
 
 const initialInput: QuoteInput = {
   productName: "",
@@ -28,6 +66,66 @@ const initialInput: QuoteInput = {
   directImportFactor: 2.2
 };
 
+function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getProductSearchTerms(value: string) {
+  return normalizeSearchText(value)
+    .split(/\s+/)
+    .filter((term) => term.length >= 3 && !productSearchStopWords.has(term));
+}
+
+function isGenericNcmOption(option: NcmOption) {
+  const description = normalizeSearchText(option.description);
+  return /\boutros?\b/.test(description);
+}
+
+function formatFileSize(value: number) {
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileExtension(fileName: string) {
+  const lastDot = fileName.lastIndexOf(".");
+  return lastDot >= 0 ? fileName.slice(lastDot + 1).toLowerCase() : "";
+}
+
+function isImageFile(file: File) {
+  return file.type.startsWith("image/");
+}
+
+function validateQuoteUploadFile(file: File) {
+  const extension = getFileExtension(file.name);
+  const mimeType = file.type.trim().toLowerCase();
+
+  if (!extension || !quoteUploadAllowedExtensions.has(extension) || quoteUploadDangerousExtensions.has(extension)) {
+    return "Tipo de arquivo não permitido. Envie imagem ou PDF.";
+  }
+
+  if (mimeType && !quoteUploadAllowedMimeTypes.has(mimeType)) {
+    return "Tipo de arquivo não permitido. Envie imagem ou PDF.";
+  }
+
+  if (file.size > maxQuoteUploadFileSizeBytes) {
+    return "Cada arquivo deve ter no máximo 6MB.";
+  }
+
+  return "";
+}
+
 export function CalculatorClient({
   initialQuotes
 }: {
@@ -38,8 +136,8 @@ export function CalculatorClient({
   const [supplierName, setSupplierName] = useState("");
   const [supplierEmail, setSupplierEmail] = useState("");
   const [supplierPhone, setSupplierPhone] = useState("");
-  const [imageNames, setImageNames] = useState<string[]>([]);
-  const [supplierContactImageNames, setSupplierContactImageNames] = useState<string[]>([]);
+  const [productFiles, setProductFiles] = useState<QuoteUploadDraft[]>([]);
+  const [supplierContactFiles, setSupplierContactFiles] = useState<QuoteUploadDraft[]>([]);
   const [calculatedResult, setCalculatedResult] = useState<QuoteResult | null>(null);
   const [isCollapsing, setIsCollapsing] = useState(false);
   const [fullSimulationModalOpen, setFullSimulationModalOpen] = useState(false);
@@ -48,6 +146,9 @@ export function CalculatorClient({
   );
   const [isRequestingSimulation, setIsRequestingSimulation] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
+  const [uploadStatusMessage, setUploadStatusMessage] = useState("");
+  const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
+  const [submissionStep, setSubmissionStep] = useState("");
   const [quotes, setQuotes] = useState<ClientQuoteRecord[]>(initialQuotes);
   const [detailQuote, setDetailQuote] = useState<ClientQuoteRecord | null>(null);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
@@ -72,6 +173,52 @@ export function CalculatorClient({
       .slice(0, 8);
   }, [input.hsCode, ncmOptions]);
 
+  const productNcmSuggestions = useMemo(() => {
+    const query = normalizeSearchText(input.productName);
+    const terms = getProductSearchTerms(input.productName);
+
+    if (query.length < 3 || terms.length === 0) {
+      return [];
+    }
+
+    const scoredSuggestions = ncmOptions
+      .map((option) => {
+        const description = normalizeSearchText(option.description);
+        const matchedTerms = terms.filter((term) => description.includes(term));
+        const hasExactPhrase = query.length >= 5 && description.includes(query);
+        const generic = isGenericNcmOption(option);
+        const firstMatchIndex = matchedTerms.length > 0
+          ? Math.min(...matchedTerms.map((term) => description.indexOf(term)))
+          : -1;
+        const earlyMatchScore = firstMatchIndex >= 0
+          ? Math.max(0, 20 - Math.floor(firstMatchIndex / 4))
+          : 0;
+
+        return {
+          option,
+          score:
+            matchedTerms.length * 10 +
+            earlyMatchScore +
+            (hasExactPhrase ? 30 : 0) +
+            (generic ? 1 : 0)
+        };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+
+        return a.option.code.localeCompare(b.option.code);
+      });
+
+    if (scoredSuggestions.length > 0) {
+      return scoredSuggestions.slice(0, 5).map((item) => item.option);
+    }
+
+    return ncmOptions.filter(isGenericNcmOption).slice(0, 5);
+  }, [input.productName, ncmOptions]);
+
   useEffect(() => {
     fetch("/data/ncm.json")
       .then((response) => response.json())
@@ -86,6 +233,10 @@ export function CalculatorClient({
     }));
 
     if (key === "hsCode") {
+      setSelectedNcm(null);
+    }
+
+    if (key === "productName") {
       setSelectedNcm(null);
     }
 
@@ -112,6 +263,100 @@ export function CalculatorClient({
     setValidationMessage("");
   }
 
+  async function prepareQuoteUploadFile(file: File): Promise<QuoteUploadDraft> {
+    const initialError = validateQuoteUploadFile(file);
+
+    if (initialError) {
+      throw new Error(initialError);
+    }
+
+    let finalFile = file;
+
+    if (isImageFile(file)) {
+      try {
+        const compressedFile = await imageCompression(file, {
+          maxSizeMB: 4.5,
+          maxWidthOrHeight: 2400,
+          initialQuality: 0.85,
+          useWebWorker: true,
+          preserveExif: false,
+          fileType: file.type
+        });
+        finalFile = new File([compressedFile], file.name, {
+          type: file.type,
+          lastModified: file.lastModified
+        });
+      } catch {
+        throw new Error("Não foi possível comprimir a imagem. Tente outra imagem ou reduza o arquivo.");
+      }
+    }
+
+    const finalError = validateQuoteUploadFile(finalFile);
+
+    if (finalError) {
+      throw new Error(finalError);
+    }
+
+    return {
+      id: crypto.randomUUID(),
+      file: finalFile,
+      originalName: file.name,
+      displayName: finalFile.name || file.name,
+      sizeBytes: finalFile.size
+    };
+  }
+
+  async function handleQuoteUploadSelection(files: FileList | null, kind: QuoteUploadKind) {
+    if (!files?.length) {
+      return;
+    }
+
+    const currentFiles = kind === "product" ? productFiles : supplierContactFiles;
+    const availableSlots = maxQuoteUploadFiles - currentFiles.length;
+
+    if (availableSlots <= 0) {
+      setValidationMessage("Você pode selecionar até 5 arquivos.");
+      return;
+    }
+
+    const selectedFiles = Array.from(files);
+
+    if (selectedFiles.length > availableSlots) {
+      setValidationMessage("Você pode selecionar até 5 arquivos.");
+    } else {
+      setValidationMessage("");
+    }
+
+    try {
+      const preparedFiles: QuoteUploadDraft[] = [];
+
+      for (const file of selectedFiles.slice(0, availableSlots)) {
+        preparedFiles.push(await prepareQuoteUploadFile(file));
+      }
+
+      if (kind === "product") {
+        setProductFiles((current) => [...current, ...preparedFiles]);
+      } else {
+        setSupplierContactFiles((current) => [...current, ...preparedFiles]);
+      }
+
+      setCalculatedResult(null);
+    } catch (error) {
+      setValidationMessage(error instanceof Error ? error.message : "Tipo de arquivo não permitido. Envie imagem ou PDF.");
+    }
+  }
+
+  function removeQuoteUploadFile(kind: QuoteUploadKind, fileId: string) {
+    if (kind === "product") {
+      setProductFiles((current) => current.filter((file) => file.id !== fileId));
+    } else {
+      setSupplierContactFiles((current) => current.filter((file) => file.id !== fileId));
+    }
+
+    setCalculatedResult(null);
+    setValidationMessage("");
+  }
+
   function validateBeforeCalculation() {
     if (!input.productName.trim() || !input.hsCode.trim()) {
       return "Informe o nome do produto e o HS Code ou NCM sugerido.";
@@ -123,10 +368,10 @@ export function CalculatorClient({
 
     const hasSupplierDetails =
       supplierName.trim() && supplierEmail.trim() && supplierPhone.trim();
-    const hasSupplierCard = supplierContactImageNames.length > 0;
+    const hasSupplierCard = supplierContactFiles.length > 0;
 
     if (!hasSupplierDetails && !hasSupplierCard) {
-      return "Informe nome, e-mail e telefone do fornecedor ou anexe uma foto do cartão de visitas.";
+      return "Informe nome, e-mail e telefone do fornecedor ou anexe ao menos uma foto/cartão de contato do fornecedor.";
     }
 
     if (hasSupplierDetails && !/^\S+@\S+\.\S+$/.test(supplierEmail.trim())) {
@@ -137,6 +382,10 @@ export function CalculatorClient({
   }
 
   async function runCalculation() {
+    if (isSubmittingQuote) {
+      return;
+    }
+
     const message = validateBeforeCalculation();
 
     if (message) {
@@ -146,7 +395,10 @@ export function CalculatorClient({
     }
 
     setValidationMessage("");
+    setUploadStatusMessage("");
+    setSubmissionStep("Atualizando parâmetros...");
     setIsLoadingExchangeRate(true);
+    setIsSubmittingQuote(true);
 
     try {
       const response = await fetch("/api/exchange-rate", { cache: "no-store" });
@@ -164,24 +416,65 @@ export function CalculatorClient({
       const calculationInput = { ...input, usedDollar: data.rate };
       setInput(calculationInput);
       setIsCollapsing(true);
-      const result = calculateQuote(calculationInput);
+      setSubmissionStep("Criando cotação...");
       const savedQuote = await saveClientQuoteAction({
         ...calculationInput,
-        ...result,
+        ...calculateQuote(calculationInput),
         id: editingQuoteId ?? undefined,
-        images: imageNames,
-        supplierContactImages: supplierContactImageNames,
+        images: [],
+        supplierContactImages: [],
         supplierName: supplierName.trim(),
         supplierEmail: supplierEmail.trim(),
         supplierPhone: supplierPhone.trim()
       });
+
+      const filesToUpload = [
+        ...productFiles.map((file) => ({ ...file, context: "quote_product_images" as const })),
+        ...supplierContactFiles.map((file) => ({ ...file, context: "quote_supplier_contact" as const }))
+      ];
+      const failedUploads: string[] = [];
+
+      if (filesToUpload.length > 0) {
+        setSubmissionStep("Enviando arquivos...");
+        setUploadStatusMessage("Enviando arquivos...");
+      }
+
+      for (const upload of filesToUpload) {
+        const uploadResult = await uploadClientQuoteFile(savedQuote.id, upload.file, upload.context);
+
+        if (!uploadResult.success) {
+          failedUploads.push(`${upload.originalName} (${uploadResult.message})`);
+        }
+      }
 
       setQuotes((currentQuotes) => {
         const withoutSaved = currentQuotes.filter((quote) => quote.id !== savedQuote.id);
         return [savedQuote, ...withoutSaved];
       });
       setEditingQuoteId(savedQuote.id);
-      setCalculatedResult(result);
+      setInput((currentInput) => ({
+        ...currentInput,
+        usedDollar: savedQuote.usedDollar,
+        rpxFactor: savedQuote.rpxFactor,
+        directImportFactor: savedQuote.directImportFactor
+      }));
+      setCalculatedResult({
+        fobTotalUsd: savedQuote.fobTotalUsd,
+        unitCostRpxBrl: savedQuote.unitCostRpxBrl,
+        totalCostRpxBrl: savedQuote.totalCostRpxBrl,
+        unitCostDirectBrl: savedQuote.unitCostDirectBrl,
+        totalCostDirectBrl: savedQuote.totalCostDirectBrl,
+        savingsBrl: savedQuote.savingsBrl,
+        savingsPercent: savedQuote.savingsPercent
+      });
+
+      if (failedUploads.length > 0) {
+        setUploadStatusMessage(
+          `Cotação criada, mas alguns arquivos não foram enviados: ${failedUploads.join(", ")}.`
+        );
+      } else if (filesToUpload.length > 0) {
+        setUploadStatusMessage("Cotação criada e arquivos enviados com sucesso.");
+      }
     } catch {
       setValidationMessage(
         "Não foi possível salvar ou atualizar os parâmetros da cotação. Tente novamente em instantes."
@@ -189,6 +482,8 @@ export function CalculatorClient({
     } finally {
       setIsCollapsing(false);
       setIsLoadingExchangeRate(false);
+      setIsSubmittingQuote(false);
+      setSubmissionStep("");
     }
   }
 
@@ -206,12 +501,13 @@ export function CalculatorClient({
     setSupplierName("");
     setSupplierEmail("");
     setSupplierPhone("");
-    setImageNames([]);
-    setSupplierContactImageNames([]);
+    setProductFiles([]);
+    setSupplierContactFiles([]);
     setCalculatedResult(null);
     setEditingQuoteId(null);
     setSelectedNcm(null);
     setValidationMessage("");
+    setUploadStatusMessage("");
     setActiveTab("history");
   }
 
@@ -225,14 +521,15 @@ export function CalculatorClient({
       rpxFactor: quote.rpxFactor,
       directImportFactor: quote.directImportFactor
     });
-    setImageNames(quote.images);
-    setSupplierContactImageNames(quote.supplierContactImages ?? []);
+    setProductFiles([]);
+    setSupplierContactFiles([]);
     setSupplierName(quote.supplierName ?? "");
     setSupplierEmail(quote.supplierEmail ?? "");
     setSupplierPhone(quote.supplierPhone ?? "");
     setCalculatedResult(null);
     setEditingQuoteId(quoteId);
     setValidationMessage("");
+    setUploadStatusMessage("");
     setActiveTab("new");
   }
 
@@ -354,6 +651,24 @@ export function CalculatorClient({
               <div className="grid gap-5 md:grid-cols-2">
               <FormField label="Nome do produto">
                 <TextInput value={input.productName} onChange={(event) => updateInput("productName", event.target.value)} placeholder="Ex: Garrafa térmica inox" />
+                {productNcmSuggestions.length > 0 && !selectedNcm ? (
+                  <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-soft">
+                    <div className="border-b border-slate-100 bg-rpx-sky px-3 py-2 text-xs font-semibold text-rpx-blue">
+                      Sugestões preliminares de NCM
+                    </div>
+                    {productNcmSuggestions.map((option) => (
+                      <button
+                        key={`product-${option.code}`}
+                        className="block w-full border-b border-slate-100 px-3 py-3 text-left text-sm last:border-b-0 hover:bg-rpx-sky"
+                        onClick={() => selectNcm(option)}
+                        type="button"
+                      >
+                        <span className="font-bold text-rpx-blue">{option.code}</span>
+                        <span className="ml-2 text-slate-600">{option.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </FormField>
               <FormField label="HS Code ou NCM sugerido" help="Classificação preliminar, sujeita a validação fiscal.">
                 <TextInput value={input.hsCode} onChange={(event) => updateInput("hsCode", event.target.value)} placeholder="Ex: 9617.00.10" />
@@ -407,49 +722,80 @@ export function CalculatorClient({
                   placeholder="+86 138 0000 0000"
                 />
               </FormField>
-              <FormField label="Imagens do produto" help="Você pode selecionar até 5 imagens para compor a cotação.">
+              <FormField label="Imagens do produto" help="Você pode selecionar até 5 imagens ou PDFs para compor a cotação. Imagens serão otimizadas antes do envio.">
                 <input
                   className="w-full min-w-0 text-sm text-slate-600 file:mr-3 file:min-h-10 file:rounded-md file:border-0 file:bg-rpx-sky file:px-3 file:text-sm file:font-bold file:text-rpx-blue"
                   type="file"
-                  accept="image/png,image/jpeg,image/webp"
+                  accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
                   multiple
                   onChange={(event) => {
-                    setImageNames(Array.from(event.target.files ?? []).slice(0, 5).map((file) => file.name));
-                    setCalculatedResult(null);
+                    void handleQuoteUploadSelection(event.target.files, "product");
+                    event.target.value = "";
                   }}
                 />
+                {productFiles.length > 0 ? (
+                  <ul className="mt-3 grid gap-2">
+                    {productFiles.map((file) => (
+                      <li key={file.id} className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
+                        <span className="min-w-0 truncate font-semibold text-slate-700" title={file.originalName}>
+                          {file.originalName} · {formatFileSize(file.sizeBytes)}
+                        </span>
+                        <button
+                          type="button"
+                          className="shrink-0 font-semibold text-red-600 hover:text-red-700"
+                          onClick={() => removeQuoteUploadFile("product", file.id)}
+                        >
+                          Remover
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </FormField>
               <FormField
                 label="Foto do cartão ou contato do fornecedor"
-                help="Anexe o cartão de visita, anotação ou outra referência de contato recebida do fornecedor."
+                help="Anexe cartão de visita, foto do estande ou outra referência de contato do fornecedor. Até 5 arquivos."
               >
                 <input
                   className="w-full min-w-0 text-sm text-slate-600 file:mr-3 file:min-h-10 file:rounded-md file:border-0 file:bg-rpx-sky file:px-3 file:text-sm file:font-bold file:text-rpx-blue"
                   type="file"
-                  accept="image/png,image/jpeg,image/webp"
+                  accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
                   multiple
                   onChange={(event) => {
-                    setSupplierContactImageNames(
-                      Array.from(event.target.files ?? [])
-                        .slice(0, 3)
-                        .map((file) => file.name)
-                    );
-                    setCalculatedResult(null);
-                    setValidationMessage("");
+                    void handleQuoteUploadSelection(event.target.files, "supplier");
+                    event.target.value = "";
                   }}
                 />
+                {supplierContactFiles.length > 0 ? (
+                  <ul className="mt-3 grid gap-2">
+                    {supplierContactFiles.map((file) => (
+                      <li key={file.id} className="flex items-center justify-between gap-3 rounded-md border border-rpx-blue/15 bg-rpx-sky px-3 py-2 text-xs">
+                        <span className="min-w-0 truncate font-semibold text-rpx-blue" title={file.originalName}>
+                          {file.originalName} · {formatFileSize(file.sizeBytes)}
+                        </span>
+                        <button
+                          type="button"
+                          className="shrink-0 font-semibold text-red-600 hover:text-red-700"
+                          onClick={() => removeQuoteUploadFile("supplier", file.id)}
+                        >
+                          Remover
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </FormField>
               </div>
-              {imageNames.length > 0 || supplierContactImageNames.length > 0 ? (
+              {productFiles.length > 0 || supplierContactFiles.length > 0 ? (
                 <div className="mt-5 flex flex-wrap gap-2">
-                {imageNames.map((name) => (
-                  <span key={name} className="rounded-md bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
-                    Produto: {name}
+                {productFiles.map((file) => (
+                  <span key={file.id} className="rounded-md bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
+                    Produto: {file.originalName}
                   </span>
                 ))}
-                {supplierContactImageNames.map((name) => (
-                  <span key={name} className="rounded-md bg-rpx-sky px-3 py-2 text-xs font-semibold text-rpx-blue">
-                    Fornecedor: {name}
+                {supplierContactFiles.map((file) => (
+                  <span key={file.id} className="rounded-md bg-rpx-sky px-3 py-2 text-xs font-semibold text-rpx-blue">
+                    Fornecedor: {file.originalName}
                   </span>
                 ))}
                 </div>
@@ -462,15 +808,40 @@ export function CalculatorClient({
                   {validationMessage}
                 </div>
               ) : null}
+              {uploadStatusMessage ? (
+                <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                  {uploadStatusMessage}
+                </div>
+              ) : null}
               <div className="mt-5 flex flex-wrap justify-end gap-2">
                 {editingQuoteId ? (
                   <Button type="button" variant="secondary" onClick={cancelQuoteEditing}>
                     Cancelar
                   </Button>
                 ) : null}
-                <Button type="button" onClick={runCalculation} disabled={isCollapsing || isLoadingExchangeRate}>
-                  {isLoadingExchangeRate ? "Atualizando cotação..." : "Fazer cálculo"}
+                <Button type="button" onClick={runCalculation} disabled={isCollapsing || isLoadingExchangeRate || isSubmittingQuote}>
+                  {isSubmittingQuote
+                    ? uploadStatusMessage === "Enviando arquivos..."
+                      ? "Enviando arquivos..."
+                      : "Criando cotação..."
+                    : isLoadingExchangeRate
+                      ? "Atualizando cotação..."
+                      : "Fazer cálculo"}
                 </Button>
+              </div>
+            </section>
+          ) : null}
+
+          {!calculatedResult && isSubmittingQuote ? (
+            <section className="rounded-lg border border-rpx-blue/15 bg-white p-5 shadow-soft">
+              <div className="flex items-center gap-3">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-rpx-blue/20 border-t-rpx-blue" />
+                <div>
+                  <p className="text-sm font-bold text-rpx-ink">{submissionStep || "Processando cotação..."}</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Aguarde enquanto salvamos a cotação e preparamos os arquivos.
+                  </p>
+                </div>
               </div>
             </section>
           ) : null}
@@ -493,6 +864,11 @@ export function CalculatorClient({
                   </Button>
                 </div>
               </div>
+              {uploadStatusMessage ? (
+                <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                  {uploadStatusMessage}
+                </div>
+              ) : null}
               <div className="grid gap-4 md:grid-cols-2">
                 <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-soft">
                   <p className="text-xs font-bold uppercase text-slate-500">Estimativa com a RPX</p>

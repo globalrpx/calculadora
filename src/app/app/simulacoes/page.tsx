@@ -1,8 +1,10 @@
-import Link from "next/link";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { UploadFilesCell } from "@/components/uploads/UploadFilesCell";
 import { getClientSimulations } from "@/lib/client/quotes";
+import { getClientUploadSignedUrl } from "@/lib/uploads/actions";
 import type { ClientSimulationRecord } from "@/lib/client/types";
 
 function formatDate(value: string) {
@@ -25,6 +27,22 @@ function mapStatus(status: string) {
   }
 }
 
+function mapStatusVariant(status: string) {
+  switch (status) {
+    case "finalizado":
+    case "published":
+      return "success";
+    case "em_producao":
+      return "info";
+    case "cancelado":
+      return "danger";
+    case "aguardando":
+    case "draft":
+    default:
+      return "neutral";
+  }
+}
+
 export default async function ClientSimulationsPage() {
   const simulations = await getClientSimulations();
   const columns: DataTableColumn<ClientSimulationRecord>[] = [
@@ -43,24 +61,20 @@ export default async function ClientSimulationsPage() {
     {
       key: "status",
       header: "Status",
-      render: (simulation) => mapStatus(simulation.status)
+      render: (simulation) => (
+        <StatusBadge variant={mapStatusVariant(simulation.status)}>{mapStatus(simulation.status)}</StatusBadge>
+      )
     },
     {
-      key: "quoteFileUrl",
+      key: "uploads",
       header: "Arquivo",
-      render: (simulation) =>
-        simulation.quoteFileUrl ? (
-          <Link
-            href={simulation.quoteFileUrl}
-            className="font-semibold text-rpx-blue"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Abrir arquivo
-          </Link>
-        ) : (
-          "Ainda não disponível"
-        )
+      render: (simulation) => (
+        <UploadFilesCell
+          uploads={simulation.uploads}
+          emptyLabel="Ainda não disponível"
+          getSignedUrl={getClientUploadSignedUrl}
+        />
+      )
     }
   ];
 

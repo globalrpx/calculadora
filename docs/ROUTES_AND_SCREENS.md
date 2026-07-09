@@ -30,7 +30,8 @@
 | `/admin/cotacoes/[id]` | Admin | Funcional | `quotes`, `clients`, `simulations` | Detalhe administrativo read-only da cotacao. |
 | `/admin/simulacoes` | Admin | Funcional | `simulations`, `quotes`, `clients` | CRUD administrativo básico com filtros, totalizador, paginação, ordenação segura, status e ações. |
 | `/admin/simulacoes/nova` | Admin | Funcional | `simulations`, `quotes`, `clients` | Criação administrativa básica usando campos existentes; sem upload real nesta fase. |
-| `/admin/simulacoes/[id]` | Admin | Funcional | `simulations`, `quotes`, `clients` | Detalhe e edição de status, observações e referência de arquivo. |
+| `/admin/simulacoes/[id]` | Admin | Funcional | `simulations`, `quotes`, `clients`, `uploads`, Storage | Detalhe e edição de status/observações, com upload real de múltiplos arquivos da simulação via bucket privado. |
+| `/admin/configuracoes` | Admin | Funcional | `config` | Lista, cria e edita configuracoes globais; `import_factor` controla o fator RPX de novas cotacoes. |
 | `/admin/usuarios` | Admin | Funcional | `app_users` | CRUD de usuarios admin com filtros, totalizador, paginacao, ordenacao segura, status e acoes. |
 | `/admin/usuarios/novo` | Admin | Funcional | Supabase Auth + `app_users` | Criacao de usuario admin com senha obrigatoria e validacao inline. |
 | `/admin/usuarios/[id]` | Admin | Funcional | Supabase Auth + `app_users` | Edicao de usuario admin, status e senha opcional. |
@@ -69,6 +70,7 @@
 - `StatusBadge`: status compartilhado.
 - `ConfirmDialog`: confirmacao de acao sensivel.
 - `DismissibleAlert`: feedback fechavel.
+- `UploadsCard`: upload/listagem/substituicao/exclusao de arquivos via Supabase Storage privado.
 - `FormField`, `TextInput`, `NumberInput`: formularios.
 - `EmptyState`: ausencia de dados.
 - `TablePlaceholder`: somente para telas ainda placeholder.

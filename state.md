@@ -1,6 +1,6 @@
 # State - Plataforma Global RPX
 
-Ultima atualizacao: 2026-06-18
+Ultima atualizacao: 2026-07-09
 
 ## Como usar este arquivo
 
@@ -46,6 +46,8 @@ Stack alvo:
 Fase atual: Fundacao autenticada com Supabase real, calculadora persistida e primeira base dinamica do painel administrativo.
 
 Estado: fundacao implementada, calculadora dinamica persistindo cotacoes reais em `quotes`, pedidos de simulacao completa persistindo em `simulations`, autenticacao real funcionando, base de usuarios da aplicacao desacoplada do provedor via `app_users` e modulo administrativo inicial conectado ao banco para dashboard, clientes, cotacoes, simulacoes e usuarios.
+Storage administrativo iniciado com bucket privado `app-uploads`, tabela unica `uploads` e upload real de multiplos arquivos no detalhe de simulacao.
+Configuracao administrativa inicial criada em `config`, com `import_factor` controlando o fator RPX usado em novas cotacoes e snapshot salvo em `quotes.rpx_factor`.
 
 Servidor de preview atual:
 
@@ -56,6 +58,366 @@ http://127.0.0.1:3001
 Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As dependencias do app Next agora estao instaladas e o build passou; o ambiente ainda nao possui npm convencional no PATH, entao a estabilizacao usou um npm temporario.
 
 ## Entregue ate agora
+
+### 2026-07-09 - Configuracao dinamica do fator RPX
+
+- Criada migration incremental para a tabela `public.config`.
+- A tabela `config` usa `key`, `value`, `description`, timestamps e RLS admin-only.
+- Inserido seed inicial `key = import_factor`, `value = 1.8`.
+- Criada camada server-side de configuracoes com fallback controlado para `1.8`.
+- Criada rota admin `/admin/configuracoes` para listar, criar e editar configuracoes.
+- A chave fica travada apos a criacao; `import_factor` valida valor numerico decimal positivo.
+- Adicionado item `Configurações` no menu administrativo.
+- O salvamento de cotacao agora busca `import_factor` no servidor, ignora o `rpxFactor` vindo do client, recalcula a cotacao e salva o snapshot em `quotes.rpx_factor`.
+- `direct_import_factor = 2.2` foi mantido independente e fora do escopo.
+- O detalhe admin da cotacao passou a exibir `Dólar usado` e `Fator de importação usado`.
+- A area cliente continua sem exibir fator ou configuracoes.
+- Ajustado fallback quando a migration ainda nao foi aplicada: `/admin/configuracoes` nao quebra mais se `public.config` nao existir e exibe aviso de migration pendente.
+- Enquanto `public.config` nao existir, novas cotacoes continuam usando fallback `1.8` para `import_factor`.
+- Migration `20260709180000_create_config_table.sql` aplicada no Supabase remoto apos aprovacao explicita.
+
+Arquivos principais:
+
+- `supabase/migrations/20260709180000_create_config_table.sql`
+- `src/lib/config/app-config.ts`
+- `src/lib/actions/config.ts`
+- `src/app/admin/configuracoes/page.tsx`
+- `src/lib/actions/client-quotes.ts`
+- `src/components/calculator/CalculatorClient.tsx`
+- `src/app/admin/cotacoes/[id]/page.tsx`
+- `src/lib/navigation.ts`
+- `docs/DATABASE_MODEL.md`
+- `docs/AUTH_AND_PERMISSIONS.md`
+- `docs/ROUTES_AND_SCREENS.md`
+- `docs/TECH_STACK.md`
+- `docs/spec-cruds.md`
+- `docs/especificacao-calculadora.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- Browser local autenticado em `/admin/configuracoes` confirmou aviso amigavel quando `public.config` ainda nao existe.
+- Apos aplicar a migration, browser local autenticado confirmou `import_factor = 1.8` listado em `/admin/configuracoes`.
+
+Nao foi possivel validar ainda:
+
+- Teste manual de admin alterando `import_factor` e criando nova cotacao ainda pendente.
+- `npm run build` nao foi executado porque o dev server esta ativo.
+
+Proxima etapa recomendada:
+
+- Aplicar a migration quando aprovado, testar `/admin/configuracoes`, alterar `import_factor` para um valor temporario e criar nova cotacao confirmando snapshot em `quotes.rpx_factor`.
+
+### 2026-07-09 - Feedback e loading do upload na calculadora
+
+- Ajustado o upload da calculadora para preservar o `fileType` original durante a compressao de imagens.
+- Ajustado o arquivo comprimido para preservar explicitamente nome, MIME type e `lastModified` originais antes de enviar ao servidor.
+- A validacao server-side de uploads de cotacao passou a aceitar MIME `image/*` quando a extensao e uma imagem permitida, evitando falso bloqueio de PNG/JPG/WEBP/GIF apos compressao.
+- A mensagem de falha parcial agora exibe o motivo retornado por arquivo.
+- Falhas de Storage e de registro em `uploads` passaram a retornar mensagens menos genericas.
+- Adicionado loading intermediario entre o recolhimento da Etapa 1 e a exibicao do resultado.
+- O loading informa fases como atualizacao de parametros, criacao da cotacao e envio de arquivos.
+
+Arquivos principais:
+
+- `src/components/calculator/CalculatorClient.tsx`
+- `src/lib/uploads/actions.ts`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+
+Nao foi possivel validar ainda:
+
+- Novo teste manual de upload com os mesmos arquivos da falha parcial.
+
+Proxima etapa recomendada:
+
+- Repetir o envio com imagens PNG/JPG e confirmar se os arquivos aparecem em `uploads` e no detalhe admin da cotacao.
+
+### 2026-07-09 - Upload real de arquivos na criacao de cotacao
+
+- A calculadora em `/app/calculadora` passou a usar upload real para os campos de arquivos da cotacao.
+- Instalada a dependencia `browser-image-compression`.
+- `Imagens do produto` aceita ate 5 arquivos validos, imagens ou PDF.
+- `Foto do cartao ou contato do fornecedor` aceita ate 5 arquivos validos, imagens ou PDF.
+- Imagens sao comprimidas no navegador antes do upload com limite visual/operacional voltado a fotos de celular.
+- PDF nao e comprimido.
+- Cada arquivo final e limitado a 6MB.
+- DOC, XLS, ZIP, SVG, JS e demais tipos fora da allowlist sao bloqueados nessa tela.
+- A validacao do fornecedor agora aceita nome, e-mail e telefone completos ou pelo menos um arquivo valido em `quote_supplier_contact`.
+- Arquivos recusados por tipo, tamanho ou erro de compressao nao contam para a validacao do fornecedor.
+- O fluxo de `Fazer calculo` agora valida formulario e arquivos, cria a quote e, depois de receber `quote_id`, envia os arquivos.
+- Os uploads sao gravados em `uploads` com `quote_id`, `simulation_id = null` e contextos:
+  - `quote_product_images`;
+  - `quote_supplier_contact`.
+- Paths usados:
+  - `quotes/{quote_id}/product-images/{upload_id}/{safe_filename}`;
+  - `quotes/{quote_id}/supplier-contact/{upload_id}/{safe_filename}`.
+- Se a quote for criada e algum upload falhar, a quote e mantida e a UI informa quais arquivos nao foram enviados.
+- `product_image_urls` e `supplier_contact_image_urls` permanecem como campos legados, sem remocao e sem backfill, e nao sao mais a fonte principal do novo fluxo.
+- O detalhe admin da cotacao passou a exibir grupos separados:
+  - `Arquivos do produto`;
+  - `Arquivos do fornecedor/contato`.
+- O admin visualiza/baixa os arquivos por modal compartilhado e signed URL sob demanda.
+- Nenhuma migration, bucket, RLS ou estrutura de tabela foi alterada nesta rodada.
+
+Arquivos principais:
+
+- `package.json`
+- `package-lock.json`
+- `src/components/calculator/CalculatorClient.tsx`
+- `src/lib/uploads/actions.ts`
+- `src/app/admin/cotacoes/[id]/page.tsx`
+- `docs/DATABASE_MODEL.md`
+- `docs/especificacao-calculadora.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+
+Nao foi possivel validar ainda:
+
+- Upload manual de imagem/PDF na calculadora.
+- Compressao visual de imagem grande.
+- Visualizacao dos arquivos no detalhe admin da cotacao.
+- `npm run build` nao sera executado com dev server ativo.
+
+Proxima etapa recomendada:
+
+- Testar manualmente cotacao com imagem grande, PDF menor que 6MB, sexto arquivo bloqueado, fornecedor sem dados mas com arquivo valido, fornecedor sem dados e sem arquivo bloqueado, e preview no detalhe admin.
+
+### 2026-07-09 - Correcao do logout em producao
+
+- Corrigido o fluxo de `POST /logout` para evitar HTTP 405 apos encerrar a sessao.
+- A causa raiz era o `NextResponse.redirect("/")` no route handler de logout usando status padrao 307.
+- Como o menu usa `<form action="/logout" method="post">`, o 307 preservava o metodo POST e fazia o navegador tentar `POST /`, que nao existe e gerava 405.
+- `/logout` agora redireciona com HTTP 303, convertendo o proximo request para GET na landing page publica.
+- O menu de conta foi preservado e o fluxo continua compativel para Admin e Cliente.
+
+Arquivos principais:
+
+- `src/app/logout/route.ts`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- `curl -X POST http://localhost:3000/logout` confirmou `303 See Other` com `Location: http://localhost:3000/`.
+
+Nao foi possivel validar ainda:
+
+- Clique manual de logout em producao apos novo deploy.
+
+Proxima etapa recomendada:
+
+- Publicar a correcao na Vercel e testar logout com usuario cliente e admin.
+
+### 2026-07-09 - Arquivos e status na listagem de simulacoes do cliente
+
+- `/app/simulacoes` passou a usar o mesmo padrao visual/funcional de arquivos da listagem admin.
+- A antiga celula admin foi extraida para `src/components/uploads/UploadFilesCell.tsx`.
+- Admin e Cliente agora usam o mesmo componente visual/modal, mas com actions diferentes de signed URL.
+- Criada action `getClientUploadSignedUrl(uploadId)`.
+- A action cliente valida role `client`, exige `client_id`, confirma que o upload tem `simulation_id` e que a simulacao pertence ao cliente logado.
+- `getClientSimulations` passou a buscar uploads em segunda query, sem N+1.
+- Os uploads do cliente sao filtrados por `simulation_id in (...)`, `context = simulation_result` e `deleted_at is null`, agrupados por `simulation_id` e anexados às rows.
+- A segunda query de metadados de uploads usa service role apenas no servidor, depois que as simulacoes ja foram filtradas por `client_id`, porque a RLS de `uploads` nao libera select direto para cliente nesta fase.
+- A listagem do cliente nao gera signed URL no carregamento.
+- A coluna `Arquivo` usa somente `uploads`, sem fallback legado `quote_file_url`, `storage_path` ou `file_name`.
+- Sem arquivo, exibe `Ainda não disponível`.
+- Com um arquivo, exibe link do arquivo; com multiplos, exibe primeiro arquivo e `+N arquivos` com expansao inline.
+- O clique abre modal compartilhado com preview de PDF/imagem/TXT e fallback de download para formatos sem preview.
+- A coluna `Status` passou a usar `StatusBadge`, seguindo o padrao visual admin.
+- Nenhuma migration, bucket, estrutura de tabela ou UI de detalhe admin foi alterada nesta rodada.
+
+Arquivos principais:
+
+- `src/components/uploads/UploadFilesCell.tsx`
+- `src/components/admin/SimulationFilesCell.tsx`
+- `src/lib/uploads/actions.ts`
+- `src/lib/client/quotes.ts`
+- `src/lib/client/types.ts`
+- `src/app/app/simulacoes/page.tsx`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- Dev server recompilou `/app/simulacoes` e `/admin/simulacoes` e respondeu HTTP 200 apos a extracao do componente compartilhado.
+
+Nao foi possivel validar ainda:
+
+- Clique manual no modal da area cliente.
+- Tentativa manual de acesso a upload de outro cliente manipulando `uploadId`.
+- `npm run build` nao sera executado com dev server ativo.
+
+Proxima etapa recomendada:
+
+- Testar manualmente `/app/simulacoes` com simulacoes sem arquivo, com PDF, imagem, formato sem preview e multiplos arquivos; validar que cliente nao abre upload de outra conta.
+
+### 2026-07-09 - Arquivos na listagem administrativa de simulacoes
+
+- `/admin/simulacoes` passou a exibir arquivos vinculados pela tabela `uploads` na coluna `Arquivo`.
+- A query `getAdminSimulations` agora busca uploads da pagina atual em uma segunda query, sem N+1.
+- Os uploads sao filtrados por `simulation_id`, `context = simulation_result` e `deleted_at is null`.
+- Os metadados sao agrupados por `simulation_id` em TypeScript e anexados a cada row.
+- A listagem nao gera signed URLs no carregamento da tabela.
+- O clique em arquivo chama `getUploadSignedUrl(uploadId)` sob demanda e abre a URL em nova aba.
+- O clique em arquivo agora abre visualizacao em modal, seguindo o padrao do detalhe da simulacao; formatos sem preview exibem acao para baixar.
+- A coluna mostra `Pendente` quando nao ha uploads.
+- Com um upload, mostra link direto com o nome do arquivo.
+- Com multiplos uploads, mostra o primeiro link e `+N arquivos` com expansao inline.
+- A coluna nao usa fallback legado `quote_file_url`, `storage_path` ou `file_name`.
+- A UI de detalhe de simulacao nao foi alterada nesta rodada.
+
+Arquivos principais:
+
+- `src/lib/admin/queries.ts`
+- `src/app/admin/simulacoes/page.tsx`
+- `src/components/admin/SimulationFilesCell.tsx`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+
+Nao foi possivel validar ainda:
+
+- Clique manual nos links da listagem.
+- `npm run build` nao foi executado porque o dev server esta ativo.
+
+Proxima etapa recomendada:
+
+- Testar manualmente simulacao sem upload, com um upload e com multiplos uploads; confirmar abertura por signed URL e atualizacao da listagem apos excluir/substituir no detalhe.
+
+### 2026-07-09 - Visualizacao de anexos em modal
+
+- O componente `UploadsCard` ganhou acao `Visualizar` por arquivo.
+- A visualizacao gera signed URL temporaria e abre modal sem sair da tela de simulacao.
+- PDFs e arquivos `.txt` sao exibidos em iframe.
+- Imagens comuns sao exibidas no modal.
+- Formatos sem preview confiavel no navegador exibem mensagem e botao para baixar.
+- Nenhuma migration, policy, tabela, rota ou regra de permissao foi alterada nesta rodada.
+
+Arquivos principais:
+
+- `src/components/uploads/UploadsCard.tsx`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- Dev server recompilou `/admin/simulacoes/[id]` e respondeu HTTP 200.
+
+Nao foi possivel validar ainda:
+
+- Preview visual no navegador com todos os tipos permitidos.
+
+Proxima etapa recomendada:
+
+- Testar manualmente `Visualizar` com PDF, imagem e TXT; para DOC/DOCX/XLS/XLSX/ZIP, confirmar exibicao da mensagem de preview indisponivel e download.
+
+### 2026-07-09 - Uploads administrativos com Supabase Storage
+
+- Criada migration `20260709134047_create_uploads_table_and_storage_bucket.sql`.
+- A migration configura bucket privado `app-uploads` com limite de 10MB.
+- Criada tabela unica `uploads` com FKs reais opcionais:
+  - `simulation_id -> public.simulations(id)`;
+  - `quote_id -> public.quotes(id)`.
+- Adicionado CHECK para garantir exatamente um dono entre `simulation_id` e `quote_id`.
+- Adicionados indices por dono, contexto, data, soft delete e unicidade de `(bucket, path)`.
+- Adicionadas policies RLS para admin na tabela `uploads` e em `storage.objects` para o bucket `app-uploads`.
+- Criada camada server-side `src/lib/uploads/actions.ts` com:
+  - `listSimulationUploads`;
+  - `listQuoteUploads`;
+  - `uploadSimulationFile`;
+  - `uploadQuoteFile`;
+  - `getUploadSignedUrl`;
+  - `deleteUpload`;
+  - `replaceUpload`.
+- Implementadas validacoes de arquivo no servidor: limite de 10MB, allowlist de MIME/extensao, bloqueio de extensoes perigosas, sanitizacao de nome e paths seguros.
+- Criado componente reutilizavel `UploadsCard` para listar, enviar, baixar por signed URL, substituir e excluir arquivos.
+- `/admin/simulacoes/[id]` passou a usar upload real com `context = simulation_result`.
+- O campo textual `URL ou caminho do arquivo` foi removido do formulario de simulacao.
+- Campos antigos `file_name`, `storage_path` e `quote_file_url` foram mantidos como legado, sem remocao de coluna e sem backfill automatico.
+- A UI de `/admin/cotacoes/[id]` nao foi alterada nesta rodada; apenas as funcoes server-side de quote ficaram preparadas.
+- Nao foi executado `supabase db push` no remoto.
+
+Arquivos principais:
+
+- `supabase/migrations/20260709134047_create_uploads_table_and_storage_bucket.sql`
+- `src/lib/uploads/actions.ts`
+- `src/components/uploads/UploadsCard.tsx`
+- `src/app/admin/simulacoes/[id]/page.tsx`
+- `src/components/admin/SimulationForm.tsx`
+- `src/lib/actions/admin.ts`
+- `src/lib/admin/simulation-form-state.ts`
+- `docs/DATABASE_MODEL.md`
+- `docs/AUTH_AND_PERMISSIONS.md`
+- `docs/ROUTES_AND_SCREENS.md`
+- `docs/TECH_STACK.md`
+- `docs/spec-cruds.md`
+- `docs/especificacao-calculadora.md`
+- `docs/CURRENT_STATUS.md`
+- `docs/FOLDER_STRUCTURE.md`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- `npm run build` aprovado.
+
+Nao foi possivel validar ainda:
+
+- Upload/download/exclusao/substituicao no browser, porque a migration ainda nao foi aplicada ao Supabase remoto/local.
+- Regras RLS/Storage em runtime, pelo mesmo motivo.
+
+Proxima etapa recomendada:
+
+- Revisar a migration e, quando aprovado, aplicar com `supabase db push`; em seguida testar upload de PDF/XLSX/DOCX/imagem, bloqueios de tamanho/tipo, signed URL, substituicao e exclusao na tela de detalhe da simulacao.
+
+### 2026-06-23 - Sugestao de NCM pelo nome do produto
+
+- A calculadora passou a sugerir NCMs tambem a partir do campo `Nome do produto`.
+- A implementacao reutiliza a base local existente `public/data/ncm.json`, ja carregada para o autocomplete do campo `HS Code ou NCM sugerido`.
+- As sugestoes priorizam descricoes oficiais que contenham os termos digitados no nome do produto, com bonus quando a correspondencia aparece no inicio da descricao.
+- Quando nao ha correspondencia especifica, a lista cai em opcoes genericas com descricao `Outros`, mantendo o cliente livre para selecionar ou editar manualmente.
+- Selecionar uma sugestao pelo nome do produto preenche o campo `HS Code ou NCM sugerido` e preserva o aviso de classificacao preliminar.
+- A lista de sugestoes do nome do produto e ocultada apos selecionar uma opcao, voltando a aparecer apenas se o nome do produto for alterado novamente.
+- Nenhum calculo, persistencia, migration, action, query, rota ou estrutura de banco foi alterado.
+
+Arquivos principais:
+
+- `src/components/calculator/CalculatorClient.tsx`
+- `state.md`
+
+Validado:
+
+- `npm run typecheck` aprovado.
+- `npm run lint` aprovado.
+- `npm run build` aprovado.
+- Teste manual em `http://localhost:3005/app/calculadora` confirmou sugestao `9617.00.10` para `garrafa termica inox` e preenchimento do campo NCM ao clicar.
+- Teste manual confirmou fallback com opcoes `Outros` quando o nome do produto nao encontra correspondencia especifica.
+
+Nao foi possivel validar ainda:
+
+- Precisao fiscal das sugestoes; a classificacao segue preliminar e sujeita a validacao.
+
+Proxima etapa recomendada:
+
+- Evoluir futuramente para uma base curada de aliases comerciais por produto quando houver volume real de cotacoes.
 
 ### 2026-06-18 - Layout admin com header e sidebar fixos
 

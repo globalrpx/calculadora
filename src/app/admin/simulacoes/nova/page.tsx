@@ -26,8 +26,7 @@ export default async function NewSimulationPage() {
             quoteId: "",
             title: "",
             status: "aguardando",
-            clientNotes: "",
-            quoteFileUrl: ""
+            clientNotes: ""
           }}
         />
       </div>

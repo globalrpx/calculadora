@@ -1,6 +1,6 @@
 # Global RPX - Status Atual
 
-Data do resumo executivo: 18 de junho de 2026.
+Data do resumo executivo: 9 de julho de 2026.
 
 Este documento e um resumo executivo de alto nivel do estado atual. Para a memoria viva, historico granular de entregas, validacoes e proximas acoes detalhadas, consulte `state.md`.
 
@@ -30,12 +30,13 @@ Fundacao autenticada com Supabase real, calculadora persistida e primeira base d
 - Dashboard administrativo com contadores dinamicos.
 - Admin de Clientes com CRUD completo: listagem, filtros, paginacao, ordenacao, status badge, criacao, edicao, validacao inline server-side, e-mail duplicado no campo correto e inativacao/soft delete com confirmacao.
 - Admin de Cotacoes, Usuarios e Simulacoes com base dinamica inicial.
+- Supabase Storage administrativo iniciado com bucket privado `app-uploads`, tabela unica `uploads` e upload real de multiplos arquivos no detalhe de simulacao.
 - Preview temporario e modo mock ainda disponiveis como fallback/apoio, nao como fluxo principal.
 
 ## Parcial ou Pendente
 
 - CRUDs administrativos de Cotacoes, Usuarios e Simulacoes ainda precisam ser refinados no mesmo padrao de Clientes.
-- Storage real para imagens/anexos ainda precisa ser consolidado com bucket, metadados e policies.
+- Imagens da calculadora ainda precisam ser migradas para Storage/metadados; hoje o Storage real foi consolidado primeiro para anexos administrativos de simulacao.
 - Parametros administrativos versionados para fatores e markup cambial ainda precisam sair do padrao inicial/hardcoded.
 - Simulacoes ainda precisam de editor administrativo completo, publicacao refinada e detalhe do cliente.
 - Validacao fiscal/NCM, impostos e aliquotas permanecem fora do escopo atual.
@@ -54,7 +55,7 @@ Fundacao autenticada com Supabase real, calculadora persistida e primeira base d
 ## Proximas Etapas Recomendadas
 
 1. Refinar CRUDs de Cotacoes, Usuarios e Simulacoes seguindo `docs/spec-cruds.md`.
-2. Consolidar Storage real para imagens/anexos e policies por `client_id`.
+2. Migrar imagens da calculadora/cotacoes para a tabela `uploads` ou estrutura equivalente com policies por `client_id`.
 3. Criar parametros administrativos versionados para fatores e markup.
 4. Validar RLS com admin e pelo menos dois clientes.
 5. Criar CI para `npm ci`, lint, typecheck e build.

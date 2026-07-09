@@ -137,13 +137,15 @@ Regras:
 - O cliente nao deve visualizar nem editar a PTAX, a taxa ajustada ou o acrescimo interno.
 - Se a consulta automatica falhar, o calculo deve ser bloqueado com uma mensagem generica para tentar novamente.
 - A cotacao deve salvar internamente a taxa ajustada usada no momento do calculo para preservar o historico.
-- Fator RPX vem de parametro administrativo e nao deve ser exibido nem editado pelo cliente.
-- Fator importacao direta vem de parametro administrativo e nao deve ser exibido nem editado pelo cliente.
-- Fator RPX deve ser editavel apenas no painel administrativo.
-- Fator importacao direta deve ser editavel apenas no painel administrativo.
+- Fator RPX vem da configuracao administrativa `config.key = 'import_factor'` e nao deve ser exibido nem editado pelo cliente.
+- Fator importacao direta permanece parametro interno independente e nao deve ser exibido nem editado pelo cliente.
+- Fator RPX deve ser editavel apenas no painel administrativo em `/admin/configuracoes`.
+- Fator importacao direta permanece fora do escopo da configuracao dinamica atual.
 - O valor padrao inicial do fator RPX e `1.8`.
 - O valor padrao inicial do fator importacao direta e `2.2`.
 - O cliente visualiza os resultados calculados, mas nao os fatores internos usados no calculo.
+- Ao salvar uma cotacao, o servidor deve buscar `import_factor`, converter para numero, usar esse valor no calculo e salvar o mesmo valor em `quotes.rpx_factor`.
+- O calculo salvo nao deve confiar em `rpxFactor` enviado pelo client.
 
 ### Padroes Iniciais
 
@@ -155,19 +157,17 @@ Maximo inicial de imagens: 5
 Maximo inicial de fotos de contato do fornecedor: 3
 ```
 
-Esses valores devem migrar para `calculation_parameters` no Supabase.
+O fator RPX padrao e administrado por `config.import_factor`. Os demais valores permanecem constantes internas ate nova rodada.
 
 ### Configuracao Administrativa dos Fatores
 
-- Criar parametro administrativo `default_rpx_factor`.
-- Criar parametro administrativo `default_direct_import_factor`.
+- Criar configuracao administrativa `import_factor`.
 - Valor inicial: `1.8`.
-- Valor inicial do fator de importacao direta: `2.2`.
-- Os parametros devem ser carregados automaticamente ao iniciar uma cotacao.
-- Apenas usuarios administrativos podem visualizar e editar os fatores.
+- Apenas usuarios administrativos podem visualizar e editar configuracoes.
 - A area do cliente nao deve exibir os campos, valores ou fatores em resumos copiados.
-- Alteracoes futuras do parametro devem afetar novas cotacoes.
-- Cada cotacao deve salvar internamente os fatores usados no momento do calculo para preservar o historico.
+- Alteracoes futuras do `import_factor` devem afetar novas cotacoes.
+- Cada cotacao deve salvar internamente o fator RPX usado no momento do calculo em `quotes.rpx_factor`.
+- `direct_import_factor = 2.2` permanece independente e fora do escopo desta configuracao.
 
 ### Exibicao do Resultado
 
@@ -267,7 +267,32 @@ Estimativa preliminar sujeita à validação fiscal, logística e operacional.
 - Imagens devem ser enviadas para Supabase Storage.
 - Banco salva apenas metadados e caminho do arquivo.
 
-### Tabela quote_images
+### Tabela de uploads
+
+A arquitetura nova de anexos usa a tabela unica `uploads`, com FK real para `quotes` por `quote_id` e `context` indicando o papel do arquivo. Para cotacoes, usar:
+
+```text
+quote_id = id da cotacao
+context = quote_product_images | quote_supplier_contact
+path produto = quotes/{quote_id}/product-images/{upload_id}/{safe_filename}
+path fornecedor = quotes/{quote_id}/supplier-contact/{upload_id}/{safe_filename}
+```
+
+Nao criar novos campos textuais de arquivo em `quotes`.
+
+Regras atuais da calculadora:
+
+- `Imagens do produto`: ate 5 arquivos, imagens ou PDF, contexto `quote_product_images`.
+- `Foto do cartao ou contato do fornecedor`: ate 5 arquivos, imagens ou PDF, contexto `quote_supplier_contact`.
+- Imagens sao comprimidas no navegador antes do upload.
+- Cada arquivo final deve ter ate 6MB.
+- PDF e permitido sem compressao.
+- DOC, XLS, ZIP, SVG, JS e demais tipos fora da allowlist sao bloqueados nesta tela.
+- A validacao do fornecedor aceita nome, e-mail e telefone completos ou pelo menos um arquivo valido em `quote_supplier_contact`.
+- Signed URLs sao geradas apenas sob demanda para visualizacao/download.
+- `product_image_urls` e `supplier_contact_image_urls` ficam como campos legados e nao sao a fonte principal da nova implementacao.
+
+### Tabela quote_images legada/planejada originalmente
 
 ```text
 id
@@ -292,14 +317,14 @@ supplier_contact
 ### Bucket Supabase
 
 ```text
-quote-images
+app-uploads
 ```
 
 Estrutura sugerida:
 
 ```text
-quote-images/{client_id}/{quote_id}/product/{image_id}-{file_name}
-quote-images/{client_id}/{quote_id}/supplier-contact/{image_id}-{file_name}
+quotes/{quote_id}/product-images/{upload_id}/{safe_filename}
+quotes/{quote_id}/supplier-contact/{upload_id}/{safe_filename}
 ```
 
 ## Historico de Cotacoes
@@ -424,7 +449,33 @@ image_type
 created_at
 ```
 
+### config
+
+```text
+id
+key
+value
+description
+created_at
+updated_at
+```
+
+Configuracao atual:
+
+```text
+import_factor = 1.8
+```
+
+Regras:
+
+- `import_factor` controla o fator RPX usado no calculo.
+- O valor e salvo como texto e convertido/validado como numero positivo no servidor.
+- O cliente nao acessa nem visualiza essa configuracao.
+- `quotes.rpx_factor` guarda o snapshot historico do valor usado na cotacao.
+
 ### calculation_parameters
+
+Status: planejado/legado conceitual. A implementacao atual usa a tabela generica `config` para o fator RPX.
 
 ```text
 id

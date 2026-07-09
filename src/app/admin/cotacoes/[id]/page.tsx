@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { UploadFilesCell } from "@/components/uploads/UploadFilesCell";
+import { getUploadSignedUrl, listQuoteUploads, type UploadRecord } from "@/lib/uploads/actions";
 
 function formatDateTime(value: string) {
   const date = new Date(value);
@@ -41,6 +43,13 @@ function formatPercent(value: number) {
   }).format(value ?? 0);
 }
 
+function formatDecimal(value: number, maximumFractionDigits = 4) {
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits
+  }).format(value ?? 0);
+}
+
 function getClientLabel(quote: AdminQuoteDetail) {
   return quote.client?.trade_name || quote.client?.company_name || quote.client?.contact_name || "-";
 }
@@ -72,34 +81,18 @@ function DetailItem({
   );
 }
 
-function AttachmentList({
+function UploadGroup({
   title,
-  values
+  uploads
 }: {
   title: string;
-  values: string[];
+  uploads: UploadRecord[];
 }) {
   return (
-    <Card title={title} description={values.length ? undefined : "Nenhum anexo registrado nesta categoria."}>
-      {values.length ? (
-        <ul className="mt-4 grid gap-3">
-          {values.map((value, index) => {
-            const isExternalUrl = /^https?:\/\//i.test(value);
-
-            return (
-              <li key={`${value}-${index}`} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                {isExternalUrl ? (
-                  <a href={value} target="_blank" rel="noreferrer" className="text-rpx-blue hover:text-rpx-navy">
-                    Abrir anexo {index + 1}
-                  </a>
-                ) : (
-                  <span className="break-all text-slate-700">{value}</span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
+    <Card title={title} description={uploads.length ? undefined : "Nenhum arquivo enviado."}>
+      <div className="mt-4">
+        <UploadFilesCell uploads={uploads} emptyLabel="Nenhum arquivo enviado." getSignedUrl={getUploadSignedUrl} />
+      </div>
     </Card>
   );
 }
@@ -110,7 +103,11 @@ export default async function AdminQuoteDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const quote = await getAdminQuoteById(id);
+  const [quote, productUploads, supplierUploads] = await Promise.all([
+    getAdminQuoteById(id),
+    listQuoteUploads(id, "quote_product_images"),
+    listQuoteUploads(id, "quote_supplier_contact")
+  ]);
 
   if (!quote) {
     notFound();
@@ -144,6 +141,8 @@ export default async function AdminQuoteDetailPage({
               <DetailItem label="Quantidade" value={formatNumber(quote.quantity)} />
               <DetailItem label="FOB unitário" value={formatMoney(quote.fob_unit_usd, "USD")} />
               <DetailItem label="FOB total" value={formatMoney(quote.fob_total_usd, "USD")} />
+              <DetailItem label="Dólar usado" value={formatMoney(quote.used_dollar)} />
+              <DetailItem label="Fator de importação usado" value={formatDecimal(quote.rpx_factor)} />
               <DetailItem label="Custo unitário via RPX" value={formatMoney(quote.unit_cost_rpx_brl)} />
               <DetailItem label="Custo total via RPX" value={formatMoney(quote.total_cost_rpx_brl)} />
               <DetailItem label="Custo unitário importação direta" value={formatMoney(quote.unit_cost_direct_brl)} />
@@ -201,8 +200,8 @@ export default async function AdminQuoteDetailPage({
         </div>
 
         <div className="grid gap-6 xl:grid-cols-2">
-          <AttachmentList title="Imagens do produto" values={quote.product_image_urls} />
-          <AttachmentList title="Fotos/contatos do fornecedor" values={quote.supplier_contact_image_urls} />
+          <UploadGroup title="Arquivos do produto" uploads={productUploads} />
+          <UploadGroup title="Arquivos do fornecedor/contato" uploads={supplierUploads} />
         </div>
 
         <p className="text-sm text-slate-500">

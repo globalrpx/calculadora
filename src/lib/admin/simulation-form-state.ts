@@ -5,7 +5,6 @@ export type SimulationFormValues = {
   title: string;
   status: string;
   clientNotes: string;
-  quoteFileUrl: string;
 };
 
 export type SimulationFormFieldErrors = Partial<Record<keyof SimulationFormValues, string>>;

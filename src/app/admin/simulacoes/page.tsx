@@ -14,6 +14,7 @@ import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 import { DismissibleAlert } from "@/components/ui/DismissibleAlert";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { simulationStatusOptions } from "@/lib/admin/simulation-form-state";
+import { SimulationFilesCell } from "@/components/admin/SimulationFilesCell";
 
 const SIMULATIONS_PER_PAGE = 20;
 
@@ -66,10 +67,6 @@ function mapStatusVariant(status: string) {
 
 function getClientLabel(row: Awaited<ReturnType<typeof getAdminSimulations>>["rows"][number]) {
   return row.client?.trade_name || row.client?.company_name || row.client?.contact_name || "-";
-}
-
-function getFileLabel(row: Awaited<ReturnType<typeof getAdminSimulations>>["rows"][number]) {
-  return row.quote_file_url || row.storage_path ? "Disponível" : "Pendente";
 }
 
 function parseFilters(params: Record<string, string | string[] | undefined>): AdminSimulationFilters {
@@ -242,7 +239,7 @@ export default async function SimulationsPage({
     {
       key: "file",
       header: "Arquivo",
-      render: (row) => getFileLabel(row)
+      render: (row) => <SimulationFilesCell uploads={row.uploads} />
     },
     {
       key: "actions",
@@ -252,14 +249,6 @@ export default async function SimulationsPage({
           <Link href={`/admin/simulacoes/${row.id}`} className="font-semibold text-rpx-blue transition hover:text-rpx-navy">
             Editar
           </Link>
-          {row.quote_file_url || row.storage_path ? (
-            <Link
-              href={row.quote_file_url || row.storage_path || "#"}
-              className="font-semibold text-rpx-blue transition hover:text-rpx-navy"
-            >
-              Baixar PDF
-            </Link>
-          ) : null}
         </div>
       )
     }

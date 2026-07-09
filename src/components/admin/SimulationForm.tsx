@@ -157,20 +157,6 @@ export function SimulationFormCard({
             ))}
           </SelectInput>
         </FormField>
-        <FormField
-          label="URL ou caminho do arquivo"
-          help="Use uma URL http(s) ou um caminho interno existente. Upload real para Storage fica para fase futura."
-          error={errors.quoteFileUrl}
-          errorId="quoteFileUrl-error"
-        >
-          <TextInput
-            name="quoteFileUrl"
-            defaultValue={currentValues?.quoteFileUrl ?? ""}
-            placeholder="https://... ou caminho/arquivo.pdf"
-            aria-invalid={Boolean(errors.quoteFileUrl)}
-            aria-describedby={errors.quoteFileUrl ? "quoteFileUrl-error" : undefined}
-          />
-        </FormField>
         <FormField label="Observações para o cliente" error={errors.clientNotes} errorId="clientNotes-error">
           <textarea
             name="clientNotes"

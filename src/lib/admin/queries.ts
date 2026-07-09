@@ -93,6 +93,15 @@ export type AdminQuoteRow = {
 
 export type AdminQuoteDetail = AdminQuoteRow;
 
+export type AdminSimulationUpload = {
+  id: string;
+  original_name: string;
+  size_bytes: number;
+  extension: string | null;
+  mime_type: string | null;
+  created_at: string;
+};
+
 export type AdminSimulationRow = {
   id: string;
   client_id: string;
@@ -128,6 +137,7 @@ export type AdminSimulationRow = {
     savings_brl: number;
     savings_percent: number;
   } | null;
+  uploads: AdminSimulationUpload[];
 };
 
 export type AdminSimulationDetail = AdminSimulationRow;
@@ -467,7 +477,8 @@ function mapAdminSimulationRow(row: Record<string, unknown>): AdminSimulationRow
           savings_brl: toNumber(quote.savings_brl),
           savings_percent: toNumber(quote.savings_percent)
         }
-      : null
+      : null,
+    uploads: []
   };
 }
 
@@ -828,9 +839,46 @@ export async function getAdminSimulations(
   }
 
   const { data, count } = await query;
+  const rows = ((data ?? []) as unknown as Record<string, unknown>[]).map(mapAdminSimulationRow);
+  const simulationIds = rows.map((row) => row.id);
+
+  if (simulationIds.length > 0) {
+    const { data: uploadsData } = await supabase
+      .from("uploads")
+      .select("id, simulation_id, original_name, size_bytes, extension, mime_type, created_at")
+      .in("simulation_id", simulationIds)
+      .eq("context", "simulation_result")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+
+    const uploadsBySimulationId = new Map<string, AdminSimulationUpload[]>();
+
+    ((uploadsData ?? []) as Array<Record<string, unknown>>).forEach((upload) => {
+      const simulationId = upload.simulation_id ? String(upload.simulation_id) : "";
+
+      if (!simulationId) {
+        return;
+      }
+
+      const currentUploads = uploadsBySimulationId.get(simulationId) ?? [];
+      currentUploads.push({
+        id: String(upload.id),
+        original_name: String(upload.original_name ?? ""),
+        size_bytes: toNumber(upload.size_bytes),
+        extension: upload.extension ? String(upload.extension) : null,
+        mime_type: upload.mime_type ? String(upload.mime_type) : null,
+        created_at: String(upload.created_at)
+      });
+      uploadsBySimulationId.set(simulationId, currentUploads);
+    });
+
+    rows.forEach((row) => {
+      row.uploads = uploadsBySimulationId.get(row.id) ?? [];
+    });
+  }
 
   return {
-    rows: ((data ?? []) as unknown as Record<string, unknown>[]).map(mapAdminSimulationRow),
+    rows,
     total: count ?? 0,
     page,
     perPage

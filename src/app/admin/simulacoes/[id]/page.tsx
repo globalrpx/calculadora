@@ -7,6 +7,8 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { simulationStatusOptions } from "@/lib/admin/simulation-form-state";
+import { listSimulationUploads } from "@/lib/uploads/actions";
+import { UploadsCard } from "@/components/uploads/UploadsCard";
 
 function formatDateTime(value: string | null) {
   if (!value) {
@@ -86,9 +88,10 @@ export default async function EditSimulationPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [simulation, options] = await Promise.all([
+  const [simulation, options, uploads] = await Promise.all([
     getAdminSimulationById(id),
-    getAdminSimulationFormOptions()
+    getAdminSimulationFormOptions(),
+    listSimulationUploads(id, "simulation_result")
   ]);
 
   if (!simulation) {
@@ -96,13 +99,12 @@ export default async function EditSimulationPage({
   }
 
   const quote = simulation.quote;
-  const fileReference = simulation.quote_file_url || simulation.storage_path;
 
   return (
     <>
       <PageHeader
         title="Detalhe da simulação"
-        description="Consulte os dados vinculados e atualize o status, observações e referência do arquivo."
+        description="Consulte os dados vinculados, gerencie arquivos e atualize o status e observações."
         action={
           <ButtonLink href="/admin/simulacoes" variant="secondary" className="w-full sm:w-auto">
             Voltar
@@ -124,18 +126,7 @@ export default async function EditSimulationPage({
               <DetailItem label="Solicitada em" value={formatDateTime(simulation.requested_at)} />
               <DetailItem label="Publicada em" value={formatDateTime(simulation.published_at)} />
               <DetailItem label="Cotação vinculada" value={simulation.quote_id ?? "Sem cotação vinculada"} />
-              <DetailItem
-                label="Arquivo"
-                value={
-                  fileReference ? (
-                    <a href={fileReference} className="text-rpx-blue transition hover:text-rpx-navy">
-                      Abrir arquivo
-                    </a>
-                  ) : (
-                    "Pendente"
-                  )
-                }
-              />
+              <DetailItem label="Arquivos" value={uploads.length > 0 ? `${uploads.length} enviado${uploads.length === 1 ? "" : "s"}` : "Pendente"} />
               <DetailItem label="Atualizada em" value={formatDateTime(simulation.updated_at)} />
             </dl>
           </Card>
@@ -165,24 +156,33 @@ export default async function EditSimulationPage({
           </Card>
         </div>
 
-        <SimulationFormCard
-          action={updateAdminSimulationAction}
-          title="Atualizar simulação"
-          description="Edite apenas os campos administrativos permitidos nesta fase."
-          submitLabel="Salvar alterações"
-          cancelHref="/admin/simulacoes"
-          clients={options.clients}
-          quotes={options.quotes}
-          values={{
-            id: simulation.id,
-            clientId: simulation.client_id,
-            quoteId: simulation.quote_id ?? "",
-            title: simulation.title,
-            status: simulation.status,
-            clientNotes: simulation.client_notes ?? "",
-            quoteFileUrl: simulation.quote_file_url ?? simulation.storage_path ?? ""
-          }}
-        />
+        <div className="grid gap-6">
+          <SimulationFormCard
+            action={updateAdminSimulationAction}
+            title="Atualizar simulação"
+            description="Edite apenas os campos administrativos permitidos nesta fase."
+            submitLabel="Salvar alterações"
+            cancelHref="/admin/simulacoes"
+            clients={options.clients}
+            quotes={options.quotes}
+            values={{
+              id: simulation.id,
+              clientId: simulation.client_id,
+              quoteId: simulation.quote_id ?? "",
+              title: simulation.title,
+              status: simulation.status,
+              clientNotes: simulation.client_notes ?? ""
+            }}
+          />
+          <UploadsCard
+            simulationId={simulation.id}
+            context="simulation_result"
+            title="Arquivos da simulação"
+            description="Envie arquivos de até 10MB."
+            allowMultiple
+            initialUploads={uploads}
+          />
+        </div>
       </div>
     </>
   );

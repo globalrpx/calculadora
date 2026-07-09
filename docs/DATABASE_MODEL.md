@@ -12,6 +12,8 @@ Migrations atuais:
 - `004_admin_foundation.sql`
 - `005_crud_soft_delete.sql`
 - `006_client_quotes_persistence.sql`
+- `20260709134047_create_uploads_table_and_storage_bucket.sql`
+- `20260709180000_create_config_table.sql`
 
 ## Convencoes
 
@@ -33,6 +35,9 @@ erDiagram
   APP_USERS ||--o{ QUOTES : creates
   APP_USERS ||--o{ SIMULATIONS : creates
   QUOTES ||--o{ SIMULATIONS : originates
+  QUOTES ||--o{ UPLOADS : has
+  SIMULATIONS ||--o{ UPLOADS : has
+  CONFIG ||--o{ QUOTES : snapshots
 ```
 
 ## Tabelas Atuais
@@ -121,7 +126,7 @@ Cotacoes preliminares persistidas pela calculadora.
 | `quantity` | integer | |
 | `fob_total_usd` | numeric(14,2) | |
 | `used_dollar` | numeric(12,4) | taxa usada internamente |
-| `rpx_factor` | numeric(10,4) | snapshot do fator RPX |
+| `rpx_factor` | numeric(10,4) | snapshot do fator RPX usado; origem atual `config.key = 'import_factor'` |
 | `direct_import_factor` | numeric(10,4) | snapshot do fator importacao direta |
 | `unit_cost_rpx_brl` | numeric(14,2) | |
 | `total_cost_rpx_brl` | numeric(14,2) | |
@@ -147,8 +152,37 @@ Status atuais:
 
 Observacao:
 
-- Nesta fase, imagens ficam como arrays de URLs/texto em `quotes`.
-- Uma tabela dedicada de anexos/imagens e Storage privado seguem como evolucao futura.
+- `used_dollar` e snapshot da taxa interna usada na cotacao.
+- `rpx_factor` e snapshot historico do fator RPX usado no calculo, salvo a partir de `config.import_factor`.
+- `direct_import_factor` permanece snapshot independente e fora do escopo da configuracao dinamica atual.
+- Os arrays `product_image_urls` e `supplier_contact_image_urls` permanecem como legado; o fluxo atual de upload usa `uploads`.
+
+### `config`
+
+Configuracoes globais da aplicacao.
+
+| Campo | Tipo | Regra atual |
+|---|---|---|
+| `id` | uuid | PK |
+| `key` | text | obrigatorio, unico, `^[a-z0-9_]+$` |
+| `value` | text | obrigatorio |
+| `description` | text | opcional |
+| `created_at` | timestamptz | default `now()` |
+| `updated_at` | timestamptz | trigger `set_updated_at()` |
+
+Configuracao inicial:
+
+| Key | Value | Uso |
+|---|---|---|
+| `import_factor` | `1.8` | fator RPX global usado no calculo de novas cotacoes |
+
+Regras:
+
+- `value` e texto para permitir configuracoes futuras.
+- O codigo valida `import_factor` como numero decimal positivo.
+- Admin pode listar, criar, editar e excluir configuracoes via RLS/admin actions.
+- Cliente nao pode acessar a tabela diretamente.
+- Alterar `import_factor` afeta novas cotacoes; cotacoes antigas preservam o snapshot em `quotes.rpx_factor`.
 
 ### `simulations`
 
@@ -184,6 +218,53 @@ Indice relevante:
 
 - `simulations_pending_quote_idx` impede mais de uma simulacao pendente por `quote_id` nos status `aguardando`, `em_producao` ou `draft`.
 
+Observacao:
+
+- `file_name`, `storage_path` e `quote_file_url` permanecem como campos legados. A UI administrativa nova de detalhe da simulacao usa `uploads` e Supabase Storage privado.
+
+### `uploads`
+
+Metadados unificados de arquivos enviados para Supabase Storage.
+
+| Campo | Tipo | Regra atual |
+|---|---|---|
+| `id` | uuid | PK |
+| `bucket` | text | default `app-uploads` |
+| `path` | text | caminho privado no Storage |
+| `original_name` | text | nome enviado pelo usuario |
+| `stored_name` | text | nome sanitizado usado no path |
+| `mime_type` | text | opcional |
+| `size_bytes` | bigint | tamanho do arquivo |
+| `extension` | text | extensao normalizada |
+| `context` | text | papel do arquivo, nao dono |
+| `simulation_id` | uuid | FK `simulations`, opcional |
+| `quote_id` | uuid | FK `quotes`, opcional |
+| `uploaded_by` | uuid | FK `auth.users`, opcional |
+| `created_at` | timestamptz | default `now()` |
+| `updated_at` | timestamptz | trigger `set_updated_at()` |
+| `deleted_at` | timestamptz | soft delete |
+
+Regra de dono:
+
+- CHECK `uploads_exactly_one_owner_check` exige exatamente um dono entre `simulation_id` e `quote_id`.
+- Novos modulos devem adicionar uma FK opcional explicita, atualizar indices, CHECK e funcoes da aplicacao. Nao usar `owner_type`, `owner_id`, `entity_type` ou semelhantes.
+
+Contextos iniciais:
+
+- `simulation_result`
+- `quote_product_images`
+- `quote_supplier_contact`
+- preparado na aplicacao para `quotation_attachment`, `supplier_invoice`, `product_photo`, `packing_list`, `invoice` e `technical_sheet`.
+
+Indices relevantes:
+
+- `uploads_bucket_path_idx` unico em `(bucket, path)`;
+- `uploads_simulation_id_idx`;
+- `uploads_quote_id_idx`;
+- `uploads_context_idx`;
+- `uploads_created_at_idx`;
+- `uploads_deleted_at_idx`.
+
 ## RLS Atual
 
 Funcoes/padroes:
@@ -191,6 +272,7 @@ Funcoes/padroes:
 - `is_admin()` usa `app_users`, `auth.uid()`, role `admin`, status `active`.
 - Clientes autenticados leem dados vinculados ao proprio `client_id`.
 - Admin le/altera registros operacionais conforme policies e actions server-side.
+- Apenas admin acessa `config`; clientes nao possuem policy de leitura ou escrita.
 - Clientes podem inserir/atualizar proprias cotacoes quando role/status permitem.
 - Clientes podem inserir solicitacoes de simulacao proprias quando role/status permitem.
 
@@ -204,22 +286,27 @@ Cuidados:
 
 Estado atual:
 
-- Supabase Storage esta previsto/preparado para anexos futuros.
-- Imagens da calculadora ainda usam arrays de URLs/texto em `quotes`.
+- Bucket privado `app-uploads` configurado por migration com limite de 10MB.
+- Tabela `uploads` guarda metadados e vinculo por FK real com `simulations` ou `quotes`.
+- Leitura/download usa signed URL temporaria gerada server-side.
+- Imagens da calculadora ainda usam arrays de URLs/texto em `quotes` ate migracao especifica do fluxo do cliente.
 
-Evolucao planejada:
-
-- bucket privado para imagens/anexos;
-- tabela de metadados de anexos;
-- policies por `client_id`;
-- URLs assinadas para leitura temporaria quando necessario.
-
-Estrutura sugerida:
+Paths atuais:
 
 ```text
-quote-images/{client_id}/{quote_id}/product/{uuid}-{filename}
-quote-images/{client_id}/{quote_id}/supplier-contact/{uuid}-{filename}
+simulations/{simulation_id}/{upload_id}/{safe_filename}
+quotes/{quote_id}/{upload_id}/{safe_filename}
+quotes/{quote_id}/product-images/{upload_id}/{safe_filename}
+quotes/{quote_id}/supplier-contact/{upload_id}/{safe_filename}
 ```
+
+Bucket:
+
+```text
+app-uploads
+```
+
+O bucket e privado. Policies em `storage.objects` permitem acesso somente a usuarios admin autenticados nesta fase.
 
 ## Modelo Planejado Ainda Nao Implementado
 

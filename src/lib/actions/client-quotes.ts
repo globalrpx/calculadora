@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/get-session-profile";
+import { calculateQuote, type QuoteInput } from "@/lib/calculator/calculate-quote";
 import { hasSupabaseConfig } from "@/lib/auth/mock-users";
 import type { ClientQuotePayload, ClientQuoteRecord } from "@/lib/client/types";
 import { mapQuoteRow } from "@/lib/client/quotes";
+import { getImportFactor } from "@/lib/config/app-config";
 import { createClient } from "@/lib/supabase/server";
 
 const quoteSelect = [
@@ -65,6 +67,26 @@ function buildQuoteMutation(payload: ClientQuotePayload, appUser: { id: string; 
   };
 }
 
+async function buildServerCalculatedPayload(payload: ClientQuotePayload): Promise<ClientQuotePayload> {
+  const importFactor = await getImportFactor();
+  const calculationInput: QuoteInput = {
+    productName: payload.productName,
+    hsCode: payload.hsCode,
+    fobUnitUsd: payload.fobUnitUsd,
+    quantity: payload.quantity,
+    usedDollar: payload.usedDollar,
+    rpxFactor: importFactor,
+    directImportFactor: payload.directImportFactor
+  };
+  const result = calculateQuote(calculationInput);
+
+  return {
+    ...payload,
+    ...calculationInput,
+    ...result
+  };
+}
+
 export async function saveClientQuoteAction(payload: ClientQuotePayload): Promise<ClientQuoteRecord> {
   const { appUser } = await requireRole("client");
 
@@ -73,10 +95,11 @@ export async function saveClientQuoteAction(payload: ClientQuotePayload): Promis
   }
 
   const supabase = await createClient();
-  const mutation = buildQuoteMutation(payload, appUser);
+  const serverCalculatedPayload = await buildServerCalculatedPayload(payload);
+  const mutation = buildQuoteMutation(serverCalculatedPayload, appUser);
 
-  const query = payload.id
-    ? supabase.from("quotes").update(mutation).eq("id", payload.id).select(quoteSelect).single()
+  const query = serverCalculatedPayload.id
+    ? supabase.from("quotes").update(mutation).eq("id", serverCalculatedPayload.id).select(quoteSelect).single()
     : supabase
         .from("quotes")
         .insert({

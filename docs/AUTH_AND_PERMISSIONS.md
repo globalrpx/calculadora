@@ -112,6 +112,7 @@ Admin:
 - `/admin/simulacoes`
 - `/admin/simulacoes/nova`
 - `/admin/simulacoes/[id]`
+- `/admin/configuracoes`
 - `/admin/usuarios`
 - `/admin/usuarios/novo`
 - `/admin/usuarios/[id]`
@@ -139,6 +140,14 @@ Middleware e interface nao substituem RLS.
 - Admin passa por verificacao server-side e/ou funcao `is_admin()`.
 - A funcao `is_admin()` atual usa `app_users`, role `admin`, status `active` e vinculo com `auth.uid()`.
 - Soft delete/inativacao usa `deleted_at` quando aplicavel.
+
+## Configuracoes Administrativas
+
+- `/admin/configuracoes` exige role `admin`.
+- A tabela `config` possui RLS somente para admin.
+- `config.key = 'import_factor'` controla o fator RPX usado em novas cotacoes.
+- Clientes nao podem visualizar configuracoes nem controlar o fator pelo payload da calculadora.
+- O Server Action de cotacao busca `import_factor` no servidor e salva o snapshot em `quotes.rpx_factor`.
 
 ## CRUD Administrativo de Clientes
 
@@ -176,19 +185,34 @@ Service role permanece restrita a Server Actions/helpers server-side.
 
 ## Arquivos e Storage
 
-Storage real para imagens/anexos esta preparado como direcao de arquitetura, mas ainda precisa ser consolidado com bucket, metadados e policies.
+Storage real para anexos administrativos foi iniciado com bucket privado e tabela unica de uploads.
 
-Direcao esperada:
+Implementacao atual:
 
 ```text
-quote-images/{client_id}/{quote_id}/{type}/{file}
+bucket: app-uploads
+tabela: public.uploads
+paths:
+  simulations/{simulation_id}/{upload_id}/{safe_filename}
+  quotes/{quote_id}/{upload_id}/{safe_filename}
 ```
 
-Policies devem verificar:
+Regras:
 
-- usuario pertence ao `client_id` do caminho;
-- admin pode acessar conforme regra operacional;
-- tipo e tamanho sao validados no servidor.
+- `uploads.simulation_id` referencia `public.simulations(id)`.
+- `uploads.quote_id` referencia `public.quotes(id)`.
+- CHECK garante exatamente um dono entre `simulation_id` e `quote_id`.
+- `context` descreve o papel do arquivo, como `simulation_result`; nao define o dono.
+- Bucket `app-uploads` e privado e possui limite de 10MB.
+- Admin pode listar, criar, baixar por signed URL temporaria, substituir e excluir arquivos no painel.
+- Clientes nao acessam o bucket diretamente nesta fase.
+- Service role permanece restrita a Server Actions/helpers server-side.
+- Policies em `storage.objects` permitem operacoes apenas para admin autenticado no bucket `app-uploads`.
+
+Fluxo futuro:
+
+- Cliente podera acessar arquivos apenas por rota/action segura e signed URL, quando a regra de negocio permitir.
+- Imagens atuais da calculadora ainda precisam ser migradas dos arrays de URLs/texto em `quotes` para `uploads` ou estrutura equivalente.
 
 ## Cuidados
 

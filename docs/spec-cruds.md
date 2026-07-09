@@ -43,6 +43,7 @@ Componentes de UI reutilizados:
 
 ```text
 src/components/layout/PageHeader.tsx
+src/components/uploads/UploadsCard.tsx
 src/components/ui/Button.tsx
 src/components/ui/Card.tsx
 src/components/ui/ConfirmDialog.tsx
@@ -150,8 +151,31 @@ Server Actions devem ser usadas para:
 Nem todo módulo administrativo precisa expor todas as operações no mesmo momento. Quando a regra de produto limitar o escopo, a exceção deve ficar explícita na entrega. Exemplos atuais:
 
 - Cotações admin é uma listagem read-only; não possui criação, edição de cálculo ou exclusão no painel.
-- Simulações admin possui criação e edição básica com os campos existentes em `simulations`, mas sem upload real, sem migration nova e sem exclusão/inativação nesta fase.
+- Simulações admin possui criação e edição básica dos campos administrativos em `simulations` e upload real de múltiplos arquivos no detalhe via `UploadsCard`, tabela `uploads` e bucket privado `app-uploads`; campos textuais legados como `quote_file_url` não devem orientar novas interfaces.
 - Usuários admin usa `status = inactive` para inativação nesta fase, sem preencher `deleted_at`, para permitir filtro por status, reativação e reserva de e-mail.
+- Configurações admin em `/admin/configuracoes` usa um CRUD enxuto em página única para `config`: lista configurações globais, cria novas chaves e edita `value`/`description`; a `key` fica travada após a criação.
+
+## Uploads Administrativos
+
+Quando um CRUD administrativo precisar anexar arquivos, o padrão atual é:
+
+- usar `public.uploads` como tabela unica de metadados;
+- vincular o arquivo por FK real opcional do modulo, como `simulation_id` ou `quote_id`;
+- manter `context` apenas como papel do arquivo, por exemplo `simulation_result`;
+- armazenar o objeto no bucket privado `app-uploads`;
+- gerar signed URL temporaria para download/visualizacao;
+- validar tamanho, MIME e extensao no servidor;
+- bloquear extensoes perigosas;
+- evitar campos textuais novos como `file_path`, `file_url`, `arquivo_url`, `owner_type` ou `owner_id`;
+- preservar campos antigos apenas como legado quando ja existirem.
+
+Na tela `/admin/simulacoes/[id]`, o upload usa:
+
+```text
+simulation_id = simulations.id
+context = simulation_result
+path = simulations/{simulation_id}/{upload_id}/{safe_filename}
+```
 
 Tipos do módulo devem ficar próximos da camada de dados, hoje em `src/lib/admin/queries.ts`, até que exista volume suficiente para justificar arquivos de tipos separados.
 

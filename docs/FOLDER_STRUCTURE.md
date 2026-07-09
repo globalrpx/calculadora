@@ -67,6 +67,7 @@ Componentes React reutilizaveis e por dominio.
 - `calculator/CalculatorClient.tsx`: experiencia da calculadora, historico e solicitacao de simulacao.
 - `landing/`: home publica.
 - `layout/`: `AppShell`, logo, menus, conta, navegacao e cabecalho.
+- `uploads/`: componentes reutilizaveis para anexos no Supabase Storage privado.
 - `ui/`: botoes, cards, tabela, alertas, campos, modal de confirmacao, badges e estados vazios.
 
 ## `src/lib`
@@ -80,6 +81,7 @@ Regras, auth, actions, queries e integracoes.
 - `client/`: helpers e tipos de cotacoes/simulacoes do cliente.
 - `exchange-rate/`: consulta PTAX.
 - `supabase/`: clients browser/server/admin, config e middleware.
+- `uploads/`: Server Actions e regras de validacao para tabela `uploads` e bucket `app-uploads`.
 - `navigation.ts`: navegacao compartilhada.
 - `types.ts`: tipos compartilhados, incluindo `AppUser`.
 
@@ -93,6 +95,7 @@ SQL versionado. Atualmente existem multiplas migrations:
 - `004_admin_foundation.sql`: base admin, `quotes`, `simulations` e policies iniciais.
 - `005_crud_soft_delete.sql`: `deleted_at`, status e indices para soft delete.
 - `006_client_quotes_persistence.sql`: persistencia da calculadora, fatores, imagens como URLs e solicitacoes em `simulations`.
+- `20260709134047_create_uploads_table_and_storage_bucket.sql`: bucket privado `app-uploads`, tabela `uploads`, RLS e policies de Storage para anexos administrativos.
 
 Nao editar migrations ja aplicadas sem pedido explicito. Criar migrations incrementais para evolucao de banco.
 
@@ -131,5 +134,5 @@ Documentacao de produto, arquitetura, banco, rotas, CRUDs, calculadora, permisso
 1. `CalculatorClient.tsx` ainda concentra bastante logica e pode ser dividido gradualmente.
 2. `preview-server.mjs` duplica parte da experiencia e deve permanecer apenas como fallback.
 3. CRUDs de Cotacoes, Usuarios e Simulacoes precisam seguir o padrao documentado em `docs/spec-cruds.md`.
-4. Storage real para imagens/anexos ainda precisa ser consolidado.
+4. Storage real para anexos administrativos usa `app-uploads`; imagens da calculadora ainda precisam ser migradas.
 5. `profiles` existe como legado, mas novas implementacoes devem usar `app_users`.

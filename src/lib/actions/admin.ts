@@ -282,22 +282,8 @@ function readSimulationFields(formData: FormData): SimulationFormValues {
     quoteId: String(formData.get("quoteId") ?? "").trim(),
     title: String(formData.get("title") ?? "").trim(),
     status: String(formData.get("status") ?? "").trim(),
-    clientNotes: String(formData.get("clientNotes") ?? "").trim(),
-    quoteFileUrl: String(formData.get("quoteFileUrl") ?? "").trim()
+    clientNotes: String(formData.get("clientNotes") ?? "").trim()
   };
-}
-
-function isValidFileReference(value: string) {
-  if (!value) {
-    return true;
-  }
-
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return /^[a-zA-Z0-9/_:.\-\s]+$/.test(value) && !value.includes("..");
-  }
 }
 
 function validateSimulationFields(fields: SimulationFormValues, options: { requireClient: boolean; requireTitle: boolean }) {
@@ -313,10 +299,6 @@ function validateSimulationFields(fields: SimulationFormValues, options: { requi
 
   if (!simulationStatusValues.includes(fields.status as (typeof simulationStatusValues)[number])) {
     fieldErrors.status = "Selecione um status válido.";
-  }
-
-  if (fields.quoteFileUrl && !isValidFileReference(fields.quoteFileUrl)) {
-    fieldErrors.quoteFileUrl = "Informe uma URL válida ou um caminho de arquivo válido.";
   }
 
   return fieldErrors;
@@ -692,7 +674,6 @@ export async function createAdminSimulationAction(
     title: fields.title,
     status: fields.status,
     client_notes: fields.clientNotes || null,
-    quote_file_url: fields.quoteFileUrl || null,
     requested_at: now
   });
 
@@ -728,7 +709,6 @@ export async function updateAdminSimulationAction(
     .update({
       status: fields.status,
       client_notes: fields.clientNotes || null,
-      quote_file_url: fields.quoteFileUrl || null,
       updated_at: new Date().toISOString()
     })
     .eq("id", fields.id);

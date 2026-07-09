@@ -11,7 +11,7 @@ O projeto e uma aplicacao **Next.js**, e nao React + Vite.
 | React DOM | `^19.0.0` | Renderizacao |
 | TypeScript | `^5.8.3` | Tipagem |
 | Tailwind CSS | `^3.4.17` | Estilos |
-| Supabase JS | `^2.49.4` | Auth, banco e Storage preparado para anexos futuros |
+| Supabase JS | `^2.49.4` | Auth, banco e Storage privado para anexos administrativos |
 | Supabase SSR | `^0.6.1` | Sessao no servidor e middleware |
 | clsx | `^2.1.1` | Classes condicionais |
 | ESLint | `^9.25.1` | Analise estatica |
@@ -136,16 +136,18 @@ Atual:
 - Auth por e-mail/senha funcionando quando as envs estao configuradas.
 - `app_users` e a fonte de verdade da aplicacao para usuario, role, status e vinculo com cliente.
 - `profiles` existe como legado da fundacao inicial, mas nao deve orientar novas implementacoes.
-- Migrations atuais cobrem `clients`, `app_users`, `quotes`, `simulations`, soft delete e persistencia da calculadora.
+- Migrations atuais cobrem `clients`, `app_users`, `quotes`, `simulations`, soft delete, persistencia da calculadora, bucket privado `app-uploads`, tabela unica `uploads` e tabela admin-only `config`.
 - Calculadora persiste cotacoes em `quotes`.
+- O fator RPX de novas cotacoes vem de `config.key = 'import_factor'` e e salvo como snapshot em `quotes.rpx_factor`.
 - Solicitacoes de simulacao persistem em `simulations`.
+- Detalhe administrativo de simulacao permite anexar multiplos arquivos no Storage privado usando signed URLs para download.
 
 Futuro:
 
 - Fornecedores e contatos.
-- Imagens no Supabase Storage.
+- Migrar imagens da calculadora para Storage/metadados.
 - NCM, impostos e validacoes.
-- Parametros administrativos versionados.
+- Parametros administrativos versionados alem da configuracao global atual.
 - Historico de versoes de simulacoes.
 - Auditoria de alteracoes administrativas.
 
