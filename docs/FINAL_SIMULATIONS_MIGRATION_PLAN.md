@@ -29,6 +29,156 @@ Nada de `temp/` deve ser copiado cegamente. Especialmente nao devem ser copiados
 - codigo que exponha campos internos ao cliente;
 - calculos fiscais sem validacao das perguntas abertas.
 
+### Fontes verificadas nesta rodada
+
+Foram verificadas a estrutura atual do projeto, a estrutura de `temp/`, os documentos atuais em `docs/`, `state.md`, `temp/state.md`, os documentos de Simulacoes Finais em `temp/docs/`, as migrations de `temp/supabase/migrations` e os arquivos principais em `temp/src/features/final-simulations`.
+
+No projeto atual, os documentos `docs/NARWAL_MAPPING.md`, `docs/FINAL_SIMULATIONS_SPEC.md`, `docs/CALCULATION_RULES.md`, `docs/EXPENSES_ENGINE.md`, `docs/FISCAL_PARAMETRIZATION.md`, `docs/NCM_INTEGRATION.md`, `docs/IMPLEMENTATION_PLAN.md` e `docs/RODRIGO_IMPLEMENTATION_AUDIT.md` ainda nao existem como arquivos ativos. As versoes encontradas estao em `temp/docs/` e devem ser tratadas como referencia ate uma decisao explicita de promocao/adaptacao para `docs/`.
+
+## 1.1 Decisoes arquiteturais da Fase 0
+
+As decisoes abaixo resolvem o minimo arquitetural necessario para iniciar uma proxima etapa de migrations com seguranca. Elas nao implementam codigo, nao criam migration e nao promovem arquivos de `temp/`.
+
+### Usuarios, permissoes e RLS
+
+Decisao:
+
+- `app_users` permanece como fonte da verdade para usuario, role, status e `client_id`.
+- `profiles` da implementacao em `temp/` nao deve ser usado em novas tabelas, policies, actions ou queries.
+- RLS e permissoes devem seguir o padrao atual do projeto: `app_users`, `auth.uid()`, usuario ativo, `deleted_at is null`, role `admin` para administracao e isolamento por `client_id` para cliente.
+- FKs de auditoria operacional devem preferir `app_users.id` quando representarem usuario da aplicacao. Vinculos diretos com `auth.users.id` devem ser reservados apenas quando o padrao atual exigir identificador do provedor.
+
+Impacto para migrations:
+
+- Nao aplicar policies de `temp/`.
+- Criar policies novas compativeis com `app_users`.
+- Validar admin e pelo menos dois clientes antes de considerar a migration pronta.
+
+### Storage e documentos
+
+Decisao:
+
+- Usar o padrao atual de Storage: tabela `uploads` + bucket privado `app-uploads`.
+- Nao criar bucket `simulation-documents` na V1.
+- Documentos de Simulacao Final devem se relacionar com `uploads` sem duplicar o papel do Storage.
+- A proxima migration deve avaliar a extensao controlada de `uploads` com FK explicita `final_simulation_id`, mantendo a regra de dono explicito e evitando `owner_type`/`owner_id`.
+- Caso exista tabela especifica para documentos gerados, ela deve ser apenas metadado/snapshot do documento e apontar para `uploads.id`; nao deve substituir `uploads` nem criar bucket proprio.
+
+Nomes recomendados para documentos na V1:
+
+- `final_simulation_documents`: metadados dos documentos gerados, com `final_simulation_id`, `upload_id`, `document_type`, `snapshot`, `generated_by_app_user_id` e timestamps.
+- `uploads.final_simulation_id`: FK opcional explicita, se a migration decidir integrar documentos diretamente ao padrao atual de uploads.
+
+### Rotas
+
+Decisao:
+
+- O novo modulo administrativo deve nascer em `/admin/simulacoes-finais`.
+- Nao substituir `/admin/simulacoes` nesta etapa.
+- `/admin/simulacoes` continua representando a simulacao/solicitacao basica atual sobre a tabela `simulations`.
+- `/admin/simulacoes-finais` representara o novo modulo de simulacao final, com calculo fiscal, produtos, despesas, snapshots, documentos e publicacao controlada.
+
+Fronteira entre entidades:
+
+- `simulations`: fluxo atual de solicitacao/simulacao basica e arquivos administrativos ja implementados.
+- `final_simulations`: novo fluxo operacional completo de simulacao final, podendo nascer de uma cotacao ou de uma simulacao basica, mas sem sobrescrever a tabela atual.
+
+### Tabelas e nomes finais para a proxima etapa
+
+Decisao:
+
+- Criar `final_simulations` e tabelas relacionadas para o novo modulo.
+- Nao aplicar migrations de `temp/` diretamente.
+- Evitar conflito semantico com `simulations` existente.
+- Preferir `text` com check constraints para status e tipos na primeira migration, salvo justificativa forte para enum Postgres.
+
+Nomes finais recomendados para a proxima etapa de banco:
+
+- `final_simulations`
+- `final_simulation_items`
+- `final_simulation_tax_lines`
+- `final_simulation_expense_lines`
+- `final_simulation_encomenda_taxes`
+- `final_simulation_documents`
+- `final_simulation_versions`
+- `ncm_codes`
+- `expense_types`
+- `expense_presets`
+- `expense_preset_items`
+- `invoice_parametrizations`
+- `states`
+
+Observacoes:
+
+- `final_simulation_documents` deve estar integrado ao padrao `uploads`/`app-uploads`.
+- `ncm_codes` deve ser tabela local da aplicacao, nao substituto de integracao externa futura.
+- A necessidade de todas as tabelas acima na primeira migration pode ser fatiada, mas estes sao os nomes aprovados para evitar divergencia com `temp/`.
+
+### Status de Simulacao Final
+
+Decisao:
+
+Usar estes status na V1:
+
+- `draft`
+- `in_review`
+- `needs_adjustment`
+- `approved`
+- `sent_to_customer`
+- `archived`
+
+O status atual de `simulations` permanece separado e nao deve ser misturado com os status de `final_simulations`.
+
+### Escopo V1
+
+Entram na V1:
+
+- listagem de simulacoes finais;
+- criacao e dados principais;
+- produtos;
+- NCM local e snapshot;
+- despesas, tipos e pre-calculo;
+- parametrizacao fiscal;
+- impostos encomenda;
+- calculo final inicial;
+- PDF cliente;
+- relatorio interno detalhado.
+
+Ficam fora da V1:
+
+- gerar processo de importacao;
+- follow-up operacional;
+- pricing Excel;
+- pedido de compra completo;
+- aplicacao direta das migrations de `temp/`.
+
+### Integracao NCM
+
+Decisao:
+
+- Usar tabela local `ncm_codes`.
+- A integracao externa com Receita/Classif pode ser posterior, rotineira ou assistida por processo separado.
+- Na V1, preparar estrutura para snapshot por item e validacao RPX.
+- O NCM da simulacao final deve ser tratado como dado operacional validado ou revisavel pela RPX, sem prometer classificacao fiscal automatica oficial.
+
+### Calculo fiscal
+
+Decisao:
+
+- O futuro `calculation-engine.ts` deve centralizar o calculo da Simulacao Final.
+- O motor de `temp/` pode ser referencia conceitual, mas nao regra final.
+- Formulas complexas ainda abertas ficam registradas em `docs/OPEN_QUESTIONS.md`.
+- Migrations podem preparar campos e snapshots, mas o calculo final deve ser validado com simulacoes reais antes de aprovacao/publicacao operacional.
+
+### PDF cliente e relatorio interno
+
+Decisao:
+
+- PDF cliente e relatorio interno detalhado sao artefatos distintos.
+- Ambos devem ser gerados a partir de snapshot persistido.
+- O PDF cliente deve usar DTO/snapshot publico e nao pode expor campos internos, margens, memorias fiscais internas, observacoes internas ou dados de revisao.
+- O relatorio interno pode conter detalhamento fiscal, despesas, bases e memoria de calculo para uso da RPX.
+
 ## 2. Inventario do projeto atual
 
 ### Stack detectada
@@ -202,6 +352,21 @@ Estrutura atual:
 - `state.md`: memoria operacional.
 
 O projeto atual nao usa `src/features` como padrao principal, embora essa organizacao possa ser considerada se o modulo crescer e for aprovada.
+
+### Documentos especializados ainda ausentes no projeto atual
+
+Os seguintes documentos existem em `temp/docs/`, mas nao foram promovidos para a documentacao ativa do projeto atual:
+
+- `NARWAL_MAPPING.md`;
+- `FINAL_SIMULATIONS_SPEC.md`;
+- `CALCULATION_RULES.md`;
+- `EXPENSES_ENGINE.md`;
+- `FISCAL_PARAMETRIZATION.md`;
+- `NCM_INTEGRATION.md`;
+- `IMPLEMENTATION_PLAN.md`;
+- `RODRIGO_IMPLEMENTATION_AUDIT.md`.
+
+Recomendacao: a promocao controlada desses materiais para `docs/` pode ocorrer em paralelo as proximas fases, adaptando referencias a `profiles`, `simulation_documents`, `simulation-documents`, rotas antigas e paths do projeto do Rodrigo. Ela nao deve bloquear a primeira migration se as decisoes da Fase 0 estiverem respeitadas.
 
 ## 3. Inventario da implementacao do Rodrigo em temp/
 
@@ -412,7 +577,7 @@ Nao ha dependencia especifica nova para PDF/Excel. O projeto atual tem `browser-
 | Despesas | Sim | Ausente | Sim, linhas e componentes | Parcial | Reaproveitar conceitos e enums; revisar regras |
 | Tipos de despesa | Sim | Ausente | Sim | Parcial | Adaptar CRUD ao padrao atual |
 | Pre-calculos de despesas | Sim | Ausente | Sim | Parcial | Adaptar com regra anti-duplicacao aprovada |
-| Impostos encomenda | Sim | Ausente | Sim | Parcial | Manter fora da primeira fase funcional se formulas nao forem confirmadas |
+| Impostos encomenda | Sim | Ausente | Sim | Parcial | Entrar na V1 com campos/snapshots e calculo inicial sujeito a validacao fiscal |
 | Estados/UF ativos | Sim | Ausente como tabela | Sim, `states` | Parcial | Criar tabela revisada com seed controlado |
 | Calculo final | Sim | Ausente para simulacao final | Motor v1 | Parcial | Usar como referencia, escrever testes e validar formulas |
 | Snapshot/versionamento | Sim | Ausente no modelo atual de `simulations` | Sim, mas incompleto | Parcial | Reimplementar como contrato central |
@@ -471,7 +636,7 @@ Rotas de `temp/`:
 - `/admin/simulacoes-finais/[id]/editar`;
 - `/admin/cadastros/*`.
 
-Decisao pendente: manter Simulacoes Finais como modulo separado em `/admin/simulacoes-finais` ou evoluir `/admin/simulacoes` para o novo fluxo.
+Decisao Fase 0: manter Simulacoes Finais como modulo separado em `/admin/simulacoes-finais`. A rota `/admin/simulacoes` continua existindo para o fluxo atual de `simulations` ate decisao posterior.
 
 ### Padroes de codigo
 
@@ -577,7 +742,7 @@ Nenhum arquivo deve ser copiado literalmente nesta etapa. Em fases futuras, pode
 - RBAC granular de revisor/aprovador;
 - auditoria completa de campo a campo;
 - multi-filial sofisticado;
-- formulas fiscais nao validadas;
+- formulas fiscais nao validadas como definitivas;
 - reabertura complexa apos aprovacao;
 - notificacoes ao cliente.
 
@@ -585,11 +750,15 @@ Nenhum arquivo deve ser copiado literalmente nesta etapa. Em fases futuras, pode
 
 ### Fase 0 - Preparacao
 
+Status: concluida documentalmente nesta rodada.
+
 - Revisar este plano com o usuario.
-- Confirmar se Simulacoes Finais sera modulo separado ou evolucao de `/admin/simulacoes`.
-- Confirmar nomes finais de tabelas e status.
-- Confirmar quais docs de `temp/docs/` devem ser incorporados ao projeto atual.
-- Fechar divergencias principais antes de banco.
+- Confirmado que Simulacoes Finais sera modulo separado em `/admin/simulacoes-finais`.
+- Confirmado que `final_simulations` sera nova entidade, sem substituir `simulations`.
+- Confirmados nomes finais iniciais de tabelas e status.
+- Confirmado uso de `app_users`, `uploads` e bucket privado `app-uploads`.
+- Confirmado que migrations de `temp/` nao devem ser aplicadas diretamente.
+- Continuam pendentes apenas decisoes funcionais/fiscais registradas em `docs/OPEN_QUESTIONS.md`.
 
 Validacoes:
 
@@ -600,11 +769,11 @@ Validacoes:
 ### Fase 1 - Migrations
 
 - Criar migration incremental no projeto atual.
-- Definir tabelas principais.
-- Definir enums ou check constraints.
+- Usar os nomes de tabelas aprovados na Fase 0.
+- Preferir `text` com check constraints para status/tipos, salvo justificativa forte para enum Postgres.
 - Criar indices.
 - Criar RLS compativel com `app_users`.
-- Integrar documentos com `uploads`/`app-uploads` ou justificar tabela/bucket proprio.
+- Integrar documentos com `uploads`/`app-uploads`; nao criar bucket `simulation-documents` na V1.
 - Atualizar `docs/DATABASE_MODEL.md`.
 
 Validacoes:
@@ -782,21 +951,20 @@ Nao reaproveitar diretamente:
 
 As perguntas abertas consolidadas foram registradas em `docs/OPEN_QUESTIONS.md`.
 
-As decisoes mais urgentes antes de qualquer migration sao:
+As decisoes arquiteturais minimas da Fase 0 foram registradas na secao 1.1 deste documento.
 
-- Simulacoes Finais sera uma tabela nova `final_simulations` ou evolucao de `simulations`?
-- A rota final sera `/admin/simulacoes-finais` ou `/admin/simulacoes`?
-- Documentos finais usam `uploads` + `app-uploads` ou uma tabela/bucket especifico?
-- Quais status finais sao obrigatorios na V1?
-- Quais formulas fiscais estao aprovadas para implementacao?
-- Quais campos podem aparecer no PDF cliente?
-- Quem aprova e quem publica simulacoes finais?
+Permanecem abertas antes ou durante as fases seguintes:
+
+- Quais transicoes de status sao permitidas na V1.
+- Quem aprova e quem publica simulacoes finais.
+- Quais formulas fiscais estao aprovadas para implementacao.
+- Quais campos podem aparecer no PDF cliente.
+- Quais cenarios numericos reais serao usados para validar o motor.
 
 ## 12. Atualizacao do state.md
 
-`state.md` foi atualizado nesta entrega para registrar:
+`state.md` deve registrar nesta entrega:
 
-- `temp/` como referencia temporaria;
-- `temp/` nao e fonte da verdade;
-- o plano de migracao foi criado;
-- a proxima etapa recomendada e revisar e aprovar as decisoes de Fase 0 antes de qualquer migration ou codigo.
+- as decisoes arquiteturais minimas da Fase 0;
+- que a proxima etapa pode ser planejamento/criacao da migration incremental;
+- que ainda nao houve codigo, migration, alteracao em `src/`, `package.json`, `supabase/migrations/` ou `temp/`.

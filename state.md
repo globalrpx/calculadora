@@ -59,6 +59,81 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Fase 0 das Simulacoes Finais: decisoes arquiteturais minimas
+
+- Executada a Fase 0 documental antes de qualquer implementacao de Simulacoes Finais.
+- Lidos os documentos ativos: `docs/FINAL_SIMULATIONS_MIGRATION_PLAN.md`, `docs/OPEN_QUESTIONS.md`, `docs/DATABASE_MODEL.md`, `docs/AUTH_AND_PERMISSIONS.md`, `docs/ROUTES_AND_SCREENS.md`, `docs/TECH_STACK.md` e `state.md`.
+- Registrado que `app_users` permanece como fonte da verdade para usuarios, roles, status e `client_id`.
+- Registrado que `profiles` da implementacao em `temp/` nao deve ser usado como base de novas migrations, RLS, actions ou queries.
+- Registrado que documentos de Simulacoes Finais devem seguir o padrao atual `uploads` + bucket privado `app-uploads`, sem criar bucket `simulation-documents` na V1.
+- Registrado que o modulo deve nascer em `/admin/simulacoes-finais`, sem substituir `/admin/simulacoes` nesta etapa.
+- Registrado que `simulations` continua representando a simulacao/solicitacao basica atual, enquanto `final_simulations` representara o novo modulo completo.
+- Registrados os nomes finais recomendados para a proxima etapa de banco: `final_simulations`, `final_simulation_items`, `final_simulation_tax_lines`, `final_simulation_expense_lines`, `final_simulation_encomenda_taxes`, `final_simulation_documents`, `final_simulation_versions`, `ncm_codes`, `expense_types`, `expense_presets`, `expense_preset_items`, `invoice_parametrizations` e `states`.
+- Registrados os status V1: `draft`, `in_review`, `needs_adjustment`, `approved`, `sent_to_customer` e `archived`.
+- Registrado o escopo V1: listagem, criacao/dados principais, produtos, NCM local/snapshot, despesas/tipos/pre-calculo, parametrizacao fiscal, impostos encomenda, calculo final inicial, PDF cliente e relatorio interno detalhado.
+- Registrado o que fica fora da V1: processo de importacao, follow-up operacional, pricing Excel, pedido de compra completo e aplicacao direta das migrations de `temp/`.
+- Registrado que `ncm_codes` sera a base local da V1, com integracao Receita/Classif posterior ou rotineira.
+- Registrado que o futuro `calculation-engine.ts` deve centralizar o calculo, mas formulas complexas permanecem abertas em `docs/OPEN_QUESTIONS.md`.
+- Registrado que PDF cliente e relatorio interno sao artefatos distintos, ambos baseados em snapshot, sem expor campos internos ao cliente.
+- Nenhum codigo, migration, `src/`, `package.json`, `supabase/migrations/` ou `temp/` foi alterado.
+
+Arquivos principais:
+
+- `docs/FINAL_SIMULATIONS_MIGRATION_PLAN.md`
+- `docs/OPEN_QUESTIONS.md`
+- `state.md`
+
+Validado:
+
+- Revisao documental dos arquivos solicitados.
+- Revisao de consistencia com o modelo atual de banco, auth, rotas, stack e estado vivo.
+- Revisao de diff documental.
+- Confirmacao de que as alteracoes ficaram restritas aos tres arquivos permitidos.
+
+Nao foi possivel validar ainda:
+
+- Typecheck, lint e build, porque a entrega foi estritamente documental e nao alterou TypeScript, React, migrations ou runtime.
+- Formulas fiscais e cenarios numericos reais, que seguem como perguntas abertas.
+- Politicas RLS e modelo SQL real, pois nenhuma migration foi criada nesta etapa.
+
+Proxima etapa recomendada:
+
+- Podemos seguir para planejamento/criacao da migration incremental, desde que a proxima etapa respeite as decisoes da Fase 0, mantenha `app_users`, `uploads`/`app-uploads`, rota `/admin/simulacoes-finais` e nao aplique migrations de `temp/` diretamente.
+
+### 2026-07-09 - Revalidacao do plano de migracao das Simulacoes Finais
+
+- Reexecutada a leitura do pedido anexado sobre migracao segura das Simulacoes Finais a partir de `temp/`.
+- Reinspecionada a estrutura atual do projeto e a estrutura da pasta temporaria `temp/`, sem alterar nada dentro de `temp/`.
+- Confirmado que o projeto atual em `/Users/hugoferreira/htdocs/app-rpx` segue como fonte da verdade.
+- Confirmado que os documentos especializados de Simulacoes Finais citados no pedido (`NARWAL_MAPPING`, `FINAL_SIMULATIONS_SPEC`, `CALCULATION_RULES`, `EXPENSES_ENGINE`, `FISCAL_PARAMETRIZATION`, `NCM_INTEGRATION`, `IMPLEMENTATION_PLAN` e `RODRIGO_IMPLEMENTATION_AUDIT`) ainda existem apenas em `temp/docs/`, enquanto o projeto atual possui `FINAL_SIMULATIONS_MIGRATION_PLAN.md` e `OPEN_QUESTIONS.md` como documentos ativos.
+- Atualizado `docs/FINAL_SIMULATIONS_MIGRATION_PLAN.md` para registrar explicitamente as fontes verificadas nesta rodada e a recomendacao de promocao documental controlada antes de qualquer migration.
+- Atualizado `docs/OPEN_QUESTIONS.md` com perguntas abertas de documentacao e governanca para decidir quais materiais de `temp/docs/` viram especificacoes ativas.
+- Nenhum codigo de `src/`, migration, configuracao, dependencia, arquivo dentro de `temp/` ou runtime foi alterado.
+
+Arquivos principais:
+
+- `docs/FINAL_SIMULATIONS_MIGRATION_PLAN.md`
+- `docs/OPEN_QUESTIONS.md`
+- `state.md`
+
+Validado:
+
+- Inspecao da estrutura atual do projeto.
+- Inspecao da estrutura de `temp/`.
+- Leitura dos documentos-base atuais e dos documentos especializados em `temp/docs/`.
+- Leitura de `state.md` e `temp/state.md`.
+- Inspecao das migrations e arquivos principais de `temp/src/features/final-simulations`.
+- Revisao de diff documental.
+
+Nao foi possivel validar ainda:
+
+- Typecheck, lint e build, porque a entrega foi estritamente documental e nao alterou TypeScript, React, migrations ou runtime.
+- Formulas fiscais, regras de despesas e conteudo final do PDF cliente, que continuam dependentes das perguntas abertas.
+
+Proxima etapa recomendada:
+
+- Aprovar a Fase 0 decidindo se os documentos especializados em `temp/docs/` serao promovidos para `docs/` como specs ativas, e so depois iniciar migrations incrementais no projeto atual.
+
 ### 2026-07-09 - Ajuste do callback de recuperacao de senha
 
 - Ajustado `/auth/callback` para aceitar tambem o formato robusto do Supabase com `token_hash` e `type=recovery`.

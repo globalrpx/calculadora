@@ -6,37 +6,140 @@ Este documento consolida duvidas encontradas na comparacao entre a arquitetura a
 
 Antes de criar migrations ou implementar codigo, as perguntas marcadas como criticas devem ser respondidas ou assumidas formalmente.
 
-## Criticas para Fase 0
+## Decisoes resolvidas na Fase 0
 
-- Simulacoes Finais deve ser uma nova entidade `final_simulations` ou uma evolucao da tabela atual `simulations`?
-- A rota administrativa final deve ser `/admin/simulacoes-finais` ou o modulo deve substituir/evoluir `/admin/simulacoes`?
-- O status atual de `simulations` deve continuar separado dos status de Simulacoes Finais?
-- Quais status entram na V1: `draft`, `in_review`, `needs_adjustment`, `approved`, `sent_to_customer`, `archived`?
+As decisoes abaixo foram assumidas formalmente em 2026-07-09 para permitir a proxima etapa de migrations incrementais.
+
+### Usuarios, permissoes e RLS
+
+- Usar `app_users` como fonte da verdade para usuario, role, status e `client_id`.
+- Nao usar `profiles` da implementacao em `temp/` como base de novas tabelas, RLS, actions ou permissoes.
+- RLS e permissoes devem seguir o padrao atual do projeto, com `app_users`, usuario ativo, `deleted_at is null`, role `admin` para administracao e isolamento por `client_id`.
+
+### Storage e documentos
+
+- Usar o padrao atual `uploads` + bucket privado `app-uploads`.
+- Nao criar bucket `simulation-documents` na V1.
+- Documentos de Simulacao Final devem se relacionar com `uploads`.
+- Se houver `final_simulation_documents`, a tabela deve guardar metadados/snapshot do documento e apontar para `uploads.id`, sem duplicar o papel de Storage.
+
+### Rotas e fronteira de produto
+
+- Criar o novo modulo em `/admin/simulacoes-finais`.
+- Nao substituir `/admin/simulacoes` sem decisao posterior.
+- `simulations` continua representando a simulacao/solicitacao basica atual.
+- `final_simulations` representara o novo modulo completo de Simulacoes Finais.
+
+### Tabelas e nomes aprovados
+
+- Criar `final_simulations` e tabelas relacionadas para o novo modulo.
+- Nao aplicar migrations de `temp/` diretamente.
+- Evitar conflito com `simulations` existente.
+- Nomes finais recomendados para a proxima etapa:
+  - `final_simulations`
+  - `final_simulation_items`
+  - `final_simulation_tax_lines`
+  - `final_simulation_expense_lines`
+  - `final_simulation_encomenda_taxes`
+  - `final_simulation_documents`
+  - `final_simulation_versions`
+  - `ncm_codes`
+  - `expense_types`
+  - `expense_presets`
+  - `expense_preset_items`
+  - `invoice_parametrizations`
+  - `states`
+
+### Status de Simulacao Final
+
+Usar na V1:
+
+- `draft`
+- `in_review`
+- `needs_adjustment`
+- `approved`
+- `sent_to_customer`
+- `archived`
+
+O status de `simulations` permanece separado.
+
+### Escopo V1
+
+Entram na V1:
+
+- listagem de simulacoes finais;
+- criacao/dados principais;
+- produtos;
+- NCM local/snapshot;
+- despesas/tipos/pre-calculo;
+- parametrizacao fiscal;
+- impostos encomenda;
+- calculo final inicial;
+- PDF cliente;
+- relatorio interno detalhado.
+
+Ficam fora da V1:
+
+- gerar processo de importacao;
+- follow-up operacional;
+- pricing Excel;
+- pedido de compra completo;
+- aplicacao direta das migrations de `temp/`.
+
+### Integracao NCM
+
+- Usar tabela local `ncm_codes`.
+- Integracao externa Receita/Classif fica posterior ou rotineira.
+- Na V1, preparar estrutura para snapshot e validacao RPX.
+
+### Calculo fiscal
+
+- O futuro `calculation-engine.ts` deve centralizar o calculo.
+- Formulas complexas ainda abertas permanecem neste documento.
+- Migrations podem preparar campos, mas o calculo final deve ser validado com simulacoes reais antes de uso operacional definitivo.
+
+### PDF cliente e relatorio interno
+
+- Diferenciar PDF cliente de relatorio interno.
+- Ambos devem ser gerados a partir de snapshot.
+- Evitar expor campos internos ao cliente.
+
+## Criticas remanescentes antes/durante migrations
+
 - Quais transicoes de status sao permitidas na V1?
 - Quem pode aprovar uma simulacao final?
 - O aprovador pode ser a mesma pessoa que criou ou editou a simulacao?
 - Quais alteracoes devem gerar obrigatoriamente uma nova versao?
 - Apos aprovacao, ajustes devem criar nova versao, duplicar a simulacao ou reabrir a mesma simulacao?
-- Documentos finais devem usar o padrao atual `uploads` + `app-uploads` ou uma nova tabela/bucket especifico?
-- Se houver tabela especifica de documentos, como ela se relaciona com `uploads` sem duplicar responsabilidades?
 - O cliente acessara documento por signed URL, route handler seguro ou outro mecanismo?
+- A primeira migration deve criar todas as tabelas aprovadas de uma vez ou fatiar em nucleos menores?
+- `final_simulation_documents` entra na primeira migration ou apenas quando a geracao de documentos for implementada?
+- Quais campos minimos de snapshot publico e interno entram ja na primeira migration?
+
+## Documentacao e governanca
+
+- Quais documentos de `temp/docs/` devem ser promovidos para `docs/` como especificacoes ativas?
+- `docs/FINAL_SIMULATIONS_SPEC.md` deve nascer como adaptacao direta do material de `temp/` ou como uma spec nova resumida a partir do plano de migracao?
+- `docs/NARWAL_MAPPING.md` deve continuar citando a Narwal em detalhe ou virar apenas anexo/referencia operacional?
+- `docs/CALCULATION_RULES.md`, `docs/EXPENSES_ENGINE.md` e `docs/FISCAL_PARAMETRIZATION.md` devem ser documentos normativos ou documentos de hipoteses pendentes de validacao RPX?
+- O relatorio `temp/docs/RODRIGO_IMPLEMENTATION_AUDIT.md` deve ser copiado/adaptado para o projeto atual ou este plano de migracao substitui essa auditoria?
+- Quem aprova oficialmente a promocao de regras fiscais, despesas e PDF de `temp/docs/` para a documentacao ativa?
 
 ## Banco, auth e RLS
 
-- Todas as FKs de usuario devem apontar para `app_users.id`, `auth.users.id` ou ambos conforme o tipo de auditoria?
-- A funcao `current_client_id()` deve ser criada/atualizada usando `app_users`?
+- Quais campos de auditoria operacional exigem FK para `app_users.id` ja na primeira migration?
+- A funcao `current_client_id()` deve ser criada como helper SQL novo ou as policies devem consultar `app_users` diretamente?
 - Quais tabelas de apoio podem ser lidas por clientes autenticados?
 - Clientes podem ler NCMs/estados ativos diretamente ou apenas via dados publicados da simulacao?
 - `invoice_parametrizations`, `expense_types` e `expense_presets` devem ser sempre admin-only?
 - `ncm_codes` e `ncm_tax_profiles` devem ter RLS separada por status de validacao?
 - Parametrizacoes fiscais podem ser especificas por cliente, filial ou globais?
 - Estados/UFs precisam de seed inicial completo do Brasil?
-- O projeto deve criar enum Postgres ou preferir `text` com check constraints para facilitar evolucao?
-- Como evitar conflito entre `simulation_documents` de `temp/` e a tabela atual `uploads`?
+- Em quais campos, se houver, enum Postgres traz beneficio suficiente para contrariar a preferencia inicial por `text` com check constraints?
+- Qual desenho exato do CHECK de `uploads` deve ser usado ao adicionar `final_simulation_id` sem quebrar `quote_id` e `simulation_id` existentes?
 
 ## Produto e escopo
 
-- Simulacoes Finais entram como modulo separado da simulacao basica atual?
 - A tabela atual `simulations` continuara representando solicitacoes e publicacoes simples?
 - Como uma cotacao preliminar em `quotes` vira uma Simulacao Final?
 - O campo de vinculo deve ser `source_quote_id`, `quote_id` ou outro nome?
