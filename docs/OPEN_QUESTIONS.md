@@ -21,7 +21,7 @@ As decisoes abaixo foram assumidas formalmente em 2026-07-09 para permitir a pro
 - Usar o padrao atual `uploads` + bucket privado `app-uploads`.
 - Nao criar bucket `simulation-documents` na V1.
 - Documentos de Simulacao Final devem se relacionar com `uploads`.
-- Se houver `final_simulation_documents`, a tabela deve guardar metadados/snapshot do documento e apontar para `uploads.id`, sem duplicar o papel de Storage.
+- Se houver `simulation_documents`, a tabela deve guardar metadados/snapshot do documento e apontar para `uploads.id`, sem duplicar o papel de Storage.
 
 ### Rotas e fronteira de produto
 
@@ -41,7 +41,7 @@ As decisoes abaixo foram assumidas formalmente em 2026-07-09 para permitir a pro
   - `final_simulation_tax_lines`
   - `final_simulation_expense_lines`
   - `final_simulation_encomenda_taxes`
-  - `final_simulation_documents`
+  - `simulation_documents`
   - `final_simulation_versions`
   - `ncm_codes`
   - `expense_types`
@@ -113,8 +113,9 @@ Ficam fora da V1:
 - Apos aprovacao, ajustes devem criar nova versao, duplicar a simulacao ou reabrir a mesma simulacao?
 - O cliente acessara documento por signed URL, route handler seguro ou outro mecanismo?
 - A primeira migration deve criar todas as tabelas aprovadas de uma vez ou fatiar em nucleos menores?
-- `final_simulation_documents` entra na primeira migration ou apenas quando a geracao de documentos for implementada?
+- `simulation_documents` deve ganhar campos adicionais quando a geracao real de documentos for implementada?
 - Quais campos minimos de snapshot publico e interno entram ja na primeira migration?
+- Quando a geracao real de documentos for implementada, sera necessario adicionar `uploads.final_simulation_id` e ajustar `uploads_exactly_one_owner_check` para permitir dono direto em Simulacao Final?
 
 ## Documentacao e governanca
 

@@ -14,6 +14,7 @@ Migrations atuais:
 - `006_client_quotes_persistence.sql`
 - `20260709134047_create_uploads_table_and_storage_bucket.sql`
 - `20260709180000_create_config_table.sql`
+- `20260709200000_create_final_simulations_core.sql`
 
 ## Convencoes
 
@@ -308,19 +309,174 @@ app-uploads
 
 O bucket e privado. Policies em `storage.objects` permitem acesso somente a usuarios admin autenticados nesta fase.
 
+## Simulacoes Finais - Nucleo Estrutural
+
+A migration `20260709200000_create_final_simulations_core.sql` cria a base estrutural do modulo futuro de Simulacoes Finais.
+
+Escopo desta migration:
+
+- modelo de dados inicial;
+- constraints/checks principais;
+- indices de acesso;
+- triggers de `updated_at` onde aplicavel;
+- RLS habilitado;
+- policies conservadoras somente para admins;
+- seed dos 27 estados brasileiros.
+
+Fora do escopo desta migration:
+
+- UI;
+- Server Actions;
+- calculo fiscal completo;
+- bucket novo;
+- alteracao da tabela `uploads`;
+- policies de cliente;
+- aplicacao de migrations de `temp/`.
+
+### `final_simulations`
+
+Entidade principal do novo modulo de Simulacoes Finais. Nao substitui a tabela atual `simulations`.
+
+Campos principais:
+
+- identificacao: `id`, `code`, `number`;
+- status: `draft`, `in_review`, `needs_adjustment`, `approved`, `sent_to_customer`, `archived`;
+- cliente: `customer_id` FK opcional para `clients`, `customer_name` snapshot textual;
+- fornecedor/filial: `supplier_id` e `branch_id` como `uuid` sem FK nesta migration, com snapshots textuais;
+- usuarios: `created_by`, `updated_by`, `assigned_to`, `approved_by`, `reopened_by`, todos referenciando `app_users`;
+- dados da operacao: data, validade, modalidade, transporte, origem/destino, embalagem, licenca e observacoes;
+- valores e pesos: moeda, cambio, frete, seguro, valor aduaneiro, impostos, despesas, custo total, pesos, volume e containers;
+- snapshots: `calculation_snapshot`, `public_snapshot`, `internal_snapshot`.
+
+Checks:
+
+- status fechado na lista aprovada da V1;
+- `import_modality`: `propria`, `conta_e_ordem`, `encomenda`;
+- `transport_mode`: `maritimo`, `aereo`, `rodoviario`;
+- `currency` curto, com ate 3 caracteres quando preenchido.
+
+### `final_simulation_items`
+
+Itens/produtos vinculados a `final_simulations`.
+
+Conteudo:
+
+- descricao de produto;
+- HS/NCM;
+- snapshot de NCM e aliquotas;
+- validacao RPX de NCM;
+- pesos, quantidades, FOB/CIF, custos e totais;
+- antidumping, regime especial e snapshots;
+- campos futuros para pedido de compra sem FK nesta etapa.
+
+### `simulation_tax_lines`
+
+Linhas de impostos calculados ou ajustados para simulacao e, opcionalmente, item.
+
+`tax_type` aceito:
+
+- `II`
+- `IPI`
+- `PIS_IMPORTACAO`
+- `COFINS_IMPORTACAO`
+- `ICMS`
+- `AFRMM`
+- `ANTIDUMPING`
+- `OUTROS`
+
+### `simulation_expense_lines`
+
+Linhas de despesas vinculadas a simulacao e, opcionalmente, item.
+
+Nesta migration, `source_preset_id`, `source_preset_item_id` e `expense_type_id` ficam como `uuid` sem FK porque os cadastros de tipos, presets e itens de preset serao criados em migrations posteriores.
+
+### `simulation_versions`
+
+Snapshots/versionamento da Simulacao Final.
+
+Regra:
+
+- `unique(simulation_id, version_number)`.
+
+### `simulation_documents`
+
+Metadados de documentos gerados.
+
+Campos de relacionamento:
+
+- `simulation_id` FK para `final_simulations`;
+- `version_id` FK opcional para `simulation_versions`;
+- `upload_id` FK opcional para `uploads`.
+
+`document_type` aceito:
+
+- `client_pdf`
+- `internal_detailed_report`
+- `pricing_excel`
+
+Observacao: `pricing_excel` fica preparado no modelo, mas a funcionalidade esta fora da V1 operacional.
+
+Pendencia conhecida: como `uploads` ainda exige dono entre `simulation_id` e `quote_id`, uma migration posterior deve avaliar `uploads.final_simulation_id` e ajuste do CHECK antes de usar `uploads` como dono direto de documentos de Simulacao Final.
+
+### `states`
+
+Cadastro local de UFs brasileiras.
+
+A migration insere os 27 estados brasileiros com `is_active = true`, usando `uf` como chave unica.
+
+### `ncm_codes`
+
+Base local de NCM para busca, snapshot e validacao RPX.
+
+Campos principais:
+
+- `code`;
+- `description`;
+- `hierarchical_description`;
+- `legal_act`;
+- fonte e data de atualizacao;
+- status ativo.
+
+### `ncm_tax_profiles`
+
+Perfis tributarios locais por NCM.
+
+Conteudo:
+
+- NCM referenciado por `ncm_code`;
+- pais, tipo de operacao e vigencia;
+- aliquotas de II, IPI, PIS, COFINS e ICMS;
+- snapshots de antidumping, ex-tarifario e base legal.
+
+## RLS de Simulacoes Finais
+
+Todas as tabelas novas da migration `20260709200000_create_final_simulations_core.sql` possuem RLS habilitado.
+
+Policies criadas nesta etapa:
+
+- admins podem ler, inserir, atualizar e deletar registros das novas tabelas;
+- a verificacao usa `public.is_admin()`, que consulta `app_users`;
+- nenhuma policy baseada em `profiles` foi criada;
+- nenhuma policy de cliente foi criada nesta migration.
+
+Policies de cliente para Simulacoes Finais devem ser criadas somente quando houver contrato de area cliente, DTO publico, snapshot publico e regra de publicacao definidos.
+
 ## Modelo Planejado Ainda Nao Implementado
 
 As tabelas abaixo aparecem em specs/planos como evolucao, mas nao devem ser tratadas como implementadas no estado atual:
 
 - `suppliers`
 - `products`
-- `ncm_codes`
 - `tax_rules`
 - `quote_calculations` separada
 - `quote_attachments` ou `quote_images`
 - `quote_status_history`
 - `calculation_parameters`
-- `simulation_versions`
+- `expense_types`
+- `expense_presets`
+- `expense_preset_items`
+- `invoice_parametrizations`
+- `simulation_encomenda_taxes`
 
 Quando forem implementadas, criar migration incremental, atualizar este documento e validar RLS.
 

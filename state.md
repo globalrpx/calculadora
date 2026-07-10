@@ -59,6 +59,54 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Etapa 2: migration estrutural das Simulacoes Finais
+
+- Criada a primeira migration incremental do nucleo estrutural de Simulacoes Finais.
+- A migration nao aplica SQL de `temp/` diretamente e nao altera migrations existentes.
+- Criadas as tabelas: `final_simulations`, `final_simulation_items`, `simulation_tax_lines`, `simulation_expense_lines`, `simulation_versions`, `simulation_documents`, `states`, `ncm_codes` e `ncm_tax_profiles`.
+- Usado `app_users` em todas as FKs de usuario.
+- Usado `public.clients(id)` para `final_simulations.customer_id`.
+- Mantidos `supplier_id`, `branch_id`, `source_preset_id`, `source_preset_item_id` e `expense_type_id` como `uuid` sem FK nesta migration, pois as tabelas correspondentes nao existem no modelo atual ou foram deixadas para migrations posteriores.
+- Usado `simulation_documents.upload_id` como FK nullable para `public.uploads(id)`.
+- A tabela `uploads` nao foi alterada nesta etapa.
+- Reutilizada a funcao `public.set_updated_at()` para triggers de `updated_at`.
+- RLS habilitado em todas as novas tabelas.
+- Criadas policies conservadoras somente para admins usando `public.is_admin()`.
+- Nao foram criadas policies de cliente nesta migration.
+- Inserido seed dos 27 estados brasileiros em `states`.
+- Atualizado `docs/DATABASE_MODEL.md` com o novo nucleo estrutural, RLS e pendencia conhecida de integracao futura com `uploads.final_simulation_id`.
+- Atualizado `docs/OPEN_QUESTIONS.md` com a pendencia futura de ajuste de `uploads`/CHECK para dono direto em Simulacao Final.
+- Nenhum arquivo em `src/`, `package.json`, `temp/` ou migration existente foi alterado.
+
+Arquivos principais:
+
+- `supabase/migrations/20260709200000_create_final_simulations_core.sql`
+- `docs/DATABASE_MODEL.md`
+- `docs/OPEN_QUESTIONS.md`
+- `state.md`
+
+Validado:
+
+- Inspecao das migrations existentes antes da edicao.
+- Confirmado que `app_users.id` e `uuid`.
+- Confirmado que `public.is_admin()` usa `app_users`.
+- Confirmado que `public.set_updated_at()` ja existe.
+- Confirmado que `uploads` ja existe e que `upload_id` pode referenciar `public.uploads(id)`.
+- Revisao estrutural da migration criada: tabelas, checks, indices, triggers, RLS, policies e seed.
+- `git diff --check` aprovado.
+- Busca estatica confirmou ausencia de referencia a `profiles` legado, bucket `simulation-documents`, criacao de bucket novo, criacao de `uploads` nova ou alteracao de `uploads` na migration.
+
+Nao foi possivel validar ainda:
+
+- Aplicacao da migration em banco local/remoto, pois a etapa nao solicitou executar migrations contra o projeto Supabase.
+- `supabase db lint --local --schema public --fail-on error`, porque nao ha Postgres/Supabase local acessivel em `127.0.0.1:54322`.
+- Validacao real de policies com usuarios admin e cliente, que deve ocorrer apos aplicar a migration em ambiente controlado.
+- Fluxos de UI/actions/calculo, pois permanecem fora do escopo desta etapa.
+
+Proxima etapa recomendada:
+
+- Aplicar a migration em ambiente de desenvolvimento/controlado, validar schema/RLS com admin e cliente, e somente depois iniciar a camada de types/queries/actions ou migrations complementares de despesas/parametrizacao fiscal.
+
 ### 2026-07-09 - Fase 0 das Simulacoes Finais: decisoes arquiteturais minimas
 
 - Executada a Fase 0 documental antes de qualquer implementacao de Simulacoes Finais.
