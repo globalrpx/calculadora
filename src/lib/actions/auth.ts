@@ -115,6 +115,7 @@ export async function signUpAction(formData: FormData) {
       contact_name: name,
       contact_email: email,
       contact_phone: phone,
+      client_type: "lead",
       source: "site",
       status: "active"
     })

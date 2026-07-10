@@ -26,9 +26,9 @@
 | `/app/simulacoes` | Cliente | Parcial | `simulations`, `quotes` | Lista solicitacoes/simulacoes vinculadas ao cliente. |
 | `/admin` | Admin | Funcional | Redirect | Entrada administrativa redireciona ao dashboard. |
 | `/admin/dashboard` | Admin | Funcional | `clients`, `quotes`, `simulations` | Contadores dinamicos. |
-| `/admin/clientes` | Admin | Funcional | `clients`, `app_users` | CRUD completo com filtros, paginacao, ordenacao, badges e inativacao. |
-| `/admin/clientes/novo` | Admin | Funcional | Supabase Auth + `clients` + `app_users` | Criacao com validacao inline server-side. |
-| `/admin/clientes/[id]` | Admin | Funcional | `clients`, `app_users` | Edicao com senha opcional e validacao inline. |
+| `/admin/clientes` | Admin | Funcional | `clients`, `app_users` | CRUD completo com filtros, paginacao, ordenacao, badges de tipo/status e inativacao. |
+| `/admin/clientes/novo` | Admin | Funcional | Supabase Auth + `clients` + `app_users` | Criacao com validacao inline server-side e tipo de cliente default `client`. |
+| `/admin/clientes/[id]` | Admin | Funcional | `clients`, `app_users` | Edicao com senha opcional, tipo de cliente e validacao inline. |
 | `/admin/cotacoes` | Admin | Funcional | `quotes`, `clients`, `simulations` | Listagem read-only padronizada com filtros, totalizador, paginacao, ordenacao segura e acao de detalhe. |
 | `/admin/cotacoes/[id]` | Admin | Funcional | `quotes`, `clients`, `simulations` | Detalhe administrativo read-only da cotacao. |
 | `/admin/simulacoes` | Admin | Funcional | `simulations`, `quotes`, `clients` | CRUD administrativo básico com filtros, totalizador, paginação, ordenação segura, status e ações. |

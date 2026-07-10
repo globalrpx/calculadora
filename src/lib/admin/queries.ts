@@ -14,6 +14,7 @@ export type AdminClientRow = {
   contact_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  client_type: "lead" | "client";
   status: string;
   source: string;
   created_at: string;
@@ -25,6 +26,7 @@ export type AdminClientFormValues = {
   contact_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  client_type: "lead" | "client";
   source: string;
   status: string;
 };
@@ -146,6 +148,7 @@ export type AdminClientFilters = {
   name?: string;
   company?: string;
   source?: string;
+  clientType?: string;
   status?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -188,6 +191,7 @@ export type AdminClientSortKey =
   | "company_name"
   | "responsible_name"
   | "email"
+  | "client_type"
   | "source"
   | "status"
   | "created_at";
@@ -232,6 +236,7 @@ export const adminClientSortColumns: Record<AdminClientSortKey, keyof AdminClien
   company_name: "company_name",
   responsible_name: "contact_name",
   email: "contact_email",
+  client_type: "client_type",
   source: "source",
   status: "status",
   created_at: "created_at"
@@ -522,7 +527,7 @@ export async function getAdminClients(
 
   let query = supabase
     .from("clients")
-    .select("id, company_name, contact_name, contact_email, contact_phone, status, source, created_at", {
+    .select("id, company_name, contact_name, contact_email, contact_phone, client_type, status, source, created_at", {
       count: "exact"
     })
     .is("deleted_at", null)
@@ -539,6 +544,10 @@ export async function getAdminClients(
 
   if (filters.source) {
     query = query.eq("source", filters.source);
+  }
+
+  if (filters.clientType) {
+    query = query.eq("client_type", filters.clientType);
   }
 
   if (filters.status) {
@@ -569,7 +578,7 @@ export async function getAdminClientById(id: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("clients")
-    .select("id, company_name, contact_name, contact_email, contact_phone, source, status")
+    .select("id, company_name, contact_name, contact_email, contact_phone, client_type, source, status")
     .eq("id", id)
     .is("deleted_at", null)
     .single();

@@ -43,6 +43,7 @@ function parseFilters(params: Record<string, string | string[] | undefined>): Ad
     name: read("name"),
     company: read("company"),
     source: read("source"),
+    clientType: read("clientType"),
     status: read("status"),
     dateFrom: read("dateFrom"),
     dateTo: read("dateTo")
@@ -129,8 +130,16 @@ function mapStatusVariant(status: string) {
   return status === "active" ? "success" : "neutral";
 }
 
+function mapClientType(clientType: string) {
+  return clientType === "lead" ? "Lead" : "Cliente";
+}
+
+function mapClientTypeVariant(clientType: string): "warning" | "info" {
+  return clientType === "lead" ? "warning" : "info";
+}
+
 function hasActiveFilters(filters: AdminClientFilters) {
-  return Boolean(filters.name || filters.company || filters.source || filters.status || filters.dateFrom || filters.dateTo);
+  return Boolean(filters.name || filters.company || filters.source || filters.clientType || filters.status || filters.dateFrom || filters.dateTo);
 }
 
 export default async function ClientsPage({
@@ -186,6 +195,13 @@ export default async function ClientsPage({
       sortable: true,
       sortKey: "source",
       render: (row) => mapSource(row.source)
+    },
+    {
+      key: "client_type",
+      header: "Tipo",
+      sortable: true,
+      sortKey: "client_type",
+      render: (row) => <StatusBadge variant={mapClientTypeVariant(row.client_type)}>{mapClientType(row.client_type)}</StatusBadge>
     },
     {
       key: "status",

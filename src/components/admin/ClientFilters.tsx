@@ -14,8 +14,8 @@ export function ClientFilters({
   clearHref: string;
 }) {
   return (
-    <Card title="Filtros" description="Refine a lista por contato, empresa, origem, status e período de cadastro.">
-      <form className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+    <Card title="Filtros" description="Refine a lista por contato, empresa, origem, tipo, status e período de cadastro.">
+      <form className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-7">
         <input type="hidden" name="sort" value={sort.sort} />
         <input type="hidden" name="direction" value={sort.direction} />
         <FormField label="Nome">
@@ -31,6 +31,13 @@ export function ClientFilters({
             <option value="admin">Painel admin</option>
           </SelectInput>
         </FormField>
+        <FormField label="Tipo de cliente">
+          <SelectInput name="clientType" defaultValue={filters.clientType ?? ""}>
+            <option value="">Todos</option>
+            <option value="lead">Lead</option>
+            <option value="client">Cliente</option>
+          </SelectInput>
+        </FormField>
         <FormField label="Status">
           <SelectInput name="status" defaultValue={filters.status ?? ""}>
             <option value="">Todos</option>
@@ -44,7 +51,7 @@ export function ClientFilters({
         <FormField label="Cadastro final">
           <TextInput name="dateTo" type="date" defaultValue={filters.dateTo ?? ""} />
         </FormField>
-        <div className="flex flex-col gap-3 md:col-span-2 md:flex-row xl:col-span-6 xl:justify-end">
+        <div className="flex flex-col gap-3 md:col-span-2 md:flex-row xl:col-span-7 xl:justify-end">
           <Link
             href={clearHref}
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-rpx-blue/20 bg-white px-4 py-2 text-sm font-semibold text-rpx-blue transition hover:bg-rpx-sky"

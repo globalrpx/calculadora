@@ -59,6 +59,48 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Tipo de cliente lead/client
+
+- Criada migration para adicionar `clients.client_type` com:
+  - tipo `text`;
+  - default `client`;
+  - `not null`;
+  - check `client_type in ('lead', 'client')`;
+  - indice `idx_clients_client_type`;
+  - backfill de clientes existentes como `client`.
+- Cadastro publico (`/cadastro`) passa a criar clientes com `client_type = 'lead'` server-side.
+- Criacao administrativa de clientes usa `client` como default, mas permite escolher `lead`.
+- Edicao administrativa permite alternar entre `lead` e `client`.
+- Listagem administrativa de Clientes ganhou:
+  - coluna `Tipo`;
+  - badge `Lead`/`Cliente`;
+  - filtro `Tipo de cliente`;
+  - ordenacao por `client_type`.
+- Atualizados documentos de modelo de dados, rotas e padrao de CRUD administrativo.
+- Nao houve alteracao em RLS, auth/middleware/permissoes, Simulacoes Finais, calculo, PDF/documentos, `package.json`, producao ou `temp/`.
+
+Validado nesta etapa:
+
+- `scripts/supabase-db-dry-run-dev.sh` apontou somente para `20260710193000_add_client_type_to_clients.sql`.
+- `scripts/supabase-db-push-dev.sh` aplicou a migration somente no Supabase Dev `neomzmuaocniunjyvpsk`.
+- Supabase Dev:
+  - coluna `clients.client_type` legivel;
+  - nenhum cliente com `client_type` nulo;
+  - insert sem `client_type` recebeu default `client`;
+  - check rejeitou valor invalido com erro `23514`;
+  - migration criou o indice `idx_clients_client_type` sem erro; inspecao direta por dump nao foi possivel porque Docker esta indisponivel no ambiente.
+- Browser no Supabase Dev:
+  - `/admin/clientes` exibiu coluna `Tipo`;
+  - filtro `Tipo de cliente` apareceu no painel de filtros;
+  - cliente criado pelo admin sem escolher tipo apareceu como `Cliente`;
+  - cliente criado pelo admin como `Lead` apareceu na listagem;
+  - edicao do tipo de cliente funcionou;
+  - filtros por `Lead` e `Cliente` funcionaram combinados com busca por empresa;
+  - cadastro publico em `/cadastro` criou cliente com `client_type = lead` sem expor o campo ao usuario;
+  - login admin continuou funcionando;
+  - fluxo de cotacao comum continuou funcionando com fornecedor vazio.
+- `git diff --check`, `npm run typecheck` e `npm run lint` passaram.
+
 ### 2026-07-10 - Indicacao de campos obrigatorios na cotacao
 
 - Ajustada a tela da calculadora/cotacao do cliente para marcar com `*` apenas os campos obrigatorios:

@@ -227,6 +227,7 @@ Empresa
 Responsável
 E-mail
 Origem
+Tipo
 Status
 Cadastro
 Ações
@@ -239,6 +240,7 @@ Formatação de colunas:
 - `Responsável` exibe `contact_name` ou `-`;
 - `E-mail` exibe `contact_email` ou `-`;
 - `Origem` mapeia `site` para `Site` e demais origens para `Painel admin`;
+- `Tipo` mapeia `lead` para `Lead` e `client` para `Cliente`;
 - `Status` mapeia `active` para `Ativo` e `inactive` para `Inativo`;
 - `Cadastro` exibe data e hora no formato `dd/mm/aaaa - HH:mm`, por exemplo `17/06/2026 - 10:50`;
 - `Ações` fica sempre por último.
@@ -265,6 +267,7 @@ Empresa      -> sort=company_name      -> coluna real company_name
 Responsável  -> sort=responsible_name  -> coluna real contact_name
 E-mail       -> sort=email             -> coluna real contact_email
 Origem       -> sort=source            -> coluna real source
+Tipo         -> sort=client_type       -> coluna real client_type
 Status       -> sort=status            -> coluna real status
 Cadastro     -> sort=created_at        -> coluna real created_at
 ```
@@ -364,6 +367,7 @@ Filtros atuais de Clientes:
 name
 company
 source
+clientType
 status
 dateFrom
 dateTo
@@ -374,6 +378,7 @@ Mapeamento visual:
 - `Nome`: texto, busca em `contact_name`;
 - `Empresa`: texto, busca em `company_name`;
 - `Origem`: select com `Todas`, `Site`, `Painel admin`;
+- `Tipo de cliente`: select com `Todos`, `Lead`, `Cliente`;
 - `Status`: select com `Todos`, `Ativo`, `Inativo`;
 - `Cadastro inicial`: input `date`;
 - `Cadastro final`: input `date`.
@@ -393,6 +398,7 @@ Conexão com o banco:
 - `name`: `ilike("contact_name", "%valor%")`;
 - `company`: `ilike("company_name", "%valor%")`;
 - `source`: `eq("source", valor)`;
+- `clientType`: `eq("client_type", valor)`;
 - `status`: `eq("status", valor)`;
 - `dateFrom`: `gte("created_at", "YYYY-MM-DDT00:00:00")`;
 - `dateTo`: `lte("created_at", "YYYY-MM-DDT23:59:59.999")`.
@@ -402,7 +408,7 @@ Layout:
 - filtros dentro de `Card`;
 - título `Filtros`;
 - descrição curta;
-- grid responsivo `md:grid-cols-2 xl:grid-cols-6`;
+- grid responsivo `md:grid-cols-2 xl:grid-cols-7`;
 - botões `Limpar` e `Filtrar` alinhados à direita no desktop;
 - botões ocupam largura total no mobile quando necessário.
 
@@ -504,6 +510,7 @@ Nome
 Empresa
 E-mail
 Telefone
+Tipo de cliente
 Senha
 Confirmar senha
 ```
@@ -514,6 +521,7 @@ Validações:
 - `E-mail` obrigatório e validado no servidor;
 - `Empresa` opcional;
 - `Telefone` opcional;
+- `Tipo de cliente` usa default `Cliente` e aceita `Lead` ou `Cliente`;
 - `Senha` obrigatória no cadastro administrativo de cliente;
 - `Confirmar senha` obrigatória;
 - senha deve ter pelo menos 6 caracteres;
@@ -527,7 +535,7 @@ Validações:
 Comportamento de criação:
 
 - cria usuário no Supabase Auth;
-- cria registro em `clients`;
+- cria registro em `clients` com `client_type = "client"` por padrao, salvo escolha explicita do admin;
 - cria registro em `app_users` com `role = "client"`;
 - vincula `app_users.client_id` ao cliente;
 - usa `email_confirm: true` para usuário criado administrativamente;
@@ -590,6 +598,7 @@ Nome
 Empresa
 E-mail
 Telefone
+Tipo de cliente
 Nova senha
 Confirmar nova senha
 ```
@@ -607,7 +616,7 @@ Persistência:
 - atualiza `clients`;
 - atualiza `app_users` vinculados;
 - atualiza Supabase Auth para usuário vinculado quando `auth_provider = "supabase"`;
-- sincroniza nome, email, telefone, empresa e, quando informada, senha.
+- sincroniza nome, email, telefone, empresa, tipo de cliente e, quando informada, senha.
 
 Feedbacks:
 

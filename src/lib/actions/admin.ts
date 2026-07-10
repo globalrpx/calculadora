@@ -9,7 +9,12 @@ import {
   type AdminUserFormState,
   type AdminUserFormValues
 } from "@/lib/admin/admin-user-form-state";
-import type { ClientFormFieldErrors, ClientFormState, ClientFormValues } from "@/lib/admin/client-form-state";
+import {
+  clientTypeValues,
+  type ClientFormFieldErrors,
+  type ClientFormState,
+  type ClientFormValues
+} from "@/lib/admin/client-form-state";
 import {
   simulationStatusValues,
   type SimulationFormFieldErrors,
@@ -40,6 +45,7 @@ function readClientFields(formData: FormData) {
   const contactName = String(formData.get("contactName") ?? "").trim();
   const contactEmail = String(formData.get("contactEmail") ?? "").trim().toLowerCase();
   const contactPhone = String(formData.get("contactPhone") ?? "").trim();
+  const clientType = String(formData.get("clientType") ?? "").trim() || "client";
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
@@ -49,6 +55,7 @@ function readClientFields(formData: FormData) {
     contactName,
     contactEmail,
     contactPhone: contactPhone || null,
+    clientType,
     password,
     confirmPassword
   };
@@ -86,7 +93,10 @@ function buildClientFormValues(fields: ReturnType<typeof readClientFields>): Cli
     companyName: fields.companyName,
     contactName: fields.contactName,
     contactEmail: fields.contactEmail,
-    contactPhone: fields.contactPhone
+    contactPhone: fields.contactPhone,
+    clientType: clientTypeValues.includes(fields.clientType as (typeof clientTypeValues)[number])
+      ? (fields.clientType as (typeof clientTypeValues)[number])
+      : "client"
   };
 }
 
@@ -123,6 +133,10 @@ function validateClientFields(fields: ReturnType<typeof readClientFields>, optio
     fieldErrors.contactEmail = "Informe o e-mail do cliente.";
   } else if (!isValidEmail(fields.contactEmail)) {
     fieldErrors.contactEmail = "Informe um e-mail válido.";
+  }
+
+  if (!clientTypeValues.includes(fields.clientType as (typeof clientTypeValues)[number])) {
+    fieldErrors.clientType = "Selecione um tipo de cliente válido.";
   }
 
   if (options.passwordRequired || fields.password || fields.confirmPassword) {
@@ -321,7 +335,7 @@ export async function createClientAction(_previousState: ClientFormState, formDa
   await requireAdminActionAccess();
 
   const fields = readClientFields(formData);
-  const { companyName, contactName, contactEmail, contactPhone, password } = fields;
+  const { companyName, contactName, contactEmail, contactPhone, clientType, password } = fields;
   const fieldErrors = validateClientFields(fields, {
     passwordRequired: true
   });
@@ -374,6 +388,7 @@ export async function createClientAction(_previousState: ClientFormState, formDa
       contact_name: contactName,
       contact_email: contactEmail,
       contact_phone: contactPhone,
+      client_type: clientType,
       source: "admin",
       status: "active"
     })
@@ -423,7 +438,7 @@ export async function updateClientAction(_previousState: ClientFormState, formDa
   await requireAdminActionAccess();
 
   const fields = readClientFields(formData);
-  const { clientId, companyName, contactName, contactEmail, contactPhone, password } = fields;
+  const { clientId, companyName, contactName, contactEmail, contactPhone, clientType, password } = fields;
   const fieldErrors = validateClientFields(fields, {
     passwordRequired: false
   });
@@ -459,6 +474,7 @@ export async function updateClientAction(_previousState: ClientFormState, formDa
       contact_name: contactName,
       contact_email: contactEmail,
       contact_phone: contactPhone,
+      client_type: clientType,
       updated_at: updatedAt
     })
     .eq("id", clientId)

@@ -58,6 +58,7 @@ Clientes/empresas da plataforma.
 | `contact_name` | text | opcional |
 | `contact_email` | text | opcional |
 | `contact_phone` | text | opcional |
+| `client_type` | text | `lead`, `client`; default `client`; `lead` para cadastros vindos do site |
 | `status` | text | `active`, `inactive` |
 | `source` | text | `site`, `admin`; default `site` |
 | `deleted_at` | timestamptz | soft delete |
@@ -67,6 +68,7 @@ Clientes/empresas da plataforma.
 Uso atual:
 
 - CRUD administrativo de Clientes.
+- Classificacao operacional entre `lead` e `client`.
 - Vinculo com `app_users`.
 - Vinculo com `quotes` e `simulations`.
 - Soft delete/inativacao no admin.

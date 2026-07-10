@@ -46,7 +46,8 @@ export default async function EditClientPage({
             companyName: client.company_name,
             contactName: client.contact_name,
             contactEmail: client.contact_email,
-            contactPhone: client.contact_phone
+            contactPhone: client.contact_phone,
+            clientType: client.client_type
           }}
           showPasswordFields
         />

@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { Card } from "@/components/ui/Card";
-import { FormField, TextInput } from "@/components/ui/FormField";
+import { FormField, SelectInput, TextInput } from "@/components/ui/FormField";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { DismissibleAlert } from "@/components/ui/DismissibleAlert";
 import { initialClientFormState, type ClientFormState, type ClientFormValues } from "@/lib/admin/client-form-state";
@@ -91,6 +91,22 @@ export function ClientFormCard({
             aria-invalid={Boolean(errors.contactPhone)}
             aria-describedby={errors.contactPhone ? "contactPhone-error" : undefined}
           />
+        </FormField>
+        <FormField
+          label="Tipo de cliente"
+          help="Leads são cadastros vindos do site. Clientes são contatos já qualificados ou gerenciados pela equipe."
+          error={errors.clientType}
+          errorId="clientType-error"
+        >
+          <SelectInput
+            name="clientType"
+            defaultValue={currentValues?.clientType ?? "client"}
+            aria-invalid={Boolean(errors.clientType)}
+            aria-describedby={errors.clientType ? "clientType-error" : undefined}
+          >
+            <option value="client">Cliente</option>
+            <option value="lead">Lead</option>
+          </SelectInput>
         </FormField>
         {showPasswordFields ? (
           <>
