@@ -90,6 +90,7 @@ Diretrizes:
 
 - Interface densa e escaneavel.
 - Em desktop, usar header fixo no topo e sidebar fixa a esquerda para aumentar a area util.
+- No admin, agrupar a sidebar em secoes curtas: `Painel Administrativo`, `Back Office` e `Gerenciar`.
 - O conteudo admin deve ocupar toda a largura restante com `w-full` e padding responsivo, sem centralizacao estreita.
 - Tabelas com filtros persistentes.
 - Rolagem horizontal deve ficar restrita ao container da tabela, nunca a pagina inteira.

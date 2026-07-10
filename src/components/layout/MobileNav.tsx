@@ -3,18 +3,25 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { NavLinks } from "@/components/layout/NavLinks";
+import type { NavGroup, NavItem } from "@/lib/navigation";
 
-type NavItem = {
-  href: string;
-  label: string;
-  disabled?: boolean;
-};
-
-export function MobileNav({ navItems, title = "Menu" }: { navItems: NavItem[]; title?: string }) {
+export function MobileNav({
+  navItems,
+  navGroups,
+  title = "Menu"
+}: {
+  navItems: NavItem[];
+  navGroups?: NavGroup[];
+  title?: string;
+}) {
   const [open, setOpen] = useState(false);
 
   const enabledItems = navItems.filter((item) => !item.disabled);
   const disabledItems = navItems.filter((item) => item.disabled);
+  const enabledGroups = navGroups?.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.disabled)
+  })).filter((group) => group.items.length > 0);
 
   return (
     <>
@@ -53,13 +60,32 @@ export function MobileNav({ navItems, title = "Menu" }: { navItems: NavItem[]; t
                   </button>
                 </div>
 
-                <nav className="mt-4 grid gap-1">
-                  <NavLinks
-                    navItems={enabledItems}
-                    onNavigate={() => setOpen(false)}
-                    itemClassName="px-3 py-3 text-sm"
-                  />
-                </nav>
+                {enabledGroups && enabledGroups.length > 0 ? (
+                  <nav className="mt-4 grid gap-5">
+                    {enabledGroups.map((group) => (
+                      <div key={group.label}>
+                        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          {group.label}
+                        </p>
+                        <div className="grid gap-1">
+                          <NavLinks
+                            navItems={group.items}
+                            onNavigate={() => setOpen(false)}
+                            itemClassName="px-3 py-3 text-sm"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </nav>
+                ) : (
+                  <nav className="mt-4 grid gap-1">
+                    <NavLinks
+                      navItems={enabledItems}
+                      onNavigate={() => setOpen(false)}
+                      itemClassName="px-3 py-3 text-sm"
+                    />
+                  </nav>
+                )}
 
                 {disabledItems.length > 0 ? (
                   <div className="mt-5 border-t border-slate-200 pt-4">

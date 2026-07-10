@@ -59,6 +59,33 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Organizacao visual da sidebar admin
+
+- Reorganizada a navegacao lateral administrativa em tres grupos visuais:
+  - `Painel Administrativo`: Dashboard, Clientes, Cotacoes, Simulacoes;
+  - `Back Office`: Simulacoes Finais, Tipos de Despesa, Pre-calculos, Parametrizacoes Fiscais;
+  - `Gerenciar`: Configuracoes, Usuarios.
+- Mantidas as mesmas rotas, textos dos links, permisssões, comportamento de item ativo e drawer mobile.
+- A lista plana `adminNavItems` foi preservada para compatibilidade; o layout admin passa a usar `adminNavGroups` apenas para renderizacao agrupada.
+- Atualizado `docs/UI_UX_GUIDE.md` com o padrao de agrupamento da sidebar admin.
+- Nao houve alteracao em banco, migrations, auth, middleware, calculo, `package.json`, Simulacoes Finais alem do link de menu, producao ou `temp/`.
+
+Arquivos principais:
+
+- `src/lib/navigation.ts`
+- `src/components/layout/AppShell.tsx`
+- `src/components/layout/MobileNav.tsx`
+- `src/app/admin/layout.tsx`
+- `docs/UI_UX_GUIDE.md`
+- `state.md`
+
+Validacao pendente nesta etapa:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+- teste browser desktop/mobile do menu admin.
+
 ### 2026-07-10 - Mapeamento de output PDF/planilha da Simulacao Final
 
 - Analisados os arquivos reais de referencia:
