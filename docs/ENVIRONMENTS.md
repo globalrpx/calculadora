@@ -2,6 +2,8 @@
 
 Este projeto usa Dev como ambiente padrao para desenvolvimento local e validacao de migrations.
 
+Runbook completo de deploy, Vercel Production, smoke test e operacao segura: `docs/DEPLOYMENT.md`.
+
 ## Arquivos locais
 
 - `.env.local`: usado pelo app Next.js local. Deve apontar para o Supabase Dev durante desenvolvimento.
@@ -59,4 +61,12 @@ Depois de qualquer operacao em Producao, os scripts tentam voltar automaticament
 ## Vercel
 
 Vercel Production continua usando variaveis de Producao configuradas no painel da Vercel.
-Nao mexer na Vercel durante este fluxo local.
+Vercel Production deve permanecer apontando para Supabase Prod. Depois de operar em Producao, volta-se o link do Supabase CLI para Dev; a Vercel Production nao deve voltar para Dev.
+
+Variavel critica em Production:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=https://wrcgjooqbgxnjztuzfpo.supabase.co
+```
+
+Nao imprimir keys/secrets e nao versionar arquivos `.env` reais.

@@ -32,6 +32,7 @@ Fontes da verdade por tema:
 - `docs/AUTH_AND_PERMISSIONS.md`: autenticacao, roles, `app_users`, permissoes e isolamento.
 - `docs/ROUTES_AND_SCREENS.md`: rotas, telas e status das paginas.
 - `docs/TECH_STACK.md`: stack, scripts, ambiente, Vercel e Supabase.
+- `docs/DEPLOYMENT.md`: runbook operacional de deploy, Supabase Dev/Prod, Vercel Production, smoke test e rollback.
 - `docs/UI_UX_GUIDE.md`: padroes visuais.
 - `docs/FEATURES_BACKLOG.md`: roadmap e prioridades.
 - `README.md`: entrada rapida para humanos.
@@ -224,6 +225,9 @@ Quando migrar para Supabase, preservar a ideia de isolamento por cliente usando 
 - Nunca commitar `.env.supabase.dev`, `.env.supabase.prod` ou qualquer secret.
 - Para migrations em Dev, usar `scripts/supabase-db-dry-run-dev.sh` e `scripts/supabase-db-push-dev.sh`.
 - Para migrations em Producao, usar `scripts/supabase-db-dry-run-prod.sh` e, so depois, `scripts/supabase-db-push-prod.sh` com `CONFIRM_PROD_DB_PUSH=YES`.
+- Para deploy de producao, seguir `docs/DEPLOYMENT.md`.
+- Vercel Production deve permanecer apontando para Supabase Prod; quem volta para Dev apos operacao de producao e o link do Supabase CLI/local.
+- Nao fazer deploy Vercel sem build local e smoke test planejado.
 
 ## Calculadora
 

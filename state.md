@@ -59,6 +59,42 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Runbook operacional de deploy
+
+- Criado `docs/DEPLOYMENT.md` com o processo real executado para GitHub, Supabase Prod, Vercel Production e smoke test online.
+- Documentados os ambientes:
+  - Supabase Dev `neomzmuaocniunjyvpsk`;
+  - Supabase Prod `wrcgjooqbgxnjztuzfpo`;
+  - Vercel Production em `https://calculadora.globalrpx.com.br`.
+- Registrada a regra operacional principal:
+  - Supabase CLI/local volta para Dev depois de operar em Producao;
+  - Vercel Production permanece apontando para Supabase Prod.
+- Documentado o checklist oficial de deploy:
+  - Git limpo;
+  - `npm run typecheck`;
+  - `npm run lint`;
+  - `npm run build`;
+  - push para GitHub;
+  - dry-run Prod;
+  - push Prod com `CONFIRM_PROD_DB_PUSH=YES`;
+  - relink Dev;
+  - conferencias Vercel;
+  - `vercel --prod`;
+  - smoke test online.
+- Registrado o deploy executado nesta rodada:
+  - hash `1811e8b`;
+  - deployment `dpl_9dcokaLRrqeNf8BPGEPrWbqT46Yx`;
+  - dominio `https://calculadora.globalrpx.com.br`;
+  - smoke basico sem criacao de dados em Prod.
+- Atualizados `docs/ENVIRONMENTS.md` e `AGENTS.md` para apontar para o runbook.
+- Nao houve alteracao em `src/`, migrations, banco, Supabase, Vercel, `package.json`, secrets ou `temp/`.
+
+Validado nesta etapa:
+
+- `git diff --check`;
+- `npm run typecheck`;
+- `npm run lint`.
+
 ### 2026-07-10 - Fechamento documental da V1 de Simulacoes Finais
 
 - Criado `docs/FINAL_SIMULATIONS_V1_CLOSEOUT.md` consolidando o ciclo V1 do modulo Simulacoes Finais.
