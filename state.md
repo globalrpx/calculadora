@@ -59,6 +59,40 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Camada server de Parametrizacao Fiscal
+
+- Criada a camada server-side inicial para `invoice_parametrizations` e configuracoes fiscais de Simulacoes Finais.
+- Adicionados tipos, enums e inputs para:
+  - `InvoiceParametrization`;
+  - operacao `entrada`/`saida`;
+  - grupos, regimes, escopo de destino e perfil de cliente;
+  - configuracoes fiscais da simulacao;
+  - modo de comissao da trade.
+- Criados schemas para parametrizacao fiscal e configuracoes fiscais da simulacao.
+- Criadas queries administrativas para listar, buscar por ID, listar opcoes ativas por tipo de operacao e ler configuracoes fiscais da simulacao.
+- Criadas actions administrativas para criar, atualizar, ativar/desativar e desativar como exclusao logica de parametrizacoes fiscais.
+- Criada action para atualizar configuracoes fiscais da Simulacao Final, validando que NF entrada usa parametrizacao `entrada` e NF saida usa `saida`.
+- O snapshot de parametrizacao fiscal grava campos principais do cadastro selecionado, incluindo codigo, tipo, descricao, CFOP/natureza, grupo, regime, ICMS, escopo, cliente/filial e timestamp do snapshot.
+- Nao houve migration, RLS, auth, middleware, layout global, UI/rotas, `package.json`, `temp/`, producao, calculo fiscal final, `simulation_tax_lines`, PDF ou alteracao de totais.
+
+Arquivos principais:
+
+- `src/features/final-simulations/types.ts`
+- `src/features/final-simulations/schemas.ts`
+- `src/features/final-simulations/queries.ts`
+- `src/features/final-simulations/actions.ts`
+- `state.md`
+
+Validado:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+
+Proxima etapa recomendada:
+
+- Criar UI admin de cadastro de parametrizacoes fiscais e uma secao na Simulacao Final para selecionar entrada/saida e salvar os snapshots.
+
 ### 2026-07-10 - Migration de Parametrizacao Fiscal de Simulacoes Finais
 
 - Criada migration incremental para suportar parametrizacoes fiscais de NF entrada/saida no modulo de Simulacoes Finais.

@@ -14,10 +14,13 @@ import {
   createExpensePresetSchema,
   createExpenseTypeSchema,
   createFinalSimulationSchema,
+  finalSimulationFiscalSettingsSchema,
   finalSimulationItemSchema,
+  invoiceParametrizationSchema,
   isFinalSimulationLocked,
   manualSimulationExpenseSchema,
   processExpensePresetSchema,
+  updateInvoiceParametrizationSchema,
   updateExpensePresetItemSchema,
   updateExpensePresetSchema,
   updateExpenseTypeSchema,
@@ -33,10 +36,13 @@ import type {
   ExpenseType,
   ExpenseTypeValues,
   FinalSimulationActionState,
+  FinalSimulationFiscalSettingsInput,
   FinalSimulationItemRow,
   FinalSimulationItemValues,
   FinalSimulationMainDataValues,
   FinalSimulationRow,
+  InvoiceParametrization,
+  InvoiceParametrizationFormInput,
   NcmCodeRow,
   NcmTaxProfileRow,
   ProcessExpensePresetValues,
@@ -217,6 +223,90 @@ function buildExpensePresetPayload(values: ExpensePresetValues, appUserId: strin
     transport_mode: values.transportMode,
     is_active: values.isActive ?? true,
     updated_by: appUserId
+  };
+}
+
+function buildInvoiceParametrizationPayload(values: InvoiceParametrizationFormInput, appUserId: string) {
+  return {
+    code: values.code,
+    key: emptyToNull(values.key),
+    operation_type: values.operationType,
+    description: values.description,
+    operation_nature: emptyToNull(values.operationNature),
+    cfop: emptyToNull(values.cfop),
+    operation_group: emptyToNull(values.operationGroup),
+    tax_regime: emptyToNull(values.taxRegime),
+    icms_rate: values.icmsRate ?? 0,
+    destination_scope: emptyToNull(values.destinationScope),
+    customer_profile: emptyToNull(values.customerProfile),
+    is_unified: values.isUnified ?? false,
+    branch_id: values.branchId || null,
+    branch_name: emptyToNull(values.branchName),
+    customer_id: values.customerId || null,
+    customer_name: emptyToNull(values.customerName),
+    is_active: values.isActive ?? true,
+    internal_notes: emptyToNull(values.internalNotes),
+    updated_by: appUserId
+  };
+}
+
+function buildInvoiceParametrizationSnapshot(invoiceParametrization: InvoiceParametrization) {
+  return {
+    id: invoiceParametrization.id,
+    code: invoiceParametrization.code,
+    key: invoiceParametrization.key,
+    operation_type: invoiceParametrization.operation_type,
+    description: invoiceParametrization.description,
+    operation_nature: invoiceParametrization.operation_nature,
+    cfop: invoiceParametrization.cfop,
+    operation_group: invoiceParametrization.operation_group,
+    tax_regime: invoiceParametrization.tax_regime,
+    icms_rate: invoiceParametrization.icms_rate,
+    destination_scope: invoiceParametrization.destination_scope,
+    customer_profile: invoiceParametrization.customer_profile,
+    is_unified: invoiceParametrization.is_unified,
+    branch_id: invoiceParametrization.branch_id,
+    branch_name: invoiceParametrization.branch_name,
+    customer_id: invoiceParametrization.customer_id,
+    customer_name: invoiceParametrization.customer_name,
+    snapshot_created_at: new Date().toISOString()
+  };
+}
+
+async function findActiveInvoiceParametrization(
+  adminSupabase: ReturnType<typeof createAdminClient>,
+  id: string,
+  operationType: InvoiceParametrization["operation_type"]
+) {
+  const { data, error } = await adminSupabase
+    .from("invoice_parametrizations")
+    .select("*")
+    .eq("id", id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      error: "Parametrização fiscal ativa não encontrada.",
+      invoiceParametrization: null
+    };
+  }
+
+  const invoiceParametrization = data as InvoiceParametrization;
+
+  if (invoiceParametrization.operation_type !== operationType) {
+    return {
+      error:
+        operationType === "entrada"
+          ? "A parametrização de NF entrada deve ter tipo entrada."
+          : "A parametrização de NF saída deve ter tipo saída.",
+      invoiceParametrization: null
+    };
+  }
+
+  return {
+    error: null,
+    invoiceParametrization
   };
 }
 
@@ -1373,5 +1463,221 @@ export async function deleteExpensePresetItemAction(formData: FormData) {
   return {
     success: true,
     message: "Item do pré-cálculo removido."
+  };
+}
+
+export async function createInvoiceParametrizationAction(
+  _previousState: FinalSimulationActionState<InvoiceParametrizationFormInput>,
+  formData: FormData
+): Promise<FinalSimulationActionState<InvoiceParametrizationFormInput>> {
+  const adminUser = await requireAdminUser();
+  const parsed = invoiceParametrizationSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const { data, error } = await adminSupabase
+    .from("invoice_parametrizations")
+    .insert({
+      ...buildInvoiceParametrizationPayload(parsed.data, adminUser.id),
+      created_by: adminUser.id,
+      updated_by: adminUser.id
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Parametrização fiscal criada.",
+    id: data.id
+  };
+}
+
+export async function updateInvoiceParametrizationAction(
+  _previousState: FinalSimulationActionState<InvoiceParametrizationFormInput>,
+  formData: FormData
+): Promise<FinalSimulationActionState<InvoiceParametrizationFormInput>> {
+  const adminUser = await requireAdminUser();
+  const parsed = updateInvoiceParametrizationSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("invoice_parametrizations")
+    .update(buildInvoiceParametrizationPayload(parsed.data, adminUser.id))
+    .eq("id", parsed.data.invoiceParametrizationId);
+
+  if (error) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Parametrização fiscal atualizada.",
+    id: parsed.data.invoiceParametrizationId
+  };
+}
+
+export async function toggleInvoiceParametrizationStatusAction(formData: FormData) {
+  const adminUser = await requireAdminUser();
+  const invoiceParametrizationId = String(formData.get("invoiceParametrizationId") ?? "").trim();
+  const isActive = String(formData.get("isActive") ?? "").trim() === "true";
+
+  if (!invoiceParametrizationId) {
+    return {
+      success: false,
+      message: "Informe a parametrização fiscal."
+    };
+  }
+
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("invoice_parametrizations")
+    .update({
+      is_active: isActive,
+      updated_by: adminUser.id
+    })
+    .eq("id", invoiceParametrizationId);
+
+  if (error) {
+    return {
+      success: false,
+      message: unexpectedSaveMessage
+    };
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: isActive ? "Parametrização fiscal ativada." : "Parametrização fiscal desativada."
+  };
+}
+
+export async function deleteInvoiceParametrizationAction(formData: FormData) {
+  const adminUser = await requireAdminUser();
+  const invoiceParametrizationId = String(formData.get("invoiceParametrizationId") ?? "").trim();
+
+  if (!invoiceParametrizationId) {
+    return {
+      success: false,
+      message: "Informe a parametrização fiscal."
+    };
+  }
+
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("invoice_parametrizations")
+    .update({
+      is_active: false,
+      updated_by: adminUser.id
+    })
+    .eq("id", invoiceParametrizationId);
+
+  if (error) {
+    return {
+      success: false,
+      message: unexpectedSaveMessage
+    };
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Parametrização fiscal desativada."
+  };
+}
+
+export async function updateFinalSimulationFiscalSettingsAction(
+  _previousState: FinalSimulationActionState<FinalSimulationFiscalSettingsInput>,
+  formData: FormData
+): Promise<FinalSimulationActionState<FinalSimulationFiscalSettingsInput>> {
+  const adminUser = await requireAdminUser();
+  const parsed = finalSimulationFiscalSettingsSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const editable = await getEditableSimulation(adminSupabase, parsed.data.simulationId);
+
+  if (editable.error || !editable.simulation) {
+    return buildActionError(parsed.data, { form: editable.error ?? unexpectedSaveMessage });
+  }
+
+  const entryInvoiceParametrizationId = parsed.data.entryInvoiceParametrizationId || null;
+  const exitInvoiceParametrizationId = parsed.data.exitInvoiceParametrizationId || null;
+  let entryInvoiceParametrizationSnapshot: Record<string, unknown> = {};
+  let exitInvoiceParametrizationSnapshot: Record<string, unknown> = {};
+
+  if (entryInvoiceParametrizationId) {
+    const entry = await findActiveInvoiceParametrization(adminSupabase, entryInvoiceParametrizationId, "entrada");
+
+    if (entry.error || !entry.invoiceParametrization) {
+      return buildActionError<FinalSimulationFiscalSettingsInput>(parsed.data, {
+        entryInvoiceParametrizationId: entry.error ?? unexpectedSaveMessage
+      });
+    }
+
+    entryInvoiceParametrizationSnapshot = buildInvoiceParametrizationSnapshot(entry.invoiceParametrization);
+  }
+
+  if (exitInvoiceParametrizationId) {
+    const exit = await findActiveInvoiceParametrization(adminSupabase, exitInvoiceParametrizationId, "saida");
+
+    if (exit.error || !exit.invoiceParametrization) {
+      return buildActionError<FinalSimulationFiscalSettingsInput>(parsed.data, {
+        exitInvoiceParametrizationId: exit.error ?? unexpectedSaveMessage
+      });
+    }
+
+    exitInvoiceParametrizationSnapshot = buildInvoiceParametrizationSnapshot(exit.invoiceParametrization);
+  }
+
+  const { error } = await adminSupabase
+    .from("final_simulations")
+    .update({
+      trade_commission_mode: emptyToNull(parsed.data.tradeCommissionMode),
+      trade_commission_percent: parsed.data.tradeCommissionPercent ?? 0,
+      trade_commission_amount_brl: parsed.data.tradeCommissionAmountBrl ?? 0,
+      ignore_trade_commission_contract: parsed.data.ignoreTradeCommissionContract ?? false,
+      credits_ipi: parsed.data.creditsIpi ?? false,
+      credits_pis: parsed.data.creditsPis ?? false,
+      credits_cofins: parsed.data.creditsCofins ?? false,
+      credits_icms: parsed.data.creditsIcms ?? false,
+      tax_credit_notes: emptyToNull(parsed.data.taxCreditNotes),
+      entry_invoice_parametrization_id: entryInvoiceParametrizationId,
+      entry_invoice_parametrization_snapshot: entryInvoiceParametrizationSnapshot,
+      exit_invoice_parametrization_id: exitInvoiceParametrizationId,
+      exit_invoice_parametrization_snapshot: exitInvoiceParametrizationSnapshot,
+      updated_by: adminUser.id
+    })
+    .eq("id", editable.simulation.id);
+
+  if (error) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateFinalSimulationPaths(editable.simulation.id);
+
+  return {
+    success: true,
+    message: "Parametrização fiscal da simulação atualizada.",
+    id: editable.simulation.id
   };
 }

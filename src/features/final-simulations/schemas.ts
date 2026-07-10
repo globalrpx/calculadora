@@ -9,12 +9,20 @@ import {
   finalSimulationImportModalityValues,
   finalSimulationStatusValues,
   finalSimulationTransportModeValues,
+  invoiceParametrizationCustomerProfileValues,
+  invoiceParametrizationDestinationScopeValues,
+  invoiceParametrizationOperationGroupValues,
+  invoiceParametrizationOperationTypeValues,
+  invoiceParametrizationTaxRegimeValues,
+  tradeCommissionModeValues,
   type ExpensePresetItemValues,
   type ExpensePresetValues,
   type ExpenseTypeValues,
   type FinalSimulationItemValues,
+  type FinalSimulationFiscalSettingsInput,
   type FinalSimulationMainDataValues,
   type FinalSimulationStatus,
+  type InvoiceParametrizationFormInput,
   type ProcessExpensePresetValues,
   type SimulationExpenseLineValues
 } from "./types";
@@ -823,6 +831,209 @@ export const updateSimulationExpenseLineSchema = {
   parse(formData: FormData): SchemaResult<SimulationExpenseLineValues> {
     const values = readSimulationExpenseLineData(formData);
     const fieldErrors = validateSimulationExpenseLineData(values, { requireExpenseLineId: true });
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
+  }
+};
+
+function readInvoiceParametrizationData(formData: FormData): InvoiceParametrizationFormInput {
+  return {
+    invoiceParametrizationId: optionalUuid(formData.get("invoiceParametrizationId")),
+    code: normalizeText(formData.get("code")),
+    key: optionalText(formData.get("key")),
+    operationType: normalizeText(formData.get("operationType")),
+    description: normalizeText(formData.get("description")),
+    operationNature: optionalText(formData.get("operationNature")),
+    cfop: optionalText(formData.get("cfop")),
+    operationGroup: optionalText(formData.get("operationGroup")),
+    taxRegime: optionalText(formData.get("taxRegime")),
+    icmsRate: normalizeNumber(formData.get("icmsRate")),
+    destinationScope: optionalText(formData.get("destinationScope")),
+    customerProfile: optionalText(formData.get("customerProfile")),
+    isUnified: normalizeCheckbox(formData, "isUnified", false),
+    branchId: optionalUuid(formData.get("branchId")),
+    branchName: optionalText(formData.get("branchName")),
+    customerId: optionalUuid(formData.get("customerId")),
+    customerName: optionalText(formData.get("customerName")),
+    isActive: normalizeCheckbox(formData, "isActive", true),
+    internalNotes: optionalText(formData.get("internalNotes"))
+  };
+}
+
+function validateInvoiceParametrizationData(
+  values: InvoiceParametrizationFormInput,
+  options: { requireInvoiceParametrizationId: boolean }
+): Partial<Record<keyof InvoiceParametrizationFormInput | "form", string>> {
+  const fieldErrors: Partial<Record<keyof InvoiceParametrizationFormInput | "form", string>> = {};
+
+  if (options.requireInvoiceParametrizationId && !values.invoiceParametrizationId) {
+    fieldErrors.invoiceParametrizationId = "Informe a parametrização fiscal.";
+  }
+
+  validateOptionalUuid(
+    fieldErrors,
+    "invoiceParametrizationId",
+    values.invoiceParametrizationId,
+    "Parametrização fiscal inválida."
+  );
+  validateOptionalUuid(fieldErrors, "branchId", values.branchId, "Filial inválida.");
+  validateOptionalUuid(fieldErrors, "customerId", values.customerId, "Cliente inválido.");
+
+  if (!values.code) {
+    fieldErrors.code = "Informe o código.";
+  }
+
+  if (!values.description) {
+    fieldErrors.description = "Informe a descrição.";
+  }
+
+  if (
+    !values.operationType ||
+    !invoiceParametrizationOperationTypeValues.includes(
+      values.operationType as (typeof invoiceParametrizationOperationTypeValues)[number]
+    )
+  ) {
+    fieldErrors.operationType = "Selecione um tipo de operação válido.";
+  }
+
+  if (
+    values.operationGroup &&
+    !invoiceParametrizationOperationGroupValues.includes(
+      values.operationGroup as (typeof invoiceParametrizationOperationGroupValues)[number]
+    )
+  ) {
+    fieldErrors.operationGroup = "Selecione um grupo de operação válido.";
+  }
+
+  if (
+    values.taxRegime &&
+    !invoiceParametrizationTaxRegimeValues.includes(
+      values.taxRegime as (typeof invoiceParametrizationTaxRegimeValues)[number]
+    )
+  ) {
+    fieldErrors.taxRegime = "Selecione um regime tributário válido.";
+  }
+
+  if (
+    values.destinationScope &&
+    !invoiceParametrizationDestinationScopeValues.includes(
+      values.destinationScope as (typeof invoiceParametrizationDestinationScopeValues)[number]
+    )
+  ) {
+    fieldErrors.destinationScope = "Selecione um escopo de destino válido.";
+  }
+
+  if (
+    values.customerProfile &&
+    !invoiceParametrizationCustomerProfileValues.includes(
+      values.customerProfile as (typeof invoiceParametrizationCustomerProfileValues)[number]
+    )
+  ) {
+    fieldErrors.customerProfile = "Selecione um perfil de cliente válido.";
+  }
+
+  validateNonNegativeNumber(fieldErrors, "icmsRate", values.icmsRate, "Informe uma alíquota ICMS válida.");
+
+  return fieldErrors;
+}
+
+export const invoiceParametrizationSchema = {
+  parse(formData: FormData): SchemaResult<InvoiceParametrizationFormInput> {
+    const values = readInvoiceParametrizationData(formData);
+    const requireId = Boolean(values.invoiceParametrizationId);
+    const fieldErrors = validateInvoiceParametrizationData(values, {
+      requireInvoiceParametrizationId: requireId
+    });
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
+  }
+};
+
+export const updateInvoiceParametrizationSchema = {
+  parse(formData: FormData): SchemaResult<InvoiceParametrizationFormInput> {
+    const values = readInvoiceParametrizationData(formData);
+    const fieldErrors = validateInvoiceParametrizationData(values, {
+      requireInvoiceParametrizationId: true
+    });
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
+  }
+};
+
+function readFinalSimulationFiscalSettingsData(formData: FormData): FinalSimulationFiscalSettingsInput {
+  return {
+    simulationId: normalizeText(formData.get("simulationId")),
+    tradeCommissionMode: optionalText(formData.get("tradeCommissionMode")),
+    tradeCommissionPercent: normalizeNumber(formData.get("tradeCommissionPercent")),
+    tradeCommissionAmountBrl: normalizeNumber(formData.get("tradeCommissionAmountBrl")),
+    ignoreTradeCommissionContract: normalizeCheckbox(formData, "ignoreTradeCommissionContract", false),
+    creditsIpi: normalizeCheckbox(formData, "creditsIpi", false),
+    creditsPis: normalizeCheckbox(formData, "creditsPis", false),
+    creditsCofins: normalizeCheckbox(formData, "creditsCofins", false),
+    creditsIcms: normalizeCheckbox(formData, "creditsIcms", false),
+    taxCreditNotes: optionalText(formData.get("taxCreditNotes")),
+    entryInvoiceParametrizationId: optionalUuid(formData.get("entryInvoiceParametrizationId")),
+    exitInvoiceParametrizationId: optionalUuid(formData.get("exitInvoiceParametrizationId"))
+  };
+}
+
+function validateFinalSimulationFiscalSettingsData(
+  values: FinalSimulationFiscalSettingsInput
+): Partial<Record<keyof FinalSimulationFiscalSettingsInput | "form", string>> {
+  const fieldErrors: Partial<Record<keyof FinalSimulationFiscalSettingsInput | "form", string>> = {};
+
+  if (!values.simulationId || !uuidPattern.test(values.simulationId)) {
+    fieldErrors.simulationId = "Informe uma simulação válida.";
+  }
+
+  if (values.tradeCommissionMode && !tradeCommissionModeValues.includes(values.tradeCommissionMode as (typeof tradeCommissionModeValues)[number])) {
+    fieldErrors.tradeCommissionMode = "Selecione uma modalidade de comissão válida.";
+  }
+
+  validateNonNegativeNumber(
+    fieldErrors,
+    "tradeCommissionPercent",
+    values.tradeCommissionPercent,
+    "Informe um percentual de comissão válido."
+  );
+  validateNonNegativeNumber(
+    fieldErrors,
+    "tradeCommissionAmountBrl",
+    values.tradeCommissionAmountBrl,
+    "Informe um valor de comissão válido."
+  );
+  validateOptionalUuid(
+    fieldErrors,
+    "entryInvoiceParametrizationId",
+    values.entryInvoiceParametrizationId,
+    "Parametrização de NF entrada inválida."
+  );
+  validateOptionalUuid(
+    fieldErrors,
+    "exitInvoiceParametrizationId",
+    values.exitInvoiceParametrizationId,
+    "Parametrização de NF saída inválida."
+  );
+
+  return fieldErrors;
+}
+
+export const finalSimulationFiscalSettingsSchema = {
+  parse(formData: FormData): SchemaResult<FinalSimulationFiscalSettingsInput> {
+    const values = readFinalSimulationFiscalSettingsData(formData);
+    const fieldErrors = validateFinalSimulationFiscalSettingsData(values);
 
     if (hasFieldErrors(fieldErrors)) {
       return { success: false, fieldErrors, values };

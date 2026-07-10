@@ -49,6 +49,43 @@ export const expensePresetTransportModeValues = finalSimulationTransportModeValu
 
 export type ExpensePresetTransportMode = (typeof expensePresetTransportModeValues)[number];
 
+export const invoiceParametrizationOperationTypeValues = ["entrada", "saida"] as const;
+
+export type InvoiceParametrizationOperationType = (typeof invoiceParametrizationOperationTypeValues)[number];
+
+export const invoiceParametrizationOperationGroupValues = [
+  "conta_e_ordem",
+  "venda_mercadoria",
+  "unificado",
+  "compra_comercializacao",
+  "simulacao_terceiros",
+  "outro"
+] as const;
+
+export type InvoiceParametrizationOperationGroup = (typeof invoiceParametrizationOperationGroupValues)[number];
+
+export const invoiceParametrizationTaxRegimeValues = [
+  "simples_nacional",
+  "lucro_real",
+  "lucro_presumido",
+  "consumidor_final",
+  "outro"
+] as const;
+
+export type InvoiceParametrizationTaxRegime = (typeof invoiceParametrizationTaxRegimeValues)[number];
+
+export const invoiceParametrizationDestinationScopeValues = ["interno", "interestadual", "fora_estado", "outro"] as const;
+
+export type InvoiceParametrizationDestinationScope = (typeof invoiceParametrizationDestinationScopeValues)[number];
+
+export const invoiceParametrizationCustomerProfileValues = ["revenda", "consumidor_final", "industria", "outro"] as const;
+
+export type InvoiceParametrizationCustomerProfile = (typeof invoiceParametrizationCustomerProfileValues)[number];
+
+export const tradeCommissionModeValues = ["percent", "fixed_expense", "none"] as const;
+
+export type TradeCommissionMode = (typeof tradeCommissionModeValues)[number];
+
 export type FinalSimulationRow = {
   id: string;
   code: string | null;
@@ -110,6 +147,22 @@ export type FinalSimulationRow = {
   container_load_type: string | null;
   has_national_freight: boolean;
   national_freight_brl: number;
+  trade_commission_mode: TradeCommissionMode | null;
+  trade_commission_percent: number;
+  trade_commission_amount_brl: number;
+  ignore_trade_commission_contract: boolean;
+  credits_ipi: boolean;
+  credits_pis: boolean;
+  credits_cofins: boolean;
+  credits_icms: boolean;
+  tax_regime_snapshot: Record<string, unknown>;
+  tax_credit_notes: string | null;
+  tax_credit_validated_by: string | null;
+  tax_credit_validated_at: string | null;
+  entry_invoice_parametrization_id: string | null;
+  entry_invoice_parametrization_snapshot: Record<string, unknown>;
+  exit_invoice_parametrization_id: string | null;
+  exit_invoice_parametrization_snapshot: Record<string, unknown>;
   calculation_snapshot: Record<string, unknown>;
   public_snapshot: Record<string, unknown>;
   internal_snapshot: Record<string, unknown>;
@@ -410,6 +463,43 @@ export type SimulationExpenseLine = {
   updated_at: string;
 };
 
+export type InvoiceParametrization = {
+  id: string;
+  code: string;
+  key: string | null;
+  operation_type: InvoiceParametrizationOperationType;
+  description: string;
+  operation_nature: string | null;
+  cfop: string | null;
+  operation_group: InvoiceParametrizationOperationGroup | null;
+  tax_regime: InvoiceParametrizationTaxRegime | null;
+  icms_rate: number;
+  destination_scope: InvoiceParametrizationDestinationScope | null;
+  customer_profile: InvoiceParametrizationCustomerProfile | null;
+  is_unified: boolean;
+  branch_id: string | null;
+  branch_name: string | null;
+  customer_id: string | null;
+  customer_name: string | null;
+  is_active: boolean;
+  internal_notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InvoiceParametrizationOption = Pick<
+  InvoiceParametrization,
+  "id" | "code" | "description" | "operation_type" | "customer_name" | "is_unified"
+>;
+
+export type InvoiceParametrizationListFilters = {
+  operationType?: string;
+  isActive?: boolean;
+  search?: string;
+};
+
 export type ExpensePresetWithItems = ExpensePreset & {
   items: ExpensePresetItem[];
 };
@@ -496,4 +586,41 @@ export type SimulationExpenseLineValues = {
   allocationType?: string;
   appliedBehavior?: string;
   notes?: string;
+};
+
+export type InvoiceParametrizationFormInput = {
+  invoiceParametrizationId?: string;
+  code: string;
+  key?: string;
+  operationType?: string;
+  description: string;
+  operationNature?: string;
+  cfop?: string;
+  operationGroup?: string;
+  taxRegime?: string;
+  icmsRate?: number;
+  destinationScope?: string;
+  customerProfile?: string;
+  isUnified?: boolean;
+  branchId?: string;
+  branchName?: string;
+  customerId?: string;
+  customerName?: string;
+  isActive?: boolean;
+  internalNotes?: string;
+};
+
+export type FinalSimulationFiscalSettingsInput = {
+  simulationId: string;
+  tradeCommissionMode?: string;
+  tradeCommissionPercent?: number;
+  tradeCommissionAmountBrl?: number;
+  ignoreTradeCommissionContract?: boolean;
+  creditsIpi?: boolean;
+  creditsPis?: boolean;
+  creditsCofins?: boolean;
+  creditsIcms?: boolean;
+  taxCreditNotes?: string;
+  entryInvoiceParametrizationId?: string;
+  exitInvoiceParametrizationId?: string;
 };

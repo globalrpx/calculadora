@@ -12,7 +12,12 @@ import type {
   FinalSimulationPagination,
   FinalSimulationRow,
   FinalSimulationClientOption,
+  FinalSimulationFiscalSettingsInput,
   NcmCodeRow,
+  InvoiceParametrization,
+  InvoiceParametrizationListFilters,
+  InvoiceParametrizationOperationType,
+  InvoiceParametrizationOption,
   SimulationExpenseLine
 } from "./types";
 
@@ -334,5 +339,123 @@ export async function getExpensePresetWithItems(presetId: string): Promise<Expen
   return {
     ...((preset ?? {}) as ExpensePreset),
     items: (items ?? []) as ExpensePresetItem[]
+  };
+}
+
+export async function listInvoiceParametrizations(
+  filters: InvoiceParametrizationListFilters = {}
+): Promise<InvoiceParametrization[]> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  let query = supabase
+    .from("invoice_parametrizations")
+    .select("*")
+    .order("operation_type", { ascending: true })
+    .order("code", { ascending: true });
+
+  if (filters.operationType) {
+    query = query.eq("operation_type", filters.operationType);
+  }
+
+  if (typeof filters.isActive === "boolean") {
+    query = query.eq("is_active", filters.isActive);
+  }
+
+  if (filters.search) {
+    const term = safeSearchTerm(filters.search);
+    query = query.or(`code.ilike.%${term}%,description.ilike.%${term}%,customer_name.ilike.%${term}%,cfop.ilike.%${term}%`);
+  }
+
+  const { data } = await query;
+
+  return (data ?? []) as InvoiceParametrization[];
+}
+
+export async function getInvoiceParametrizationById(id: string): Promise<InvoiceParametrization | null> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase.from("invoice_parametrizations").select("*").eq("id", id).maybeSingle();
+
+  return (data ?? null) as InvoiceParametrization | null;
+}
+
+export async function listInvoiceParametrizationOptions(
+  operationType: InvoiceParametrizationOperationType
+): Promise<InvoiceParametrizationOption[]> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("invoice_parametrizations")
+    .select("id, code, description, operation_type, customer_name, is_unified")
+    .eq("operation_type", operationType)
+    .eq("is_active", true)
+    .order("code", { ascending: true })
+    .order("description", { ascending: true });
+
+  return (data ?? []) as InvoiceParametrizationOption[];
+}
+
+export async function getFinalSimulationFiscalSettings(
+  simulationId: string
+): Promise<FinalSimulationFiscalSettingsInput | null> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("final_simulations")
+    .select(
+      [
+        "id",
+        "trade_commission_mode",
+        "trade_commission_percent",
+        "trade_commission_amount_brl",
+        "ignore_trade_commission_contract",
+        "credits_ipi",
+        "credits_pis",
+        "credits_cofins",
+        "credits_icms",
+        "tax_credit_notes",
+        "entry_invoice_parametrization_id",
+        "exit_invoice_parametrization_id"
+      ].join(", ")
+    )
+    .eq("id", simulationId)
+    .maybeSingle();
+
+  if (!data) {
+    return null;
+  }
+
+  const row = data as unknown as {
+    id: string;
+    trade_commission_mode: string | null;
+    trade_commission_percent: number | null;
+    trade_commission_amount_brl: number | null;
+    ignore_trade_commission_contract: boolean | null;
+    credits_ipi: boolean | null;
+    credits_pis: boolean | null;
+    credits_cofins: boolean | null;
+    credits_icms: boolean | null;
+    tax_credit_notes: string | null;
+    entry_invoice_parametrization_id: string | null;
+    exit_invoice_parametrization_id: string | null;
+  };
+
+  return {
+    simulationId: row.id,
+    tradeCommissionMode: row.trade_commission_mode ?? undefined,
+    tradeCommissionPercent: row.trade_commission_percent ?? 0,
+    tradeCommissionAmountBrl: row.trade_commission_amount_brl ?? 0,
+    ignoreTradeCommissionContract: row.ignore_trade_commission_contract ?? false,
+    creditsIpi: row.credits_ipi ?? false,
+    creditsPis: row.credits_pis ?? false,
+    creditsCofins: row.credits_cofins ?? false,
+    creditsIcms: row.credits_icms ?? false,
+    taxCreditNotes: row.tax_credit_notes ?? undefined,
+    entryInvoiceParametrizationId: row.entry_invoice_parametrization_id ?? undefined,
+    exitInvoiceParametrizationId: row.exit_invoice_parametrization_id ?? undefined
   };
 }
