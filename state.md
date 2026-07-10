@@ -59,6 +59,50 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - UI admin de Parametrizacoes Fiscais
+
+- Criadas rotas administrativas para CRUD de `invoice_parametrizations`:
+  - `/admin/cadastros/parametrizacoes-fiscais`;
+  - `/admin/cadastros/parametrizacoes-fiscais/nova`;
+  - `/admin/cadastros/parametrizacoes-fiscais/[id]/editar`.
+- A listagem exibe codigo, tipo, descricao, CFOP, regime, ICMS, cliente/filial, status e acoes.
+- Filtros simples implementados: busca textual, tipo e status.
+- Criado formulario administrativo para codigo, chave, tipo, descricao, natureza, CFOP, grupo, regime, ICMS, escopo, perfil, filial, cliente, flags e observacoes internas.
+- Criadas acoes de linha para editar e ativar/inativar parametrizacoes fiscais usando as actions server-side ja existentes.
+- Adicionado link `Parametrizações Fiscais` na navegacao admin.
+- Atualizado `docs/ROUTES_AND_SCREENS.md`.
+- Nao houve migration, RLS, auth, middleware, layout global, `package.json`, `temp/`, secao fiscal dentro da simulacao, calculo fiscal, `simulation_tax_lines`, PDF ou producao.
+
+Arquivos principais:
+
+- `src/app/admin/cadastros/parametrizacoes-fiscais/page.tsx`
+- `src/app/admin/cadastros/parametrizacoes-fiscais/nova/page.tsx`
+- `src/app/admin/cadastros/parametrizacoes-fiscais/[id]/editar/page.tsx`
+- `src/features/final-simulations/InvoiceParametrizationForm.tsx`
+- `src/features/final-simulations/InvoiceParametrizationRowActions.tsx`
+- `src/features/final-simulations/fiscal-labels.ts`
+- `src/lib/navigation.ts`
+- `docs/ROUTES_AND_SCREENS.md`
+- `state.md`
+
+Validado:
+
+- `git diff --check` passou.
+- `npm run typecheck` passou.
+- `npm run lint` passou.
+- Teste browser no Supabase Dev passou em `http://localhost:3002`:
+  - login admin Dev;
+  - listagem de parametrizacoes fiscais;
+  - criacao de NF entrada;
+  - criacao de NF saida;
+  - edicao de NF entrada;
+  - inativacao e reativacao;
+  - filtros por tipo, status ativo e busca textual.
+
+Proxima etapa recomendada:
+
+- Depois de validar e commitar esta UI, criar a secao fiscal dentro do detalhe/edicao da Simulacao Final para selecionar entrada/saida e gravar snapshots.
+
 ### 2026-07-10 - Camada server de Parametrizacao Fiscal
 
 - Criada a camada server-side inicial para `invoice_parametrizations` e configuracoes fiscais de Simulacoes Finais.

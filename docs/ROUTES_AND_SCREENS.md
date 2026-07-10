@@ -44,6 +44,9 @@
 | `/admin/cadastros/pre-calculos-despesas` | Admin | Parcial | `expense_presets` | Listagem e inativação de pré-cálculos de despesas. |
 | `/admin/cadastros/pre-calculos-despesas/novo` | Admin | Parcial | `expense_presets` | Criação de pré-cálculo de despesas. |
 | `/admin/cadastros/pre-calculos-despesas/[id]/editar` | Admin | Parcial | `expense_presets`, `expense_preset_items`, `expense_types` | Edição de pré-cálculo e gestão dos itens do preset. |
+| `/admin/cadastros/parametrizacoes-fiscais` | Admin | Parcial | `invoice_parametrizations` | Listagem, filtros e ativação/inativação de parametrizações fiscais. |
+| `/admin/cadastros/parametrizacoes-fiscais/nova` | Admin | Parcial | `invoice_parametrizations` | Criação de parametrização fiscal de NF entrada/saída. |
+| `/admin/cadastros/parametrizacoes-fiscais/[id]/editar` | Admin | Parcial | `invoice_parametrizations` | Edição de parametrização fiscal. |
 | `/admin/configuracoes` | Admin | Funcional | `config` | Lista, cria e edita configuracoes globais; `import_factor` controla o fator RPX de novas cotacoes. |
 | `/admin/usuarios` | Admin | Funcional | `app_users` | CRUD de usuarios admin com filtros, totalizador, paginacao, ordenacao segura, status e acoes. |
 | `/admin/usuarios/novo` | Admin | Funcional | Supabase Auth + `app_users` | Criacao de usuario admin com senha obrigatoria e validacao inline. |

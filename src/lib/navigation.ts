@@ -18,6 +18,7 @@ export const adminNavItems: NavItem[] = [
   { href: "/admin/simulacoes-finais", label: "Simulações Finais" },
   { href: "/admin/cadastros/tipos-despesa", label: "Tipos de Despesa" },
   { href: "/admin/cadastros/pre-calculos-despesas", label: "Pré-cálculos" },
+  { href: "/admin/cadastros/parametrizacoes-fiscais", label: "Parametrizações Fiscais" },
   { href: "/admin/configuracoes", label: "Configurações" },
   { href: "/admin/usuarios", label: "Usuários" }
 ];
