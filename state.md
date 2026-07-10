@@ -59,6 +59,42 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Etapa 6.1: migration de tipos de despesa e pre-calculos
+
+- Criada migration incremental para os cadastros mestres de despesas do modulo Simulacoes Finais.
+- Criadas as tabelas `expense_types`, `expense_presets` e `expense_preset_items`.
+- `expense_types` prepara classificacao de modalidade, tipo de rateio, tipo de calculo, comportamentos por modalidade, flags operacionais/fiscais, campos financeiros/ERP opcionais e controle de ativo.
+- `expense_presets` prepara pre-calculos por via de transporte.
+- `expense_preset_items` relaciona presets a tipos de despesa, com snapshots, valores padrao e overrides opcionais.
+- As FKs de auditoria usam `app_users`.
+- Reutilizado `public.set_updated_at()` nos triggers de `updated_at`.
+- RLS habilitado nas tres tabelas, com policies conservadoras admin-only usando `public.is_admin()`.
+- Nao foram criados seeds nesta etapa.
+- Nao foram criadas UI, processamento de pre-calculo, `invoice_parametrizations`, `simulation_encomenda_taxes`, calculo fiscal final, PDF, policies de cliente, bucket novo ou alteracoes em `uploads`.
+- Nenhum arquivo em `src/`, `package.json` ou `temp/` foi alterado.
+
+Arquivos principais:
+
+- `supabase/migrations/20260709213000_create_expense_types_and_presets.sql`
+- `docs/DATABASE_MODEL.md`
+- `state.md`
+
+Validado:
+
+- Revisao estatica da migration criada.
+- Confirmado que `public.is_admin()` ja existe e usa `app_users`.
+- Confirmado que `public.set_updated_at()` ja existe e foi reutilizada.
+- Confirmada ausencia de `profiles`, buckets, `uploads`, seeds, `src/`, `package.json` e `temp/` nesta migration.
+- `git diff --check`
+
+Nao foi possivel validar ainda:
+
+- Aplicacao da migration em Supabase/Postgres local, pois a etapa nao deve depender de Docker/Supabase local.
+
+Proxima etapa recomendada:
+
+- Revisar/aplicar a migration em ambiente controlado e, depois, criar a camada TypeScript/UI para despesas e aplicacao de presets na Simulacao Final.
+
 ### 2026-07-09 - Etapa 5: Produtos e NCM local das Simulacoes Finais
 
 - Implementada a primeira versao da secao de Produtos no detalhe de `/admin/simulacoes-finais/[id]`.

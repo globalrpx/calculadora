@@ -15,6 +15,7 @@ Migrations atuais:
 - `20260709134047_create_uploads_table_and_storage_bucket.sql`
 - `20260709180000_create_config_table.sql`
 - `20260709200000_create_final_simulations_core.sql`
+- `20260709213000_create_expense_types_and_presets.sql`
 
 ## Convencoes
 
@@ -448,9 +449,95 @@ Conteudo:
 - aliquotas de II, IPI, PIS, COFINS e ICMS;
 - snapshots de antidumping, ex-tarifario e base legal.
 
+## Simulacoes Finais - Tipos de Despesa e Pre-calculos
+
+A migration `20260709213000_create_expense_types_and_presets.sql` cria os cadastros mestres de despesas para etapas futuras do modulo de Simulacoes Finais.
+
+Escopo desta migration:
+
+- `expense_types`;
+- `expense_presets`;
+- `expense_preset_items`;
+- constraints/checks principais;
+- indices de acesso;
+- triggers de `updated_at`;
+- RLS habilitado;
+- policies conservadoras somente para admins.
+
+Fora do escopo desta migration:
+
+- UI de despesas;
+- processamento de pre-calculo dentro da simulacao;
+- `invoice_parametrizations`;
+- `simulation_encomenda_taxes`;
+- calculo fiscal final;
+- PDF;
+- seeds de tipos ou presets;
+- policies de cliente;
+- bucket novo;
+- alteracoes em `uploads`.
+
+### `expense_types`
+
+Cadastro mestre de tipos de despesa e bases de calculo usados futuramente em despesas/pre-calculos da Simulacao Final.
+
+Campos principais:
+
+- identificacao: `id`, `code`, `description`, `key`, `print_order`;
+- classificacao: `expense_modality`, `allocation_type`, `expense_calculation_type` e respectivos labels;
+- comportamento por modalidade: `own_import_behavior`, `order_account_behavior`, `encomenda_behavior` e respectivos labels;
+- operacao/fiscal: `expense_resulting`, `siscomex_addition_id`, `expense_group_id`, `expense_group_name`, flags de container, ICMS de entrada e nota de servico;
+- financeiro/ERP opcional: tipo de titulo, servico, conta bancaria e `erp_key`;
+- numerario: flags `paid_by_cash_*`;
+- controle: `is_active`, `created_by`, `updated_by`, `created_at`, `updated_at`.
+
+Checks:
+
+- `expense_modality`: `tax`, `expense`, `calculation_base`;
+- `allocation_type`: `value`, `net_weight`, `cif`, `gross_weight`;
+- `expense_calculation_type`: `parameters`, `fob`, `freight`, `insurance`, `cif`, `ii`, `ipi`, `icms`;
+- comportamentos por modalidade: `accessory_expense`, `tax_base`, `icms_base`, `not_applicable`, `product_cost_only`, `icms_base_courier_fine`, `ipi_base`.
+
+### `expense_presets`
+
+Cadastro de pre-calculos/presets de despesas por via de transporte.
+
+Campos principais:
+
+- `name`;
+- `description`;
+- `transport_mode`;
+- `is_active`;
+- `created_by`, `updated_by`, `created_at`, `updated_at`.
+
+Check:
+
+- `transport_mode`: `maritimo`, `aereo`, `rodoviario`.
+
+### `expense_preset_items`
+
+Itens que compoem um preset de despesas.
+
+Campos principais:
+
+- `preset_id` FK para `expense_presets`;
+- `expense_type_id` FK para `expense_types`;
+- snapshots de codigo/descricao do tipo de despesa;
+- valores padrao em BRL/USD e moeda;
+- overrides opcionais de tipo de calculo, rateio e comportamento;
+- `is_editable`, `sort_order`, `notes`;
+- `created_by`, `updated_by`, `created_at`, `updated_at`.
+
+Checks:
+
+- `default_currency` nulo ou curto, com ate 3 caracteres;
+- `override_calculation_type`, quando preenchido, segue os valores de `expense_calculation_type`;
+- `override_allocation_type`, quando preenchido, segue os valores de `allocation_type`;
+- `override_behavior`, quando preenchido, segue os valores dos comportamentos por modalidade.
+
 ## RLS de Simulacoes Finais
 
-Todas as tabelas novas da migration `20260709200000_create_final_simulations_core.sql` possuem RLS habilitado.
+Todas as tabelas novas das migrations de Simulacoes Finais possuem RLS habilitado.
 
 Policies criadas nesta etapa:
 
@@ -472,9 +559,6 @@ As tabelas abaixo aparecem em specs/planos como evolucao, mas nao devem ser trat
 - `quote_attachments` ou `quote_images`
 - `quote_status_history`
 - `calculation_parameters`
-- `expense_types`
-- `expense_presets`
-- `expense_preset_items`
 - `invoice_parametrizations`
 - `simulation_encomenda_taxes`
 
