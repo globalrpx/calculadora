@@ -38,6 +38,12 @@
 | `/admin/simulacoes-finais/nova` | Admin | Parcial | `final_simulations`, `clients` | Criação dos dados principais em status `draft`; produtos e cálculo avançado entram depois. |
 | `/admin/simulacoes-finais/[id]` | Admin | Parcial | `final_simulations` | Detalhe simples com dados principais, status e totais básicos. |
 | `/admin/simulacoes-finais/[id]/editar` | Admin | Parcial | `final_simulations`, `clients` | Edição dos dados principais; bloqueio de edição comum para status finais via action. |
+| `/admin/cadastros/tipos-despesa` | Admin | Parcial | `expense_types` | Listagem e inativação de tipos mestres de despesa. |
+| `/admin/cadastros/tipos-despesa/novo` | Admin | Parcial | `expense_types` | Criação de tipo mestre de despesa. |
+| `/admin/cadastros/tipos-despesa/[id]/editar` | Admin | Parcial | `expense_types` | Edição de tipo mestre de despesa. |
+| `/admin/cadastros/pre-calculos-despesas` | Admin | Parcial | `expense_presets` | Listagem e inativação de pré-cálculos de despesas. |
+| `/admin/cadastros/pre-calculos-despesas/novo` | Admin | Parcial | `expense_presets` | Criação de pré-cálculo de despesas. |
+| `/admin/cadastros/pre-calculos-despesas/[id]/editar` | Admin | Parcial | `expense_presets`, `expense_preset_items`, `expense_types` | Edição de pré-cálculo e gestão dos itens do preset. |
 | `/admin/configuracoes` | Admin | Funcional | `config` | Lista, cria e edita configuracoes globais; `import_factor` controla o fator RPX de novas cotacoes. |
 | `/admin/usuarios` | Admin | Funcional | `app_users` | CRUD de usuarios admin com filtros, totalizador, paginacao, ordenacao segura, status e acoes. |
 | `/admin/usuarios/novo` | Admin | Funcional | Supabase Auth + `app_users` | Criacao de usuario admin com senha obrigatoria e validacao inline. |

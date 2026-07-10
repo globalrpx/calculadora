@@ -59,6 +59,53 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Etapa 6.3: UI admin de tipos de despesa e pre-calculos
+
+- Criadas rotas administrativas para Tipos de Despesa:
+  - `/admin/cadastros/tipos-despesa`
+  - `/admin/cadastros/tipos-despesa/novo`
+  - `/admin/cadastros/tipos-despesa/[id]/editar`
+- Criadas rotas administrativas para Pre-calculos de Despesas:
+  - `/admin/cadastros/pre-calculos-despesas`
+  - `/admin/cadastros/pre-calculos-despesas/novo`
+  - `/admin/cadastros/pre-calculos-despesas/[id]/editar`
+- As listagens usam o padrao admin atual com `CrudHeaderWithFilters`, `DataTable`, `StatusBadge` e filtros simples.
+- Os formularios usam `useActionState` e reutilizam as actions server-side da Etapa 6.2.
+- Tipos de despesa podem ser criados, editados e inativados via `archiveOrDeactivateExpenseTypeAction`.
+- Pre-calculos podem ser criados, editados e inativados via `archiveOrDeactivateExpensePresetAction`.
+- A tela de edicao de pre-calculo permite listar, adicionar, editar e remover itens do preset usando apenas tipos de despesa ativos.
+- Adicionados links no menu admin para `Tipos de Despesa` e `Pré-cálculos`, sem reorganizar o menu inteiro.
+- Atualizado `docs/ROUTES_AND_SCREENS.md` com as novas rotas.
+- Nao foram criadas migrations, policies, processamento de pre-calculo em simulacao, alteracoes em `simulation_expense_lines`, calculo fiscal, PDF, dependencias novas, alteracoes em auth/middleware/layout global, `package.json` ou `temp/`.
+
+Arquivos principais:
+
+- `src/app/admin/cadastros/tipos-despesa/page.tsx`
+- `src/app/admin/cadastros/tipos-despesa/novo/page.tsx`
+- `src/app/admin/cadastros/tipos-despesa/[id]/editar/page.tsx`
+- `src/app/admin/cadastros/pre-calculos-despesas/page.tsx`
+- `src/app/admin/cadastros/pre-calculos-despesas/novo/page.tsx`
+- `src/app/admin/cadastros/pre-calculos-despesas/[id]/editar/page.tsx`
+- `src/features/final-simulations/ExpenseTypeForm.tsx`
+- `src/features/final-simulations/ExpensePresetForm.tsx`
+- `src/features/final-simulations/ExpensePresetItemsSection.tsx`
+- `src/features/final-simulations/ExpenseMasterRowActions.tsx`
+- `src/features/final-simulations/expense-labels.ts`
+- `src/features/final-simulations/schemas.ts`
+- `src/lib/navigation.ts`
+- `docs/ROUTES_AND_SCREENS.md`
+- `state.md`
+
+Validado:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+
+Proxima etapa recomendada:
+
+- Validar manualmente os CRUDs no navegador com a migration aplicada; depois implementar a aplicacao de presets na Simulacao Final sem criar calculo fiscal completo.
+
 ### 2026-07-09 - Etapa 6.2: camada TypeScript de tipos de despesa e pre-calculos
 
 - Criada a camada TypeScript server-side para os cadastros mestres `expense_types`, `expense_presets` e `expense_preset_items`.

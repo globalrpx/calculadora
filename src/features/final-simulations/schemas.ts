@@ -63,6 +63,16 @@ function normalizeBoolean(value: FormDataEntryValue | string | boolean | null | 
   return ["1", "true", "on", "yes", "sim"].includes(text);
 }
 
+function normalizeCheckbox(formData: FormData, field: string, fallback = false) {
+  const values = formData.getAll(field);
+
+  if (values.length === 0) {
+    return fallback;
+  }
+
+  return values.some((value) => normalizeBoolean(value));
+}
+
 function optionalUuid(value: FormDataEntryValue | string | null | undefined) {
   const text = optionalText(value);
   return text;
@@ -406,7 +416,7 @@ function readExpenseTypeData(formData: FormData): ExpenseTypeValues {
     paidByCashOrderAccount: normalizeBoolean(formData.get("paidByCashOrderAccount")),
     paidByCashDirectExport: normalizeBoolean(formData.get("paidByCashDirectExport")),
     paidByCashIndirectExport: normalizeBoolean(formData.get("paidByCashIndirectExport")),
-    isActive: formData.has("isActive") ? normalizeBoolean(formData.get("isActive")) : true
+    isActive: normalizeCheckbox(formData, "isActive", true)
   };
 }
 
@@ -470,7 +480,7 @@ function readExpensePresetData(formData: FormData): ExpensePresetValues {
     name: normalizeText(formData.get("name")),
     description: optionalText(formData.get("description")),
     transportMode: normalizeText(formData.get("transportMode")),
-    isActive: formData.has("isActive") ? normalizeBoolean(formData.get("isActive")) : true
+    isActive: normalizeCheckbox(formData, "isActive", true)
   };
 }
 
@@ -508,7 +518,7 @@ function readExpensePresetItemData(formData: FormData): ExpensePresetItemValues 
     overrideCalculationType: optionalText(formData.get("overrideCalculationType")),
     overrideAllocationType: optionalText(formData.get("overrideAllocationType")),
     overrideBehavior: optionalText(formData.get("overrideBehavior")),
-    isEditable: formData.has("isEditable") ? normalizeBoolean(formData.get("isEditable")) : true,
+    isEditable: normalizeCheckbox(formData, "isEditable", true),
     sortOrder: normalizeNumber(formData.get("sortOrder")),
     notes: optionalText(formData.get("notes"))
   };
