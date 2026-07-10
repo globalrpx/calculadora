@@ -59,6 +59,54 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - PDF cliente salvo em Storage e modal de preview
+
+- Implementada a action admin `generateAndStoreFinalSimulationClientPdfAction`.
+- A action:
+  - exige admin;
+  - usa exclusivamente `final_simulations.public_snapshot`;
+  - nao gera snapshot automaticamente;
+  - nao recalcula impostos;
+  - bloqueia simulacao sem `public_snapshot` com mensagem amigavel;
+  - gera PDF cliente com o gerador V1 existente;
+  - salva o arquivo no bucket privado `app-uploads`;
+  - cria registro em `simulation_documents` com `document_type = client_pdf`;
+  - grava o `public_snapshot` usado em `simulation_documents.snapshot_json`;
+  - nao cria registro em `uploads`, porque o schema atual de `uploads` ainda referencia apenas a tabela legada `simulations`.
+- Path adotado no Storage:
+  - `final-simulations/{simulationId}/client-pdf/{documentId}.pdf`.
+- Criada rota server-side autenticada para visualizacao/download do PDF salvo:
+  - `/admin/simulacoes-finais/[id]/documentos/[documentId]/pdf`;
+  - `?download=1` força download.
+- O preview cliente ganhou painel `PDF cliente` com:
+  - botão `Gerar PDF cliente`;
+  - modal interna com preview em `object/iframe`;
+  - botoes `Baixar PDF`, `Abrir em nova aba` e `Fechar`.
+- A rota temporaria `/admin/simulacoes-finais/[id]/pdf-cliente` continua existindo e gerando PDF sob demanda sem persistir.
+- Atualizados `docs/ROUTES_AND_SCREENS.md` e `docs/DATABASE_MODEL.md`.
+- Nao houve migration, bucket novo, RLS, auth, middleware, permissao, calculo fiscal, recalc automatico, CRUD novo, `package.json`, producao ou `temp/`.
+
+Validado nesta etapa:
+
+- `git diff --check`: sem erros.
+- `npm run typecheck`: passou.
+- `npm run lint`: passou sem warnings ou erros.
+- Browser no Supabase Dev:
+  - geracao de PDF cliente salvo a partir de simulacao com `public_snapshot`;
+  - modal abriu sem navegar para fora da pagina;
+  - modal exibiu rota segura do PDF salvo;
+  - botoes `Baixar PDF`, `Abrir em nova aba` e `Fechar` ficaram disponiveis;
+  - fechamento da modal funcionou;
+  - segunda geracao criou novo `documentId` e novo path;
+  - simulacao sem `public_snapshot` retornou erro amigavel e nao abriu modal;
+  - rota temporaria `/pdf-cliente` continuou funcionando.
+- Supabase Dev:
+  - `simulation_documents` recebeu registros `client_pdf`;
+  - `snapshot_json` contem o `public_snapshot` usado;
+  - objetos existem no bucket privado `app-uploads`;
+  - paths sao unicos por `documentId`;
+  - simulacao sem snapshot permaneceu sem registro `client_pdf`.
+
 ### 2026-07-10 - PDF cliente temporario a partir do public_snapshot
 
 - Criada a rota admin `/admin/simulacoes-finais/[id]/pdf-cliente`.
