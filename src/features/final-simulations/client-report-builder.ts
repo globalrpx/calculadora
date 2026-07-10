@@ -101,6 +101,18 @@ export type ClientReportData = {
     calculatedAt: string | null;
     taxLinesCount: number;
     expensesCount: number;
+    publicSnapshotGeneratedAt: string | null;
+    internalSnapshotGeneratedAt: string | null;
+  };
+  internalDetails: {
+    expenses: SimulationExpenseLine[];
+    taxLines: SimulationTaxLineWithProduct[];
+    calculationSnapshot: Record<string, unknown>;
+    fiscalSnapshots: {
+      entry: Record<string, unknown>;
+      exit: Record<string, unknown>;
+      taxRegime: Record<string, unknown>;
+    };
   };
 };
 
@@ -109,6 +121,17 @@ type SavedCalculationSnapshot = {
   calculated_at?: string;
   totals?: Partial<Record<string, number>>;
   warnings?: Array<{ message?: string }>;
+};
+
+type SnapshotMetadataInput = {
+  generatedAt: string;
+  generatedBy: string | null;
+};
+
+type StoredDocumentSnapshot = {
+  metadata?: {
+    generated_at?: string;
+  };
 };
 
 const notAvailable = "N/A";
@@ -200,6 +223,19 @@ function buildProducts(
 
 function buildWarnings(snapshot: SavedCalculationSnapshot | null) {
   return (snapshot?.warnings ?? []).map((warning) => warning.message).filter(Boolean) as string[];
+}
+
+function readGeneratedAt(snapshot: Record<string, unknown>) {
+  const value = snapshot as StoredDocumentSnapshot;
+  return value.metadata?.generated_at ?? null;
+}
+
+function buildInternalSimulationSnapshot(simulation: FinalSimulationRow) {
+  const { public_snapshot, internal_snapshot, calculation_snapshot, ...snapshot } = simulation;
+  void public_snapshot;
+  void internal_snapshot;
+  void calculation_snapshot;
+  return snapshot;
 }
 
 function sumExpenses(expenses: SimulationExpenseLine[], fallback: number) {
@@ -301,7 +337,75 @@ export async function buildFinalSimulationClientReportData(simulationId: string)
       hasSavedCalculation,
       calculatedAt: savedSnapshot?.calculated_at ?? null,
       taxLinesCount: taxLines.length,
-      expensesCount: expenses.length
+      expensesCount: expenses.length,
+      publicSnapshotGeneratedAt: readGeneratedAt(simulation.public_snapshot),
+      internalSnapshotGeneratedAt: readGeneratedAt(simulation.internal_snapshot)
+    },
+    internalDetails: {
+      expenses,
+      taxLines,
+      calculationSnapshot: simulation.calculation_snapshot,
+      fiscalSnapshots: {
+        entry: simulation.entry_invoice_parametrization_snapshot,
+        exit: simulation.exit_invoice_parametrization_snapshot,
+        taxRegime: simulation.tax_regime_snapshot
+      }
+    }
+  };
+}
+
+export function buildFinalSimulationPublicSnapshot(report: ClientReportData, metadata: SnapshotMetadataInput) {
+  return {
+    metadata: {
+      snapshot_version: 1,
+      snapshot_type: "client_pdf",
+      generated_at: metadata.generatedAt,
+      generated_by: metadata.generatedBy,
+      source_simulation_id: report.simulation.id,
+      source_calculation_calculated_at: report.meta.calculatedAt
+    },
+    header: report.header,
+    logistics: report.logistics,
+    products: report.products,
+    invoice_entry: report.invoiceEntry,
+    invoice_exit: report.invoiceExit,
+    icms_base_composition: report.icmsBaseComposition,
+    observations: report.observations,
+    pending_fields: {
+      logistics: report.logistics.pendingFields,
+      invoice_entry: report.invoiceEntry.pendingFields,
+      invoice_exit: report.invoiceExit.pendingFields
+    }
+  };
+}
+
+export function buildFinalSimulationInternalSnapshot(report: ClientReportData, metadata: SnapshotMetadataInput) {
+  return {
+    metadata: {
+      snapshot_version: 1,
+      snapshot_type: "internal_report",
+      generated_at: metadata.generatedAt,
+      generated_by: metadata.generatedBy,
+      source_simulation_id: report.simulation.id,
+      source_calculation_calculated_at: report.meta.calculatedAt
+    },
+    simulation: buildInternalSimulationSnapshot(report.simulation),
+    client_report: buildFinalSimulationPublicSnapshot(report, metadata),
+    products: report.products,
+    expenses: report.internalDetails.expenses,
+    tax_lines: report.internalDetails.taxLines,
+    fiscal_snapshots: report.internalDetails.fiscalSnapshots,
+    calculation_snapshot: report.internalDetails.calculationSnapshot,
+    warnings: report.observations.warnings,
+    limitations: [
+      "Snapshot interno V1 gerado a partir do cálculo fiscal salvo.",
+      "PDF e arquivo em Storage ainda não são gerados nesta etapa.",
+      "Campos pendentes permanecem marcados como N/A, pendente ou não informado."
+    ],
+    pending_fields: {
+      logistics: report.logistics.pendingFields,
+      invoice_entry: report.invoiceEntry.pendingFields,
+      invoice_exit: report.invoiceExit.pendingFields
     }
   };
 }

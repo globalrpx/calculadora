@@ -59,6 +59,68 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Snapshots public/internal dos documentos da Simulacao Final
+
+- Confirmado no schema que `final_simulations` ja possui os campos JSONB:
+  - `public_snapshot`;
+  - `internal_snapshot`;
+  - `calculation_snapshot`.
+- Implementada a action admin `generateFinalSimulationDocumentSnapshotsAction` para gerar e salvar snapshots de documentos sem criar migration.
+- A action:
+  - exige admin;
+  - nao recalcula impostos;
+  - recusa simulacao inexistente;
+  - recusa geracao quando nao ha calculo fiscal salvo;
+  - salva `public_snapshot` e `internal_snapshot` em `final_simulations`;
+  - atualiza `updated_by`;
+  - revalida detalhe e preview cliente.
+- `public_snapshot` contem apenas dados publicaveis:
+  - metadata;
+  - header;
+  - dados logisticos;
+  - produtos;
+  - NF entrada/saida;
+  - composicao ICMS;
+  - observacoes/disclaimers;
+  - campos pendentes.
+- `internal_snapshot` contem dados detalhados:
+  - metadata;
+  - simulacao;
+  - public snapshot;
+  - produtos;
+  - despesas;
+  - linhas fiscais;
+  - snapshots fiscais;
+  - calculation snapshot;
+  - warnings;
+  - limitacoes V1;
+  - campos pendentes.
+- Adicionado painel minimo no preview cliente para gerar snapshots e mostrar status de geracao.
+- Atualizado `docs/DATABASE_MODEL.md`.
+- Nao houve PDF, arquivo em Storage, migration, banco estrutural, RLS, auth, middleware, permissao, calculo fiscal, action de recalculo, CRUD novo, `package.json`, producao ou `temp/`.
+
+Arquivos principais:
+
+- `src/features/final-simulations/client-report-builder.ts`
+- `src/features/final-simulations/actions.ts`
+- `src/features/final-simulations/FinalSimulationDocumentSnapshotsPanel.tsx`
+- `src/features/final-simulations/FinalSimulationClientPreview.tsx`
+- `docs/DATABASE_MODEL.md`
+- `state.md`
+
+Validado nesta etapa:
+
+- `git diff --check`: sem erros.
+- `npm run typecheck`: passou.
+- `npm run lint`: passou sem warnings ou erros.
+- Browser no Supabase Dev:
+  - geracao de snapshots em simulacao com calculo fiscal salvo;
+  - `public_snapshot` e `internal_snapshot` preenchidos em `final_simulations`;
+  - `public_snapshot` sem despesas, linhas fiscais, calculation snapshot ou dados internos;
+  - `internal_snapshot` com despesas, linhas fiscais, snapshots fiscais e calculation snapshot;
+  - preview cliente continuou funcionando apos gerar snapshots;
+  - simulacao sem calculo salvo exibiu erro amigavel e nao gerou sucesso.
+
 ### 2026-07-10 - Preview HTML do PDF cliente da Simulacao Final
 
 - Criada a rota `/admin/simulacoes-finais/[id]/preview-cliente`.

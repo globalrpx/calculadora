@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { ButtonLink } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { FinalSimulationDocumentSnapshotsPanel } from "./FinalSimulationDocumentSnapshotsPanel";
 import type { ClientReportData, ClientReportProduct, ClientReportTaxTotals } from "./client-report-builder";
 
 const statusLabels: Record<string, string> = {
@@ -118,6 +119,13 @@ function ProductRow({ product }: { product: ClientReportProduct }) {
 export function FinalSimulationClientPreview({ report }: { report: ClientReportData }) {
   return (
     <div className="grid gap-5">
+      <FinalSimulationDocumentSnapshotsPanel
+        simulationId={report.simulation.id}
+        hasSavedCalculation={report.meta.hasSavedCalculation}
+        publicSnapshotGeneratedAt={report.meta.publicSnapshotGeneratedAt}
+        internalSnapshotGeneratedAt={report.meta.internalSnapshotGeneratedAt}
+      />
+
       <div className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-bold">Preview HTML para validação. Ainda não é o PDF final.</p>

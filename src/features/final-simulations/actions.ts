@@ -9,6 +9,11 @@ import {
   calculateSimulationBasicTotals,
   calculateSimulationExpensesTotal
 } from "./calculation-engine";
+import {
+  buildFinalSimulationClientReportData,
+  buildFinalSimulationInternalSnapshot,
+  buildFinalSimulationPublicSnapshot
+} from "./client-report-builder";
 import { expenseBehaviorLabels } from "./expense-labels";
 import {
   createExpensePresetItemSchema,
@@ -65,6 +70,7 @@ function revalidateFinalSimulationPaths(simulationId?: string) {
 
   if (simulationId) {
     revalidatePath(`/admin/simulacoes-finais/${simulationId}`);
+    revalidatePath(`/admin/simulacoes-finais/${simulationId}/preview-cliente`);
   }
 }
 
@@ -1052,6 +1058,69 @@ export async function recalculateFinalSimulationTaxesAction(formData: FormData) 
     success: true,
     message: "Impostos V1 recalculados.",
     preview
+  };
+}
+
+export async function generateFinalSimulationDocumentSnapshotsAction(
+  _previousState: { success: boolean; message?: string; generatedAt?: string },
+  formData: FormData
+) {
+  const adminUser = await requireAdminUser();
+  const simulationId = String(formData.get("simulationId") ?? "").trim();
+
+  if (!simulationId) {
+    return {
+      success: false,
+      message: "Informe a simulação."
+    };
+  }
+
+  const report = await buildFinalSimulationClientReportData(simulationId);
+
+  if (!report) {
+    return {
+      success: false,
+      message: "Simulação final não encontrada."
+    };
+  }
+
+  if (!report.meta.hasSavedCalculation) {
+    return {
+      success: false,
+      message: "Recalcule os impostos antes de gerar os snapshots dos documentos."
+    };
+  }
+
+  const generatedAt = new Date().toISOString();
+  const metadata = {
+    generatedAt,
+    generatedBy: adminUser.id
+  };
+  const publicSnapshot = buildFinalSimulationPublicSnapshot(report, metadata);
+  const internalSnapshot = buildFinalSimulationInternalSnapshot(report, metadata);
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("final_simulations")
+    .update({
+      public_snapshot: publicSnapshot,
+      internal_snapshot: internalSnapshot,
+      updated_by: adminUser.id
+    })
+    .eq("id", simulationId);
+
+  if (error) {
+    return {
+      success: false,
+      message: unexpectedSaveMessage
+    };
+  }
+
+  revalidateFinalSimulationPaths(simulationId);
+
+  return {
+    success: true,
+    message: "Snapshots dos documentos gerados.",
+    generatedAt
   };
 }
 

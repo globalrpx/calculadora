@@ -351,6 +351,21 @@ Campos principais:
 - parametrizacao fiscal: comissao da trade, flags de creditos tributarios, snapshot de regime fiscal e parametrizacoes de NF de entrada/saida;
 - snapshots: `calculation_snapshot`, `public_snapshot`, `internal_snapshot`.
 
+Uso atual dos snapshots de documentos:
+
+- `calculation_snapshot`: resultado salvo do recálculo fiscal V1, usado como fonte para preview e documentos.
+- `public_snapshot`: base congelada do PDF cliente, contendo apenas dados publicáveis, disclaimers, warnings públicos e metadados de geração.
+- `internal_snapshot`: base congelada do relatório interno, contendo dados detalhados da simulação, produtos, despesas, linhas fiscais, snapshots fiscais, cálculo salvo, warnings e limitações V1.
+
+Metadados mínimos dos snapshots de documentos:
+
+- `snapshot_version`;
+- `snapshot_type`;
+- `generated_at`;
+- `generated_by`;
+- `source_simulation_id`;
+- `source_calculation_calculated_at`.
+
 Checks:
 
 - status fechado na lista aprovada da V1;
