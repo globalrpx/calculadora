@@ -34,6 +34,10 @@
 | `/admin/simulacoes` | Admin | Funcional | `simulations`, `quotes`, `clients` | CRUD administrativo básico com filtros, totalizador, paginação, ordenação segura, status e ações. |
 | `/admin/simulacoes/nova` | Admin | Funcional | `simulations`, `quotes`, `clients` | Criação administrativa básica usando campos existentes; sem upload real nesta fase. |
 | `/admin/simulacoes/[id]` | Admin | Funcional | `simulations`, `quotes`, `clients`, `uploads`, Storage | Detalhe e edição de status/observações, com upload real de múltiplos arquivos da simulação via bucket privado. |
+| `/admin/simulacoes-finais` | Admin | Parcial | `final_simulations` | Listagem inicial do novo módulo, com filtros simples e ações de abrir/editar. |
+| `/admin/simulacoes-finais/nova` | Admin | Parcial | `final_simulations`, `clients` | Criação dos dados principais em status `draft`; produtos e cálculo avançado entram depois. |
+| `/admin/simulacoes-finais/[id]` | Admin | Parcial | `final_simulations` | Detalhe simples com dados principais, status e totais básicos. |
+| `/admin/simulacoes-finais/[id]/editar` | Admin | Parcial | `final_simulations`, `clients` | Edição dos dados principais; bloqueio de edição comum para status finais via action. |
 | `/admin/configuracoes` | Admin | Funcional | `config` | Lista, cria e edita configuracoes globais; `import_factor` controla o fator RPX de novas cotacoes. |
 | `/admin/usuarios` | Admin | Funcional | `app_users` | CRUD de usuarios admin com filtros, totalizador, paginacao, ordenacao segura, status e acoes. |
 | `/admin/usuarios/novo` | Admin | Funcional | Supabase Auth + `app_users` | Criacao de usuario admin com senha obrigatoria e validacao inline. |

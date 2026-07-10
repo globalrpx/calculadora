@@ -100,6 +100,9 @@ export type FinalSimulationListRow = Pick<
   | "customer_name"
   | "supplier_name"
   | "quote_date"
+  | "origin"
+  | "destination"
+  | "import_modality"
   | "valid_until"
   | "total_products_usd"
   | "total_cost_brl"
@@ -231,6 +234,7 @@ export type FinalSimulationListFilters = {
   status?: string;
   customer?: string;
   code?: string;
+  number?: string;
   dateFrom?: string;
   dateTo?: string;
 };
@@ -238,4 +242,9 @@ export type FinalSimulationListFilters = {
 export type FinalSimulationPagination = {
   page?: number;
   perPage?: number;
+};
+
+export type FinalSimulationClientOption = {
+  id: string;
+  label: string;
 };

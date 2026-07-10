@@ -6,6 +6,7 @@ import type {
   FinalSimulationListRow,
   FinalSimulationPagination,
   FinalSimulationRow,
+  FinalSimulationClientOption,
   NcmCodeRow
 } from "./types";
 
@@ -18,6 +19,9 @@ const finalSimulationListSelect = [
   "customer_name",
   "supplier_name",
   "quote_date",
+  "origin",
+  "destination",
+  "import_modality",
   "valid_until",
   "total_products_usd",
   "total_cost_brl",
@@ -59,6 +63,14 @@ export async function listFinalSimulations(
 
   if (filters.code) {
     query = query.ilike("code", `%${safeSearchTerm(filters.code)}%`);
+  }
+
+  if (filters.number) {
+    const parsedNumber = Number(filters.number);
+
+    if (Number.isInteger(parsedNumber) && parsedNumber > 0) {
+      query = query.eq("number", parsedNumber);
+    }
   }
 
   if (filters.dateFrom) {
@@ -119,6 +131,25 @@ export async function getNcmCodeByCode(code: string): Promise<NcmCodeRow | null>
     .maybeSingle();
 
   return (data ?? null) as NcmCodeRow | null;
+}
+
+export async function getFinalSimulationFormOptions() {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("clients")
+    .select("id, company_name, trade_name, contact_name, contact_email")
+    .is("deleted_at", null)
+    .order("company_name", { ascending: true, nullsFirst: false })
+    .limit(500);
+
+  return {
+    clients: (data ?? []).map<FinalSimulationClientOption>((client) => ({
+      id: client.id,
+      label: client.trade_name || client.company_name || client.contact_name || client.contact_email || "Cliente sem nome"
+    }))
+  };
 }
 
 export async function searchNcmCodes(term: string, limit = 20): Promise<NcmCodeRow[]> {

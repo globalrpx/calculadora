@@ -59,6 +59,50 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Etapa 4: UI administrativa minima das Simulacoes Finais
+
+- Criada a primeira interface administrativa do modulo em `/admin/simulacoes-finais`.
+- Criadas as rotas:
+  - `/admin/simulacoes-finais`
+  - `/admin/simulacoes-finais/nova`
+  - `/admin/simulacoes-finais/[id]`
+  - `/admin/simulacoes-finais/[id]/editar`
+- A listagem usa `listFinalSimulations`, filtros simples por codigo, numero, cliente e status, tabela padronizada e acoes de abrir/editar.
+- A tela de nova simulacao usa `createFinalSimulationAction` e cria registros em status `draft`.
+- A tela de detalhe usa `getFinalSimulationById` e exibe dados principais, status e totais basicos.
+- A tela de edicao usa `updateFinalSimulationMainDataAction` e preserva o bloqueio de edicao comum para `approved`, `sent_to_customer` e `archived`.
+- Criado o componente `FinalSimulationMainDataForm` para reaproveitar o formulario de dados principais entre criacao e edicao.
+- As opcoes de cliente sao carregadas server-side via `getFinalSimulationFormOptions`.
+- Atualizada a documentacao de rotas para marcar o modulo como parcial.
+- Nao foram implementados produtos, NCM UI, despesas, parametrizacao fiscal, impostos encomenda, PDF, calculo fiscal completo, policies novas ou migrations.
+- Nenhum arquivo em `temp/`, `package.json`, auth, middleware ou layout global foi alterado.
+
+Arquivos principais:
+
+- `src/app/admin/simulacoes-finais/page.tsx`
+- `src/app/admin/simulacoes-finais/nova/page.tsx`
+- `src/app/admin/simulacoes-finais/[id]/page.tsx`
+- `src/app/admin/simulacoes-finais/[id]/editar/page.tsx`
+- `src/features/final-simulations/FinalSimulationMainDataForm.tsx`
+- `src/features/final-simulations/queries.ts`
+- `src/features/final-simulations/types.ts`
+- `docs/ROUTES_AND_SCREENS.md`
+- `state.md`
+
+Validado:
+
+- Inspecao dos padroes atuais das rotas admin, layout admin, componentes UI, formularios e Server Actions.
+- `npm run typecheck`
+
+Nao foi possivel validar ainda:
+
+- Fluxo manual completo no banco remoto/local, pois depende da migration estar aplicada no ambiente usado pelo teste.
+- Produtos, despesas, PDF, relatorio interno e calculo fiscal avancado, pois ficaram fora do escopo desta etapa.
+
+Proxima etapa recomendada:
+
+- Aplicar/validar a migration no ambiente de desenvolvimento conectado, testar manualmente o CRUD minimo de dados principais e depois implementar a aba de produtos com NCM local/snapshot.
+
 ### 2026-07-09 - Etapa 3: base TypeScript das Simulacoes Finais
 
 - Criada a estrutura base do modulo em `src/features/final-simulations/`.
