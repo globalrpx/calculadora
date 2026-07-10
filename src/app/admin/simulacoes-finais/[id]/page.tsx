@@ -199,6 +199,9 @@ export default async function FinalSimulationDetailPage({
             <ButtonLink href="/admin/simulacoes-finais" variant="secondary">
               Voltar
             </ButtonLink>
+            <ButtonLink href={`/admin/simulacoes-finais/${simulation.id}/preview-cliente`} variant="secondary">
+              Preview cliente
+            </ButtonLink>
             <ButtonLink href={`/admin/simulacoes-finais/${simulation.id}/editar`}>Editar dados principais</ButtonLink>
           </div>
         }

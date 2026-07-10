@@ -59,6 +59,47 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Preview HTML do PDF cliente da Simulacao Final
+
+- Criada a rota `/admin/simulacoes-finais/[id]/preview-cliente`.
+- Criado builder server-side `buildFinalSimulationClientReportData(simulationId)` para montar dados do preview a partir de:
+  - `final_simulations`;
+  - `final_simulation_items`;
+  - `simulation_expense_lines`;
+  - `simulation_tax_lines`;
+  - snapshots fiscais;
+  - `calculation_snapshot`.
+- Criado componente visual `FinalSimulationClientPreview` com blocos semelhantes ao modelo real:
+  - cabecalho;
+  - dados comerciais/logisticos;
+  - tabela de produtos;
+  - nota fiscal de entrada;
+  - nota fiscal de saida;
+  - composicao da base de ICMS;
+  - observacoes/disclaimers.
+- O preview usa apenas calculo salvo; nao recalcula impostos automaticamente ao abrir.
+- Quando nao ha calculo fiscal salvo, o preview mostra o alerta: `Recalcule os impostos antes de validar o preview do cliente.`
+- Campos ainda nao estruturados aparecem como `N/A` ou com observacao de pendencia.
+- Adicionado link `Preview cliente` no detalhe da Simulacao Final.
+- Atualizado `docs/ROUTES_AND_SCREENS.md`.
+- Nao houve PDF gerado, arquivo em storage, migration, banco, RLS, auth, middleware, permissao, calculo fiscal, action de recalculo, CRUD novo, `package.json`, producao ou `temp/`.
+
+Arquivos principais:
+
+- `src/app/admin/simulacoes-finais/[id]/preview-cliente/page.tsx`
+- `src/features/final-simulations/client-report-builder.ts`
+- `src/features/final-simulations/FinalSimulationClientPreview.tsx`
+- `src/app/admin/simulacoes-finais/[id]/page.tsx`
+- `docs/ROUTES_AND_SCREENS.md`
+- `state.md`
+
+Validacao pendente nesta etapa:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+- teste browser desktop/mobile do preview em simulacao com e sem calculo salvo.
+
 ### 2026-07-10 - Ajuste visual do detalhe de Simulacao Final
 
 - Reorganizada a pagina `/admin/simulacoes-finais/[id]` sem alterar regra de negocio, calculo, actions, schemas, banco ou permissoes.
