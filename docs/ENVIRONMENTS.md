@@ -4,6 +4,8 @@ Este projeto usa Dev como ambiente padrao para desenvolvimento local e validacao
 
 Runbook completo de deploy, Vercel Production, smoke test e operacao segura: `docs/DEPLOYMENT.md`.
 
+Checklist de onboarding para devs e maquinas novas: `docs/DEV_ONBOARDING.md`.
+
 ## Arquivos locais
 
 - `.env.local`: usado pelo app Next.js local. Deve apontar para o Supabase Dev durante desenvolvimento.

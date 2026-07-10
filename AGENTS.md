@@ -33,6 +33,7 @@ Fontes da verdade por tema:
 - `docs/ROUTES_AND_SCREENS.md`: rotas, telas e status das paginas.
 - `docs/TECH_STACK.md`: stack, scripts, ambiente, Vercel e Supabase.
 - `docs/DEPLOYMENT.md`: runbook operacional de deploy, Supabase Dev/Prod, Vercel Production, smoke test e rollback.
+- `docs/DEV_ONBOARDING.md`: checklist para devs configurarem ambiente local, Supabase CLI, Vercel CLI e fluxo seguro com Codex.
 - `docs/UI_UX_GUIDE.md`: padroes visuais.
 - `docs/FEATURES_BACKLOG.md`: roadmap e prioridades.
 - `README.md`: entrada rapida para humanos.
@@ -228,6 +229,7 @@ Quando migrar para Supabase, preservar a ideia de isolamento por cliente usando 
 - Para deploy de producao, seguir `docs/DEPLOYMENT.md`.
 - Vercel Production deve permanecer apontando para Supabase Prod; quem volta para Dev apos operacao de producao e o link do Supabase CLI/local.
 - Nao fazer deploy Vercel sem build local e smoke test planejado.
+- Para onboarding de outro dev ou maquina nova, seguir `docs/DEV_ONBOARDING.md`.
 
 ## Calculadora
 

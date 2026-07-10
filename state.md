@@ -59,6 +59,30 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Checklist de onboarding para devs
+
+- Criado `docs/DEV_ONBOARDING.md` para orientar Rodrigo/outros devs a configurar o projeto localmente com seguranca.
+- O documento inclui:
+  - prompt copy-paste para iniciar uma sessao com Codex;
+  - acessos necessarios;
+  - pre-requisitos locais;
+  - clone e instalacao;
+  - arquivos `.env` locais esperados;
+  - Supabase Dev como padrao;
+  - comandos reais do projeto (`npm run dev`, `build`, `lint`, `typecheck`);
+  - usuarios de teste Dev sem senhas;
+  - smoke test local;
+  - regras de trabalho com Codex;
+  - resumo de Producao e pendencias conhecidas.
+- Atualizados `AGENTS.md` e `docs/ENVIRONMENTS.md` para apontar para o checklist.
+- Nao houve alteracao em `src/`, migrations, Supabase, Vercel, `package.json`, secrets ou `temp/`.
+
+Validado nesta etapa:
+
+- `git diff --check`;
+- `npm run typecheck`;
+- `npm run lint`.
+
 ### 2026-07-10 - Runbook operacional de deploy
 
 - Criado `docs/DEPLOYMENT.md` com o processo real executado para GitHub, Supabase Prod, Vercel Production e smoke test online.
