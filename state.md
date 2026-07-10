@@ -59,6 +59,47 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Etapa 3: base TypeScript das Simulacoes Finais
+
+- Criada a estrutura base do modulo em `src/features/final-simulations/`.
+- Adicionados tipos de dominio, status, valores de formulario, linhas de simulacao, itens e NCM.
+- Criados schemas manuais de validacao, seguindo o padrao atual do projeto sem Zod ou dependencia nova.
+- Criadas queries server-side administrativas para listar/buscar Simulacoes Finais, itens e NCM local.
+- Criadas Server Actions basicas para criar Simulacao Final, atualizar dados principais, adicionar/editar/remover item e recalcular totais basicos.
+- As actions usam `requireRole("admin")` antes de operacoes sensiveis e `createAdminClient()` para writes server-side.
+- As actions bloqueiam edicao comum quando a Simulacao Final esta em `approved`, `sent_to_customer` ou `archived`.
+- A criacao inicia sempre com status `draft`.
+- O NCM do item e obrigatorio como texto, mas a action nao bloqueia base NCM vazia; quando `ncm_codes` contem o codigo, a action preenche descricao oficial e snapshot basico.
+- Criado `calculation-engine.ts` apenas com funcoes puras de totais basicos: total do item, pesos por item e somas de produtos/pesos da simulacao.
+- Nao foram implementados II, IPI, PIS, COFINS, ICMS, CIF final, despesas rateadas, antidumping, PDF, relatorio interno, UI ou policies novas.
+- Nenhuma migration nova foi criada nesta etapa.
+- Nenhum arquivo em `temp/`, `package.json`, auth, middleware ou layout foi alterado.
+
+Arquivos principais:
+
+- `src/features/final-simulations/types.ts`
+- `src/features/final-simulations/schemas.ts`
+- `src/features/final-simulations/queries.ts`
+- `src/features/final-simulations/actions.ts`
+- `src/features/final-simulations/calculation-engine.ts`
+- `state.md`
+
+Validado:
+
+- Inspecao dos padroes atuais de Server Actions, queries, validacao manual, autorizacao admin, tratamento de erros e `revalidatePath`.
+- Leitura dos documentos solicitados antes da edicao.
+- `npm run typecheck`
+- `npm run lint`
+
+Nao foi possivel validar ainda:
+
+- Fluxo manual em UI, pois nenhuma tela foi implementada nesta etapa.
+- Escrita real no banco, pois depende da migration aplicada em ambiente controlado.
+
+Proxima etapa recomendada:
+
+- Revisar diff e depois implementar a primeira UI administrativa minima em `/admin/simulacoes-finais`, ou aplicar a migration em ambiente controlado antes de testar actions contra o banco.
+
 ### 2026-07-09 - Etapa 2: migration estrutural das Simulacoes Finais
 
 - Criada a primeira migration incremental do nucleo estrutural de Simulacoes Finais.
