@@ -59,6 +59,59 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Preview puro de calculo fiscal da Simulacao Final
+
+- Implementado o motor puro V1 em `calculation-engine.ts` para gerar preview fiscal em memoria, sem persistencia.
+- Criados tipos de input/output para `FinalSimulationTaxPreview`, itens, totais e warnings.
+- O calculo V1 estima:
+  - FOB BRL;
+  - rateio proporcional de despesas por FOB;
+  - base aduaneira simplificada;
+  - II, IPI, PIS, COFINS e ICMS simplificados por item;
+  - impostos brutos;
+  - creditos tributarios liquidos para IPI/PIS/COFINS/ICMS;
+  - comissao trade por percentual ou valor fixo;
+  - custo total estimado.
+- Adicionado helper server-side `getFinalSimulationTaxPreviewInput` para montar input do preview a partir de `final_simulations`, `final_simulation_items` e `simulation_expense_lines`.
+- Warnings V1 cobrem cambio invalido, ausencia de produtos, FOB zerado, NCM ausente, ICMS zerado e snapshots de NF Entrada/Saida ausentes.
+- Nao houve migration, RLS, auth, middleware, layout global, UI nova, `package.json`, `temp/`, `simulation_tax_lines`, alteracao de totais persistidos, PDF ou producao.
+
+Arquivos principais:
+
+- `src/features/final-simulations/calculation-engine.ts`
+- `src/features/final-simulations/queries.ts`
+- `state.md`
+
+Validado:
+
+- `git diff --check` passou.
+- `npm run typecheck` passou.
+- Teste numerico temporario via Node compilando o motor para `/tmp` confirmou:
+  - `total_fob_brl = 520`;
+  - `total_expenses_brl = 150`;
+  - `total_customs_base_brl = 670`;
+  - `ii_brl = 120.60`;
+  - `ipi_brl = 0`;
+  - `pis_brl = 14.07`;
+  - `cofins_brl = 64.66`;
+  - `icms_brl = 156.48`;
+  - `gross_taxes_brl = 355.81`;
+  - sem creditos, `net_taxes_brl = 355.81`;
+  - sem comissao, `estimated_total_cost_brl = 1025.81`;
+  - com creditos PIS/COFINS/ICMS, `tax_credits_brl = 235.21` e `net_taxes_brl = 120.60`;
+  - com comissao percentual `2,5`, `trade_commission_brl = 13.00`.
+
+Limitacoes V1:
+
+- ICMS nao faz gross-up por dentro.
+- Despesas sao rateadas somente por FOB.
+- Comportamentos fiscais de despesas ainda nao alteram bases.
+- Preview nao grava `simulation_tax_lines` nem atualiza totais de `final_simulations`.
+
+Proxima etapa recomendada:
+
+- Expor o preview em UI simples no detalhe da Simulacao Final ou criar a persistencia controlada de `simulation_tax_lines` em etapa posterior.
+
 ### 2026-07-10 - Secao Fiscal no detalhe da Simulacao Final
 
 - Adicionada a secao `Parametrização Fiscal` no detalhe de `/admin/simulacoes-finais/[id]`.

@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth/get-session-profile";
 import { createClient } from "@/lib/supabase/server";
+import type { FinalSimulationTaxPreviewInput } from "./calculation-engine";
 import type {
   ExpensePreset,
   ExpensePresetItem,
@@ -122,6 +123,99 @@ export async function getFinalSimulationItems(simulationId: string): Promise<Fin
     .order("created_at", { ascending: true });
 
   return (data ?? []) as FinalSimulationItemRow[];
+}
+
+function hasJsonSnapshot(value: unknown) {
+  return Boolean(value && typeof value === "object" && Object.keys(value).length > 0);
+}
+
+export async function getFinalSimulationTaxPreviewInput(
+  simulationId: string
+): Promise<FinalSimulationTaxPreviewInput | null> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const [simulationResult, itemsResult, expensesResult] = await Promise.all([
+    supabase
+      .from("final_simulations")
+      .select(
+        [
+          "id",
+          "exchange_rate",
+          "total_expenses_brl",
+          "trade_commission_mode",
+          "trade_commission_percent",
+          "trade_commission_amount_brl",
+          "ignore_trade_commission_contract",
+          "credits_ipi",
+          "credits_pis",
+          "credits_cofins",
+          "credits_icms",
+          "entry_invoice_parametrization_snapshot",
+          "exit_invoice_parametrization_snapshot"
+        ].join(", ")
+      )
+      .eq("id", simulationId)
+      .maybeSingle(),
+    supabase
+      .from("final_simulation_items")
+      .select("id, product_description, ncm, total_price, ii_rate, ipi_rate, pis_rate, cofins_rate, icms_rate")
+      .eq("simulation_id", simulationId)
+      .order("created_at", { ascending: true }),
+    supabase.from("simulation_expense_lines").select("amount_brl").eq("simulation_id", simulationId)
+  ]);
+
+  if (!simulationResult.data) {
+    return null;
+  }
+
+  const simulation = simulationResult.data as unknown as Pick<
+    FinalSimulationRow,
+    | "id"
+    | "exchange_rate"
+    | "total_expenses_brl"
+    | "trade_commission_mode"
+    | "trade_commission_percent"
+    | "trade_commission_amount_brl"
+    | "ignore_trade_commission_contract"
+    | "credits_ipi"
+    | "credits_pis"
+    | "credits_cofins"
+    | "credits_icms"
+    | "entry_invoice_parametrization_snapshot"
+    | "exit_invoice_parametrization_snapshot"
+  >;
+  const expenses = (expensesResult.data ?? []) as Array<Pick<SimulationExpenseLine, "amount_brl">>;
+  const totalExpensesBrl = expenses.length > 0
+    ? expenses.reduce((total, expense) => total + Number(expense.amount_brl ?? 0), 0)
+    : simulation.total_expenses_brl;
+
+  return {
+    simulationId: simulation.id,
+    exchangeRate: simulation.exchange_rate,
+    totalExpensesBrl,
+    creditsIpi: simulation.credits_ipi,
+    creditsPis: simulation.credits_pis,
+    creditsCofins: simulation.credits_cofins,
+    creditsIcms: simulation.credits_icms,
+    tradeCommissionMode: simulation.trade_commission_mode,
+    tradeCommissionPercent: simulation.trade_commission_percent,
+    tradeCommissionAmountBrl: simulation.trade_commission_amount_brl,
+    ignoreTradeCommissionContract: simulation.ignore_trade_commission_contract,
+    hasEntryInvoiceSnapshot: hasJsonSnapshot(simulation.entry_invoice_parametrization_snapshot),
+    hasExitInvoiceSnapshot: hasJsonSnapshot(simulation.exit_invoice_parametrization_snapshot),
+    items: ((itemsResult.data ?? []) as FinalSimulationItemRow[]).map((item) => ({
+      itemId: item.id,
+      description: item.product_description,
+      ncm: item.ncm,
+      totalPriceUsd: item.total_price,
+      iiRate: item.ii_rate,
+      ipiRate: item.ipi_rate,
+      pisRate: item.pis_rate,
+      cofinsRate: item.cofins_rate,
+      icmsRate: item.icms_rate
+    }))
+  };
 }
 
 export async function getNcmCodeByCode(code: string): Promise<NcmCodeRow | null> {
