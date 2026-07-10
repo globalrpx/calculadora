@@ -177,6 +177,26 @@ export type NcmCodeRow = {
   updated_at: string;
 };
 
+export type NcmTaxProfileRow = {
+  id: string;
+  ncm_code: string;
+  country_code: string | null;
+  operation_type: string | null;
+  effective_date: string | null;
+  ii_rate: number;
+  ipi_rate: number;
+  pis_rate: number;
+  cofins_rate: number;
+  icms_rate: number;
+  antidumping_info: Record<string, unknown>;
+  ex_tariff_info: Record<string, unknown>;
+  legal_basis_snapshot: Record<string, unknown>;
+  source: string | null;
+  source_updated_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type FinalSimulationMainDataValues = {
   simulationId?: string;
   customerId?: string;
@@ -217,6 +237,10 @@ export type FinalSimulationItemValues = {
   currency?: string;
   unitNetWeight: number;
   unitGrossWeight: number;
+  iiRate?: number;
+  ipiRate?: number;
+  pisRate?: number;
+  cofinsRate?: number;
   internalConsumption?: boolean;
   fiscalException?: string;
   reducedBaseRate?: number;

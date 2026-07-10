@@ -59,6 +59,41 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Etapa 5: Produtos e NCM local das Simulacoes Finais
+
+- Implementada a primeira versao da secao de Produtos no detalhe de `/admin/simulacoes-finais/[id]`.
+- A tela agora lista produtos de `final_simulation_items` com descricao, NCM, aliquotas basicas, pesos, quantidade, preco, totais e acoes.
+- Adicionado formulario para incluir produto usando `addFinalSimulationItemAction`.
+- Adicionada edicao de produto usando `updateFinalSimulationItemAction`.
+- Adicionada remocao de produto com confirmacao usando `deleteFinalSimulationItemAction`.
+- A busca local de NCM usa `searchNcmCodes` com o parametro `ncmSearch` na propria tela de detalhe.
+- Quando o NCM existe em `ncm_codes`, a action salva descricao oficial, fonte, data da fonte e snapshot basico.
+- Quando existe perfil em `ncm_tax_profiles`, a action preenche II, IPI, PIS e COFINS a partir do perfil local mais recente e registra snapshot fiscal.
+- Quando o NCM nao existe na base local, a inclusao continua permitida e a UI exibe alerta de validacao pendente.
+- Os totais basicos do item continuam sendo calculados por `calculation-engine.ts`: valor total, peso liquido total e peso bruto total.
+- Apos incluir, editar ou remover produto, os totais basicos da simulacao sao recalculados: `total_products_usd`, `net_weight` e `gross_weight`.
+- A edicao de produtos permanece bloqueada pelas actions para simulacoes em `approved`, `sent_to_customer` ou `archived`.
+- Nao foram implementados integracao externa Receita/Classif, despesas, impostos finais, CIF final, PDF, relatorio interno, migrations, policies, auth, middleware, layout global, dependencias novas ou alteracoes em `temp/`.
+
+Arquivos principais:
+
+- `src/app/admin/simulacoes-finais/[id]/page.tsx`
+- `src/features/final-simulations/FinalSimulationItemsSection.tsx`
+- `src/features/final-simulations/actions.ts`
+- `src/features/final-simulations/schemas.ts`
+- `src/features/final-simulations/types.ts`
+- `state.md`
+
+Validado:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+
+Proxima etapa recomendada:
+
+- Validar manualmente inclusao/edicao/remocao contra banco com a migration aplicada; depois avancar para despesas ou parametrizacao fiscal.
+
 ### 2026-07-09 - Ajuste de navegacao das Simulacoes Finais
 
 - Adicionado o item `Simulações Finais` na navegacao administrativa existente.

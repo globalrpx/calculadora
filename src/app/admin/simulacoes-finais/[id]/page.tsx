@@ -3,7 +3,13 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { getFinalSimulationById } from "@/features/final-simulations/queries";
+import { FinalSimulationItemsSection } from "@/features/final-simulations/FinalSimulationItemsSection";
+import {
+  getFinalSimulationById,
+  getFinalSimulationItems,
+  searchNcmCodes
+} from "@/features/final-simulations/queries";
+import { isFinalSimulationLocked } from "@/features/final-simulations/schemas";
 import type { FinalSimulationRow } from "@/features/final-simulations/types";
 
 const statusLabels: Record<string, string> = {
@@ -76,13 +82,32 @@ function buildTitle(simulation: FinalSimulationRow) {
   return simulation.number ? `Simulação final ${simulation.number}` : "Simulação final";
 }
 
-export default async function FinalSimulationDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function readSearchParam(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export default async function FinalSimulationDetailPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { id } = await params;
+  const queryParams = await searchParams;
   const simulation = await getFinalSimulationById(id);
 
   if (!simulation) {
     notFound();
   }
+
+  const ncmSearch = readSearchParam(queryParams, "ncmSearch");
+  const [items, ncmOptions] = await Promise.all([
+    getFinalSimulationItems(simulation.id),
+    ncmSearch.length >= 2 ? searchNcmCodes(ncmSearch, 20) : Promise.resolve([])
+  ]);
+  const canEdit = !isFinalSimulationLocked(simulation.status);
 
   return (
     <>
@@ -148,12 +173,20 @@ export default async function FinalSimulationDetailPage({ params }: { params: Pr
 
           <Card title="Próximas etapas">
             <p className="mt-4 text-sm leading-6 text-slate-600">
-              Produtos, NCM, despesas, parametrização fiscal, impostos por encomenda, PDF cliente e relatório interno
-              entram nas próximas etapas do módulo.
+              Despesas, parametrização fiscal, impostos por encomenda, PDF cliente e relatório interno entram nas
+              próximas etapas do módulo.
             </p>
           </Card>
         </div>
       </div>
+
+      <FinalSimulationItemsSection
+        simulationId={simulation.id}
+        items={items}
+        ncmOptions={ncmOptions}
+        ncmSearch={ncmSearch}
+        canEdit={canEdit}
+      />
     </>
   );
 }

@@ -242,6 +242,10 @@ function readItemData(formData: FormData): FinalSimulationItemValues {
     currency: normalizeCurrency(formData.get("currency")),
     unitNetWeight: normalizeNumber(formData.get("unitNetWeight")),
     unitGrossWeight: normalizeNumber(formData.get("unitGrossWeight")),
+    iiRate: normalizeNumber(formData.get("iiRate")),
+    ipiRate: normalizeNumber(formData.get("ipiRate")),
+    pisRate: normalizeNumber(formData.get("pisRate")),
+    cofinsRate: normalizeNumber(formData.get("cofinsRate")),
     internalConsumption: normalizeBoolean(formData.get("internalConsumption")),
     fiscalException: optionalText(formData.get("fiscalException")),
     reducedBaseRate: normalizeNumber(formData.get("reducedBaseRate"))
@@ -287,6 +291,26 @@ function validateItemData(
 
   if (values.unitGrossWeight < 0) {
     fieldErrors.unitGrossWeight = "Informe um peso bruto válido.";
+  }
+
+  if ((values.iiRate ?? 0) < 0) {
+    fieldErrors.iiRate = "Informe uma alíquota II válida.";
+  }
+
+  if ((values.ipiRate ?? 0) < 0) {
+    fieldErrors.ipiRate = "Informe uma alíquota IPI válida.";
+  }
+
+  if ((values.pisRate ?? 0) < 0) {
+    fieldErrors.pisRate = "Informe uma alíquota PIS válida.";
+  }
+
+  if ((values.cofinsRate ?? 0) < 0) {
+    fieldErrors.cofinsRate = "Informe uma alíquota COFINS válida.";
+  }
+
+  if ((values.reducedBaseRate ?? 0) < 0) {
+    fieldErrors.reducedBaseRate = "Informe uma taxa base reduzida válida.";
   }
 
   if (values.currency && values.currency.length > 3) {

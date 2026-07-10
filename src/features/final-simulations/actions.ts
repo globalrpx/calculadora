@@ -20,7 +20,8 @@ import type {
   FinalSimulationItemValues,
   FinalSimulationMainDataValues,
   FinalSimulationRow,
-  NcmCodeRow
+  NcmCodeRow,
+  NcmTaxProfileRow
 } from "./types";
 
 const reviewFieldsMessage = "Revise os campos destacados antes de continuar.";
@@ -144,35 +145,65 @@ function buildMainDataPayload(values: FinalSimulationMainDataValues, appUserId: 
 }
 
 async function getNcmSnapshot(adminSupabase: ReturnType<typeof createAdminClient>, ncm: string) {
-  const { data } = await adminSupabase
+  const { data: ncmData } = await adminSupabase
     .from("ncm_codes")
     .select("*")
     .eq("code", ncm)
     .eq("is_active", true)
     .maybeSingle();
 
-  const ncmCode = (data ?? null) as NcmCodeRow | null;
+  const ncmCode = (ncmData ?? null) as NcmCodeRow | null;
 
   if (!ncmCode) {
     return {
       officialDescription: null,
       source: null,
       sourceUpdatedAt: null,
-      taxSnapshot: {}
+      taxProfile: null,
+      taxSnapshot: {
+        ncm_found: false
+      }
     };
   }
 
+  const { data: taxProfileData } = await adminSupabase
+    .from("ncm_tax_profiles")
+    .select("*")
+    .eq("ncm_code", ncmCode.code)
+    .order("effective_date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const taxProfile = (taxProfileData ?? null) as NcmTaxProfileRow | null;
+
   return {
     officialDescription: ncmCode.description,
-    source: ncmCode.source,
-    sourceUpdatedAt: ncmCode.source_updated_at,
+    source: taxProfile?.source ?? ncmCode.source,
+    sourceUpdatedAt: taxProfile?.source_updated_at ?? ncmCode.source_updated_at,
+    taxProfile,
     taxSnapshot: {
+      ncm_found: true,
       code: ncmCode.code,
       description: ncmCode.description,
       hierarchical_description: ncmCode.hierarchical_description,
       legal_act: ncmCode.legal_act,
       source: ncmCode.source,
-      source_updated_at: ncmCode.source_updated_at
+      source_updated_at: ncmCode.source_updated_at,
+      tax_profile: taxProfile
+        ? {
+            id: taxProfile.id,
+            country_code: taxProfile.country_code,
+            operation_type: taxProfile.operation_type,
+            effective_date: taxProfile.effective_date,
+            ii_rate: taxProfile.ii_rate,
+            ipi_rate: taxProfile.ipi_rate,
+            pis_rate: taxProfile.pis_rate,
+            cofins_rate: taxProfile.cofins_rate,
+            icms_rate: taxProfile.icms_rate,
+            source: taxProfile.source,
+            source_updated_at: taxProfile.source_updated_at
+          }
+        : null
     }
   };
 }
@@ -180,6 +211,7 @@ async function getNcmSnapshot(adminSupabase: ReturnType<typeof createAdminClient
 async function buildItemPayload(adminSupabase: ReturnType<typeof createAdminClient>, values: FinalSimulationItemValues) {
   const totals = calculateItemTotalsFromValues(values);
   const ncmSnapshot = await getNcmSnapshot(adminSupabase, values.ncm);
+  const taxProfile = ncmSnapshot.taxProfile;
 
   return {
     simulation_id: values.simulationId,
@@ -191,6 +223,10 @@ async function buildItemPayload(adminSupabase: ReturnType<typeof createAdminClie
     ncm_source: ncmSnapshot.source,
     ncm_source_updated_at: ncmSnapshot.sourceUpdatedAt,
     ncm_tax_snapshot: ncmSnapshot.taxSnapshot,
+    ii_rate: taxProfile?.ii_rate ?? values.iiRate ?? 0,
+    ipi_rate: taxProfile?.ipi_rate ?? values.ipiRate ?? 0,
+    pis_rate: taxProfile?.pis_rate ?? values.pisRate ?? 0,
+    cofins_rate: taxProfile?.cofins_rate ?? values.cofinsRate ?? 0,
     internal_consumption: Boolean(values.internalConsumption),
     fiscal_exception: emptyToNull(values.fiscalException),
     reduced_base_rate: values.reducedBaseRate ?? 0,
