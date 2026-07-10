@@ -57,7 +57,7 @@ function DocumentActions({
   const viewUrl = `/admin/simulacoes-finais/${document.simulation_id}/documentos/${document.id}/pdf`;
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
       <Button type="button" variant="secondary" onClick={() => onPreview(document)}>
         Visualizar
       </Button>
@@ -86,76 +86,49 @@ export function FinalSimulationDocumentsSection({
 }) {
   const [previewDocument, setPreviewDocument] = useState<FinalSimulationDocumentRow | null>(null);
   const clientPdfDocuments = documents.filter((document) => document.document_type === "client_pdf");
-  const latestClientPdf = clientPdfDocuments[0] ?? null;
 
   return (
     <>
-      <Card title="Último PDF cliente" description="Acesso rápido ao documento cliente mais recente salvo no Storage.">
-        {latestClientPdf ? (
-          <div className="mt-4 rounded-md border border-rpx-blue/20 bg-rpx-sky p-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold text-rpx-ink">{latestClientPdf.file_name}</h3>
-                  <StatusBadge variant="info">Mais recente</StatusBadge>
-                  <StatusBadge variant="neutral">PDF cliente</StatusBadge>
-                </div>
-                <p className="mt-2 text-sm text-slate-600">
-                  Gerado em {formatDateTime(latestClientPdf.generated_at)}
-                  {latestClientPdf.generated_by_name || latestClientPdf.generated_by_email
-                    ? ` por ${latestClientPdf.generated_by_name ?? latestClientPdf.generated_by_email}`
-                    : ""}
-                  {latestClientPdf.size_bytes ? ` • ${formatFileSize(latestClientPdf.size_bytes)}` : ""}
-                </p>
-              </div>
-              <DocumentActions document={latestClientPdf} onPreview={setPreviewDocument} />
-            </div>
-          </div>
-        ) : (
-          <div className="mt-4 rounded-md border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
-            Nenhum PDF cliente gerado ainda.
-          </div>
-        )}
-      </Card>
-
       <Card title="Documentos gerados" description="Histórico de documentos salvos para esta simulação, do mais recente para o mais antigo.">
         {clientPdfDocuments.length > 0 ? (
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-3 py-3">Documento</th>
-                  <th className="px-3 py-3">Tipo</th>
-                  <th className="px-3 py-3">Gerado em</th>
-                  <th className="px-3 py-3">Gerado por</th>
-                  <th className="px-3 py-3 text-right">Tamanho</th>
-                  <th className="px-3 py-3 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {clientPdfDocuments.map((document, index) => (
-                  <tr key={document.id}>
-                    <td className="px-3 py-3 font-medium text-rpx-ink">
-                      <div className="flex flex-wrap items-center gap-2">
+          <div className="mt-4 grid gap-3">
+            {clientPdfDocuments.map((document, index) => (
+              <article
+                key={document.id}
+                className={
+                  index === 0
+                    ? "rounded-md border border-rpx-blue/20 bg-rpx-sky p-4"
+                    : "rounded-md border border-slate-200 bg-white p-4"
+                }
+              >
+                <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <h3 className="min-w-0 max-w-full break-words text-sm font-semibold text-rpx-ink">
                         {document.file_name}
-                        {index === 0 ? <StatusBadge variant="info">Mais recente</StatusBadge> : null}
+                      </h3>
+                      {index === 0 ? <StatusBadge variant="info">Mais recente</StatusBadge> : null}
+                      <StatusBadge variant="neutral">{documentTypeLabel(document.document_type)}</StatusBadge>
+                    </div>
+                    <dl className="mt-3 grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
+                      <div className="min-w-0">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gerado em</dt>
+                        <dd className="mt-1 break-words">{formatDateTime(document.generated_at)}</dd>
                       </div>
-                    </td>
-                    <td className="px-3 py-3 text-slate-700">{documentTypeLabel(document.document_type)}</td>
-                    <td className="px-3 py-3 text-slate-700">{formatDateTime(document.generated_at)}</td>
-                    <td className="px-3 py-3 text-slate-700">
-                      {document.generated_by_name ?? document.generated_by_email ?? "-"}
-                    </td>
-                    <td className="px-3 py-3 text-right text-slate-700">{formatFileSize(document.size_bytes)}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex justify-end">
-                        <DocumentActions document={document} onPreview={setPreviewDocument} />
+                      <div className="min-w-0">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gerado por</dt>
+                        <dd className="mt-1 break-words">{document.generated_by_name ?? document.generated_by_email ?? "-"}</dd>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <div className="min-w-0">
+                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tamanho</dt>
+                        <dd className="mt-1">{formatFileSize(document.size_bytes)}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                  <DocumentActions document={document} onPreview={setPreviewDocument} />
+                </div>
+              </article>
+            ))}
           </div>
         ) : (
           <div className="mt-4 rounded-md border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">

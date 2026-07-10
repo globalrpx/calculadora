@@ -59,6 +59,32 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Ajuste visual do historico de documentos da Simulacao Final
+
+- Removido o card separado `Ultimo PDF cliente` do detalhe da Simulacao Final.
+- Mantida uma unica secao `Documentos gerados`, usando a lista ordenada do mais recente para o mais antigo como fonte principal.
+- O primeiro documento da lista agora recebe o badge `Mais recente`.
+- A listagem passou de tabela para cards responsivos, reduzindo risco de overflow lateral em desktop e mobile.
+- As acoes existentes foram preservadas:
+  - `Visualizar`;
+  - `Baixar PDF`;
+  - `Abrir em nova aba`.
+- O estado vazio permanece como `Nenhum PDF cliente gerado ainda.`.
+- Nao houve alteracao em geracao de PDF, Storage, `simulation_documents`, rotas seguras, calculo fiscal, banco, RLS, auth, middleware, permissoes, `package.json`, producao ou `temp/`.
+
+Validado nesta etapa:
+
+- Browser no Supabase Dev:
+  - simulacao com PDFs exibiu apenas `Documentos gerados`;
+  - o bloco `Ultimo PDF cliente` nao apareceu;
+  - o item mais recente apareceu primeiro com badge `Mais recente`;
+  - documentos antigos continuaram listados;
+  - `Visualizar` abriu modal com o PDF salvo;
+  - `Baixar PDF` e `Abrir em nova aba` permaneceram apontando para a rota segura do documento;
+  - viewport desktop nao apresentou overflow horizontal;
+  - viewport mobile 390x844 nao apresentou overflow horizontal;
+  - simulacao sem documentos exibiu o estado vazio.
+
 ### 2026-07-10 - Historico de documentos gerados da Simulacao Final
 
 - Implementada query `listFinalSimulationDocuments(simulationId)`.
