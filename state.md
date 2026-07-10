@@ -59,6 +59,43 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Refino da lista de documentos gerados
+
+- Refinada a secao `Documentos gerados` para suportar multiplos tipos com mais clareza operacional.
+- Mantida a ordenacao por `simulation_documents.generated_at desc`, vinda da query existente.
+- Adicionado resumo de documentos na secao:
+  - total de documentos;
+  - quantidade de PDFs cliente;
+  - quantidade de relatorios internos;
+  - quantidade de planilhas, quando houver.
+- Labels por tipo ajustados:
+  - `client_pdf`: `PDF cliente`;
+  - `internal_detailed_report`: `Relatorio interno`;
+  - `pricing_excel`: `Excel/planilha`.
+- Adicionadas descricoes curtas por tipo:
+  - PDF cliente: documento comercial para cliente;
+  - relatorio interno: documento detalhado para equipe interna.
+- Metadados ficaram separados em `Gerado em`, `Gerado por` e `Tamanho`.
+- Estado vazio atualizado para orientar o fluxo: gerar snapshots e depois PDF cliente ou relatorio interno.
+- Acoes existentes foram preservadas e continuam usando documento salvo:
+  - `Visualizar`;
+  - `Baixar PDF`;
+  - `Abrir em nova aba`.
+- Nao houve alteracao em queries, actions, Storage, `simulation_documents`, geracao de documentos, calculo fiscal, RLS, auth, middleware, permissoes, `package.json`, producao ou `temp/`.
+
+Validado nesta etapa:
+
+- Browser no Supabase Dev com a simulacao `0358251e-4d4a-4709-b522-97ef94fe73be`:
+  - lista exibiu PDF cliente e relatorios internos;
+  - `Mais recente` apareceu apenas no primeiro item geral;
+  - descricoes por tipo apareceram corretamente;
+  - documentos antigos continuaram listados;
+  - `Visualizar` abriu modal sem regenerar documento;
+  - links `Baixar PDF` e `Abrir em nova aba` apontaram para a rota segura do documento salvo;
+  - desktop sem overflow horizontal;
+  - mobile 390x844 sem overflow horizontal e com botoes acessiveis.
+- Simulacao sem documentos exibiu o novo estado vazio.
+
 ### 2026-07-10 - Relatorio interno simples da Simulacao Final
 
 - Implementada a geracao de PDF de relatorio interno a partir exclusivamente de `final_simulations.internal_snapshot`.
