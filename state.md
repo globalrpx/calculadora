@@ -59,6 +59,38 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Migration de Parametrizacao Fiscal de Simulacoes Finais
+
+- Criada migration incremental para suportar parametrizacoes fiscais de NF entrada/saida no modulo de Simulacoes Finais.
+- Nova tabela `invoice_parametrizations` preparada para codigo, tipo de operacao, descricao, natureza, CFOP, grupo de operacao, regime, destino, perfil de cliente, ICMS, filial/cliente opcional e auditoria por `app_users`.
+- Adicionados campos fiscais em `final_simulations` para:
+  - comissao da trade;
+  - flags de creditos IPI/PIS/COFINS/ICMS;
+  - snapshot de regime fiscal;
+  - validacao de creditos;
+  - parametrizacao/snapshot de NF entrada e NF saida.
+- Criados checks para `operation_type`, `operation_group`, `tax_regime`, `destination_scope`, `customer_profile` e `trade_commission_mode`.
+- Criados indices para consultas por tipo, codigo, ativo, cliente e parametrizacoes vinculadas a `final_simulations`.
+- Habilitado RLS em `invoice_parametrizations` com policies admin-only usando `public.is_admin()`.
+- Reutilizado `public.set_updated_at()` para `invoice_parametrizations`.
+- Atualizado `docs/DATABASE_MODEL.md`.
+- Nao houve UI, alteracao em `src/`, `package.json`, auth/RLS fora da nova tabela, `temp/`, db push real ou producao.
+
+Arquivos principais:
+
+- `supabase/migrations/20260710120000_create_invoice_parametrizations.sql`
+- `docs/DATABASE_MODEL.md`
+- `state.md`
+
+Validado:
+
+- Revisao estatica da migration.
+- `git diff --check`.
+
+Proxima etapa recomendada:
+
+- Validar a migration via dry-run no Supabase Dev antes de criar camada TypeScript/actions para parametrizacao fiscal.
+
 ### 2026-07-10 - Validacoes minimas de Simulacoes Finais
 
 - Criadas validacoes minimas para criacao e edicao de dados principais de Simulacoes Finais.

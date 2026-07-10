@@ -16,6 +16,7 @@ Migrations atuais:
 - `20260709180000_create_config_table.sql`
 - `20260709200000_create_final_simulations_core.sql`
 - `20260709213000_create_expense_types_and_presets.sql`
+- `20260710120000_create_invoice_parametrizations.sql`
 
 ## Convencoes
 
@@ -347,6 +348,7 @@ Campos principais:
 - usuarios: `created_by`, `updated_by`, `assigned_to`, `approved_by`, `reopened_by`, todos referenciando `app_users`;
 - dados da operacao: data, validade, modalidade, transporte, origem/destino, embalagem, licenca e observacoes;
 - valores e pesos: moeda, cambio, frete, seguro, valor aduaneiro, impostos, despesas, custo total, pesos, volume e containers;
+- parametrizacao fiscal: comissao da trade, flags de creditos tributarios, snapshot de regime fiscal e parametrizacoes de NF de entrada/saida;
 - snapshots: `calculation_snapshot`, `public_snapshot`, `internal_snapshot`.
 
 Checks:
@@ -355,6 +357,7 @@ Checks:
 - `import_modality`: `propria`, `conta_e_ordem`, `encomenda`;
 - `transport_mode`: `maritimo`, `aereo`, `rodoviario`;
 - `currency` curto, com ate 3 caracteres quando preenchido.
+- `trade_commission_mode`, quando preenchido: `percent`, `fixed_expense`, `none`.
 
 ### `final_simulation_items`
 
@@ -534,6 +537,71 @@ Checks:
 - `override_calculation_type`, quando preenchido, segue os valores de `expense_calculation_type`;
 - `override_allocation_type`, quando preenchido, segue os valores de `allocation_type`;
 - `override_behavior`, quando preenchido, segue os valores dos comportamentos por modalidade.
+
+## Simulacoes Finais - Parametrizacao Fiscal
+
+A migration `20260710120000_create_invoice_parametrizations.sql` cria a base de parametrizacao fiscal para notas fiscais de entrada/saida e adiciona snapshots fiscais na Simulacao Final.
+
+Escopo desta migration:
+
+- tabela `invoice_parametrizations`;
+- campos de comissao da trade em `final_simulations`;
+- flags de creditos tributarios em `final_simulations`;
+- snapshots fiscais e de parametrizacao de NF em `final_simulations`;
+- constraints/checks principais;
+- indices de acesso;
+- trigger de `updated_at` em `invoice_parametrizations`;
+- RLS habilitado em `invoice_parametrizations`;
+- policies conservadoras somente para admins.
+
+Fora do escopo desta migration:
+
+- UI de parametrizacao fiscal;
+- actions/queries/types;
+- calculo fiscal final;
+- aplicacao da comissao da trade;
+- interpretacao de creditos tributarios no custo final;
+- PDF;
+- policies de cliente;
+- alteracoes em auth, uploads ou storage.
+
+### `invoice_parametrizations`
+
+Cadastro mestre de parametrizacoes fiscais para NF de entrada e NF de saida.
+
+Campos principais:
+
+- identificacao: `id`, `code`, `key`, `description`;
+- tipo: `operation_type` (`entrada` ou `saida`);
+- natureza/operacao: `operation_nature`, `cfop`, `operation_group`;
+- regime e destino: `tax_regime`, `destination_scope`, `customer_profile`;
+- aliquota base: `icms_rate`;
+- unificacao: `is_unified`;
+- escopo opcional: `branch_id`, `branch_name`, `customer_id`, `customer_name`;
+- controle: `is_active`, `internal_notes`, `created_by`, `updated_by`, `created_at`, `updated_at`.
+
+Checks:
+
+- `operation_type`: `entrada`, `saida`;
+- `operation_group`, quando preenchido: `conta_e_ordem`, `venda_mercadoria`, `unificado`, `compra_comercializacao`, `simulacao_terceiros`, `outro`;
+- `tax_regime`, quando preenchido: `simples_nacional`, `lucro_real`, `lucro_presumido`, `consumidor_final`, `outro`;
+- `destination_scope`, quando preenchido: `interno`, `interestadual`, `fora_estado`, `outro`;
+- `customer_profile`, quando preenchido: `revenda`, `consumidor_final`, `industria`, `outro`.
+
+### Campos fiscais em `final_simulations`
+
+Campos adicionados:
+
+- comissao trade: `trade_commission_mode`, `trade_commission_percent`, `trade_commission_amount_brl`, `ignore_trade_commission_contract`;
+- creditos: `credits_ipi`, `credits_pis`, `credits_cofins`, `credits_icms`;
+- snapshot fiscal: `tax_regime_snapshot`, `tax_credit_notes`, `tax_credit_validated_by`, `tax_credit_validated_at`;
+- NF entrada: `entry_invoice_parametrization_id`, `entry_invoice_parametrization_snapshot`;
+- NF saida: `exit_invoice_parametrization_id`, `exit_invoice_parametrization_snapshot`.
+
+Regra:
+
+- Os campos preparam o armazenamento da parametrizacao e dos snapshots.
+- A migration nao implementa calculo, UI, validacao operacional da equipe RPX nem exposicao ao cliente.
 
 ## RLS de Simulacoes Finais
 
