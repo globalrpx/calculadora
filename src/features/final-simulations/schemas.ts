@@ -47,6 +47,10 @@ function normalizeCurrency(value: FormDataEntryValue | string | null | undefined
   return text || fallback;
 }
 
+function normalizeCurrencyCode(value: FormDataEntryValue | string | null | undefined) {
+  return normalizeText(value).toUpperCase();
+}
+
 function normalizeNumber(value: FormDataEntryValue | string | number | null | undefined) {
   const parsed = parseLocalizedNumber(value);
   return parsed ?? Number.NaN;
@@ -183,7 +187,7 @@ function readMainData(formData: FormData): FinalSimulationMainDataValues {
     requiresImportLicense: normalizeBoolean(formData.get("requiresImportLicense")),
     notes: optionalText(formData.get("notes")),
     incoterm: optionalText(formData.get("incoterm")),
-    currency: normalizeCurrency(formData.get("currency")),
+    currency: normalizeCurrencyCode(formData.get("currency")),
     exchangeRate: normalizeNumber(formData.get("exchangeRate"))
   };
 }
@@ -203,25 +207,71 @@ function validateMainData(
   validateOptionalDate(fieldErrors, "quoteDate", values.quoteDate, "Informe uma data de cotação válida.");
   validateOptionalDate(fieldErrors, "validUntil", values.validUntil, "Informe uma data de validade válida.");
 
+  if (!values.customerId && !values.customerName) {
+    fieldErrors.customerName = "Selecione um cliente ou informe o nome do cliente.";
+  }
+
+  if (!values.quoteDate) {
+    fieldErrors.quoteDate = "Informe a data da cotação.";
+  }
+
+  if (!values.validUntil) {
+    fieldErrors.validUntil = "Informe a validade.";
+  }
+
   if (
-    values.importModality &&
-    !finalSimulationImportModalityValues.includes(values.importModality as (typeof finalSimulationImportModalityValues)[number])
+    values.quoteDate &&
+    values.validUntil &&
+    datePattern.test(values.quoteDate) &&
+    datePattern.test(values.validUntil) &&
+    values.validUntil < values.quoteDate
+  ) {
+    fieldErrors.validUntil = "A validade não pode ser anterior à data da cotação.";
+  }
+
+  if (!values.importModality) {
+    fieldErrors.importModality = "Selecione a modalidade de importação.";
+  } else if (
+    !finalSimulationImportModalityValues.includes(
+      values.importModality as (typeof finalSimulationImportModalityValues)[number]
+    )
   ) {
     fieldErrors.importModality = "Selecione uma modalidade válida.";
   }
 
-  if (
-    values.transportMode &&
-    !finalSimulationTransportModeValues.includes(values.transportMode as (typeof finalSimulationTransportModeValues)[number])
+  if (!values.transportMode) {
+    fieldErrors.transportMode = "Selecione a via de transporte.";
+  } else if (
+    !finalSimulationTransportModeValues.includes(
+      values.transportMode as (typeof finalSimulationTransportModeValues)[number]
+    )
   ) {
     fieldErrors.transportMode = "Selecione uma via de transporte válida.";
   }
 
-  if (values.currency && values.currency.length > 3) {
-    fieldErrors.currency = "Informe uma moeda com até 3 caracteres.";
+  if (!values.origin) {
+    fieldErrors.origin = "Informe a origem.";
+  }
+
+  if (!values.destination) {
+    fieldErrors.destination = "Informe o destino.";
+  }
+
+  if (!values.incoterm) {
+    fieldErrors.incoterm = "Informe o Incoterm.";
+  }
+
+  if (!values.currency) {
+    fieldErrors.currency = "Informe a moeda.";
+  } else if (values.currency.length !== 3) {
+    fieldErrors.currency = "Informe uma moeda com 3 caracteres.";
   }
 
   validateNonNegativeNumber(fieldErrors, "exchangeRate", values.exchangeRate, "Informe uma taxa de câmbio válida.");
+
+  if (Number.isFinite(values.exchangeRate ?? 0) && (values.exchangeRate ?? 0) <= 0) {
+    fieldErrors.exchangeRate = "Informe uma taxa de câmbio maior que zero.";
+  }
 
   return fieldErrors;
 }

@@ -59,6 +59,35 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Validacoes minimas de Simulacoes Finais
+
+- Criadas validacoes minimas para criacao e edicao de dados principais de Simulacoes Finais.
+- A simulação agora exige cliente vinculado ou nome do cliente, data da cotacao, validade, modalidade, via de transporte, origem, destino, Incoterm, moeda e cambio.
+- `valid_until` nao pode ser anterior a `quote_date`.
+- `exchange_rate` deve ser maior que zero.
+- `currency` deve ter exatamente 3 caracteres.
+- `import_modality` e `transport_mode` seguem apenas os enums ja previstos.
+- O formulario de dados principais exibe erro inline nos campos obrigatorios e o campo de cambio passou a aceitar entrada decimal textual com `inputMode="decimal"`.
+- Nao houve migration, RLS, auth, middleware, layout global, `package.json`, `temp/`, fiscal, PDF ou calculo novo.
+
+Arquivos principais:
+
+- `src/features/final-simulations/schemas.ts`
+- `src/features/final-simulations/FinalSimulationMainDataForm.tsx`
+- `state.md`
+
+Validado:
+
+- Browser local apontando para Supabase Dev:
+  - tentativa de criar simulação vazia ficou bloqueada em `/admin/simulacoes-finais/nova`;
+  - mensagens exibidas para cliente, data da cotacao, validade, modalidade, transporte, origem, destino, Incoterm e cambio;
+  - criada simulação minima `43fcc9d4-d20c-4876-bece-bdb8b45cc996`;
+  - registro confirmado em `final_simulations` no Supabase Dev com `exchange_rate = 5.2`.
+
+Proxima etapa recomendada:
+
+- Validar a edicao de simulacoes antigas vazias, garantindo preenchimento dos mesmos campos antes de salvar.
+
 ### 2026-07-10 - Correcao de normalizacao numerica em Simulacoes Finais
 
 - Corrigido o parser numerico usado pelos schemas e calculos basicos de Simulacoes Finais.

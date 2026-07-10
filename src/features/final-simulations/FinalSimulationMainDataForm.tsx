@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DismissibleAlert } from "@/components/ui/DismissibleAlert";
-import { FormField, NumberInput, SelectInput, TextInput } from "@/components/ui/FormField";
+import { FormField, SelectInput, TextInput } from "@/components/ui/FormField";
 import type {
   FinalSimulationActionState,
   FinalSimulationClientOption,
@@ -122,6 +122,7 @@ export function FinalSimulationMainDataForm({
               name="quoteDate"
               type="date"
               defaultValue={currentValues.quoteDate ?? ""}
+              required
               aria-invalid={Boolean(errors.quoteDate)}
               aria-describedby={errors.quoteDate ? "quoteDate-error" : undefined}
             />
@@ -132,6 +133,7 @@ export function FinalSimulationMainDataForm({
               name="validUntil"
               type="date"
               defaultValue={currentValues.validUntil ?? ""}
+              required
               aria-invalid={Boolean(errors.validUntil)}
               aria-describedby={errors.validUntil ? "validUntil-error" : undefined}
             />
@@ -141,6 +143,7 @@ export function FinalSimulationMainDataForm({
             <SelectInput
               name="importModality"
               defaultValue={currentValues.importModality ?? ""}
+              required
               aria-invalid={Boolean(errors.importModality)}
               aria-describedby={errors.importModality ? "importModality-error" : undefined}
             >
@@ -155,6 +158,7 @@ export function FinalSimulationMainDataForm({
             <SelectInput
               name="transportMode"
               defaultValue={currentValues.transportMode ?? ""}
+              required
               aria-invalid={Boolean(errors.transportMode)}
               aria-describedby={errors.transportMode ? "transportMode-error" : undefined}
             >
@@ -166,11 +170,23 @@ export function FinalSimulationMainDataForm({
           </FormField>
 
           <FormField label="Origem" error={errors.origin} errorId="origin-error">
-            <TextInput name="origin" defaultValue={currentValues.origin ?? ""} />
+            <TextInput
+              name="origin"
+              defaultValue={currentValues.origin ?? ""}
+              required
+              aria-invalid={Boolean(errors.origin)}
+              aria-describedby={errors.origin ? "origin-error" : undefined}
+            />
           </FormField>
 
           <FormField label="Destino" error={errors.destination} errorId="destination-error">
-            <TextInput name="destination" defaultValue={currentValues.destination ?? ""} />
+            <TextInput
+              name="destination"
+              defaultValue={currentValues.destination ?? ""}
+              required
+              aria-invalid={Boolean(errors.destination)}
+              aria-describedby={errors.destination ? "destination-error" : undefined}
+            />
           </FormField>
 
           <FormField label="Destino final" error={errors.finalDestination} errorId="finalDestination-error">
@@ -186,15 +202,36 @@ export function FinalSimulationMainDataForm({
           </FormField>
 
           <FormField label="Incoterm" error={errors.incoterm} errorId="incoterm-error">
-            <TextInput name="incoterm" defaultValue={currentValues.incoterm ?? ""} placeholder="FOB, CIF..." />
+            <TextInput
+              name="incoterm"
+              defaultValue={currentValues.incoterm ?? ""}
+              placeholder="FOB, CIF..."
+              required
+              aria-invalid={Boolean(errors.incoterm)}
+              aria-describedby={errors.incoterm ? "incoterm-error" : undefined}
+            />
           </FormField>
 
           <FormField label="Moeda" error={errors.currency} errorId="currency-error">
-            <TextInput name="currency" defaultValue={currentValues.currency ?? "USD"} maxLength={3} />
+            <TextInput
+              name="currency"
+              defaultValue={currentValues.currency ?? "USD"}
+              maxLength={3}
+              required
+              aria-invalid={Boolean(errors.currency)}
+              aria-describedby={errors.currency ? "currency-error" : undefined}
+            />
           </FormField>
 
           <FormField label="Câmbio" error={errors.exchangeRate} errorId="exchangeRate-error">
-            <NumberInput name="exchangeRate" defaultValue={currentValues.exchangeRate ?? 0} step="0.000001" />
+            <TextInput
+              name="exchangeRate"
+              defaultValue={currentValues.exchangeRate ?? 0}
+              inputMode="decimal"
+              required
+              aria-invalid={Boolean(errors.exchangeRate)}
+              aria-describedby={errors.exchangeRate ? "exchangeRate-error" : undefined}
+            />
           </FormField>
         </div>
 
