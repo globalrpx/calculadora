@@ -12,7 +12,7 @@ Este arquivo e a memoria operacional do projeto. Ao terminar cada versao, funcio
 - Decisoes tecnicas e de produto.
 - Proxima etapa recomendada.
 
-Antes de iniciar uma nova sessao, ler este arquivo junto com `agents.md` e os documentos em `docs/`.
+Antes de iniciar uma nova sessao, ler este arquivo junto com `AGENTS.md` e os documentos em `docs/`.
 
 ## Contexto de produto
 
@@ -58,6 +58,30 @@ http://127.0.0.1:3001
 Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As dependencias do app Next agora estao instaladas e o build passou; o ambiente ainda nao possui npm convencional no PATH, entao a estabilizacao usou um npm temporario.
 
 ## Entregue ate agora
+
+### 2026-07-10 - Estrutura local Supabase Dev/Prod
+
+- Criados arquivos locais ignorados pelo Git para configurar Supabase CLI por ambiente:
+  - `.env.supabase.dev`
+  - `.env.supabase.prod`
+- Criados exemplos versionados sem secrets:
+  - `.env.supabase.dev.example`
+  - `.env.supabase.prod.example`
+- Atualizado `.gitignore` para proteger arquivos reais de ambiente Supabase e variantes de producao.
+- Criados scripts seguros para link, dry-run e push de migrations em Dev e Producao.
+- Push em Producao exige `CONFIRM_PROD_DB_PUSH=YES`.
+- Scripts de Producao tentam voltar o link do Supabase CLI para Dev ao final.
+- Criado `docs/ENVIRONMENTS.md` com o fluxo operacional Dev/Prod.
+- Atualizado `AGENTS.md` com regras curtas de operacao Supabase Dev/Prod.
+- Nao foram aplicadas migrations, nao foi rodado `db push` real, nao houve alteracao de codigo da aplicacao, `package.json`, Vercel ou `temp/`.
+
+Validado:
+
+- `chmod +x scripts/supabase-*.sh`
+- `git diff --check`
+- `git status --short`
+- `git check-ignore -v .env.supabase.dev .env.supabase.prod .env.prod .env.prod.local .env.production.local`
+- Busca local confirmou apenas placeholders nos novos arquivos de ambiente, sem secrets reais.
 
 ### 2026-07-10 - Etapa 6.4: processamento de pre-calculo em Simulacoes Finais
 

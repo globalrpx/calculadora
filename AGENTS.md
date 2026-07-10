@@ -24,7 +24,7 @@ Depois de ler, confirme mentalmente:
 
 Fontes da verdade por tema:
 
-- `agents.md`: regras operacionais para agentes/desenvolvedores.
+- `AGENTS.md`: regras operacionais para agentes/desenvolvedores.
 - `state.md`: estado vivo e historico mais recente do projeto.
 - `docs/spec-cruds.md`: padrao oficial de CRUDs administrativos.
 - `docs/especificacao-calculadora.md`: padrao oficial da calculadora, cotacoes, historico, imagens e regras de calculo.
@@ -215,6 +215,16 @@ Quando migrar para Supabase, preservar a ideia de isolamento por cliente usando 
 - Atualizar `docs/DATABASE_MODEL.md` quando a modelagem mudar.
 - Nunca usar `SUPABASE_SERVICE_ROLE_KEY` no client.
 
+### Regras Supabase Dev/Prod
+
+- Usar Supabase Dev por padrao.
+- Nunca aplicar migrations em Producao sem dry-run anterior.
+- Nunca rodar push em Producao sem confirmacao explicita do usuario.
+- Depois de operar em Producao, voltar o link do Supabase CLI para Dev.
+- Nunca commitar `.env.supabase.dev`, `.env.supabase.prod` ou qualquer secret.
+- Para migrations em Dev, usar `scripts/supabase-db-dry-run-dev.sh` e `scripts/supabase-db-push-dev.sh`.
+- Para migrations em Producao, usar `scripts/supabase-db-dry-run-prod.sh` e, so depois, `scripts/supabase-db-push-prod.sh` com `CONFIRM_PROD_DB_PUSH=YES`.
+
 ## Calculadora
 
 A calculadora e o primeiro modulo funcional.
@@ -360,7 +370,7 @@ Sempre atualizar `state.md` com:
 - O que nao foi possivel validar.
 - Proxima etapa recomendada.
 
-Se a entrega mudar escopo, roadmap, stack, rotas ou modelo de dados, atualizar tambem este `agents.md` quando necessario.
+Se a entrega mudar escopo, roadmap, stack, rotas ou modelo de dados, atualizar tambem este `AGENTS.md` quando necessario.
 
 Na resposta final ao usuario, resumir:
 
