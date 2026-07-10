@@ -59,6 +59,41 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Visualizacao detalhada do calculo fiscal salvo
+
+- Evoluida a secao `Cálculo Fiscal V1` no detalhe da Simulacao Final para exibir o calculo salvo, sem recalcular automaticamente ao abrir a pagina.
+- `getSimulationTaxLines` passou a retornar linhas fiscais enriquecidas com descricao do produto e NCM por busca auxiliar em `final_simulation_items`.
+- O card agora mostra:
+  - status calculado/nao calculado;
+  - formula e data/hora do calculo quando disponivel em `calculation_snapshot.calculated_at`;
+  - resumo consolidado salvo em `calculation_snapshot.totals`;
+  - warnings salvos em `calculation_snapshot.warnings`;
+  - tabela de linhas fiscais por produto com produto, NCM, imposto, base, aliquota, valor, manual e observacao/ajuste.
+- A action de recalc passou a gravar `calculated_at` no `calculation_snapshot` para exibicao futura.
+- Estado vazio implementado: quando nao ha calculo fiscal salvo, exibe a mensagem para usar `Recalcular impostos`.
+- Nao houve migration, RLS, auth, middleware, layout global, `package.json`, `temp/`, PDF, producao ou alteracao da formula fiscal V1.
+
+Arquivos principais:
+
+- `src/features/final-simulations/FinalSimulationTaxPreviewSection.tsx`
+- `src/features/final-simulations/actions.ts`
+- `src/features/final-simulations/queries.ts`
+- `src/features/final-simulations/types.ts`
+- `docs/ROUTES_AND_SCREENS.md`
+- `state.md`
+
+Validado no Supabase Dev/browser:
+
+- Simulacao com calculo salvo exibiu resumo consolidado e 5 linhas fiscais para 1 produto.
+- Recalculo atualizou data/hora e manteve 5 linhas, sem duplicidade.
+- Simulacao sem calculo salvo exibiu:
+  - `Status: não calculado`;
+  - `Nenhum cálculo fiscal salvo ainda. Use Recalcular impostos para gerar as linhas.`
+
+Proxima etapa recomendada:
+
+- Fechar checkpoint da visualizacao fiscal salva ou evoluir relatorio interno/PDF com base nesses snapshots.
+
 ### 2026-07-10 - Persistencia do calculo fiscal V1
 
 - Criada action administrativa `recalculateFinalSimulationTaxesAction` para recalcular impostos da Simulacao Final.

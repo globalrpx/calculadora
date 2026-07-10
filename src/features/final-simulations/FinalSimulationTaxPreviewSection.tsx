@@ -9,11 +9,22 @@ import { Card } from "@/components/ui/Card";
 import { DismissibleAlert } from "@/components/ui/DismissibleAlert";
 import { recalculateFinalSimulationTaxesAction } from "./actions";
 import type { FinalSimulationTaxPreview } from "./calculation-engine";
+import type { SimulationTaxLineWithProduct } from "./types";
 
 type TaxCalculationState = {
   success: boolean;
   message?: string;
   preview?: FinalSimulationTaxPreview;
+};
+
+type SavedTaxCalculationSnapshot = {
+  formula_version?: string;
+  scope?: string;
+  totals?: FinalSimulationTaxPreview["totals"];
+  warnings?: FinalSimulationTaxPreview["warnings"];
+  meta?: FinalSimulationTaxPreview["meta"];
+  persisted_tax_lines_count?: number;
+  calculated_at?: string;
 };
 
 function formatMoney(value: number | null | undefined) {
@@ -22,6 +33,24 @@ function formatMoney(value: number | null | undefined) {
     currency: "BRL",
     minimumFractionDigits: 2
   }).format(value ?? 0);
+}
+
+function formatNumber(value: number | null | undefined) {
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4
+  }).format(value ?? 0);
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(new Date(value));
 }
 
 function SubmitButton() {
@@ -43,14 +72,37 @@ function SummaryItem({ label, value }: { label: string; value: number }) {
   );
 }
 
+function isSavedTaxCalculationSnapshot(value: Record<string, unknown> | null | undefined): value is SavedTaxCalculationSnapshot {
+  return Boolean(value && value.scope === "tax_recalculation" && typeof value.totals === "object" && value.totals);
+}
+
+function taxTypeLabel(value: string) {
+  const labels: Record<string, string> = {
+    II: "II",
+    IPI: "IPI",
+    PIS_IMPORTACAO: "PIS Importação",
+    COFINS_IMPORTACAO: "COFINS Importação",
+    ICMS: "ICMS",
+    AFRMM: "AFRMM",
+    ANTIDUMPING: "Antidumping",
+    OUTROS: "Outros"
+  };
+
+  return labels[value] ?? value;
+}
+
 export function FinalSimulationTaxPreviewSection({
   simulationId,
   preview,
+  savedSnapshot,
+  taxLines,
   persistedTaxLinesCount,
   canEdit
 }: {
   simulationId: string;
   preview: FinalSimulationTaxPreview | null;
+  savedSnapshot: Record<string, unknown>;
+  taxLines: SimulationTaxLineWithProduct[];
   persistedTaxLinesCount: number;
   canEdit: boolean;
 }) {
@@ -63,6 +115,10 @@ export function FinalSimulationTaxPreviewSection({
     }
   );
   const currentPreview = state.preview ?? preview;
+  const savedCalculation = isSavedTaxCalculationSnapshot(savedSnapshot) ? savedSnapshot : null;
+  const savedTotals = savedCalculation?.totals ?? null;
+  const savedWarnings = savedCalculation?.warnings ?? [];
+  const isCalculated = Boolean(savedCalculation && taxLines.length > 0);
 
   useEffect(() => {
     if (state.success) {
@@ -82,17 +138,31 @@ export function FinalSimulationTaxPreviewSection({
           </DismissibleAlert>
         ) : null}
 
-        {currentPreview ? (
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+          Status:{" "}
+          <span className="font-semibold text-rpx-ink">{isCalculated ? "calculado" : "não calculado"}</span>
+          {savedCalculation ? (
+            <>
+              <span className="mx-2 text-slate-300">|</span>
+              Fórmula: <span className="font-semibold text-rpx-ink">{savedCalculation.formula_version ?? "tax-preview-v1"}</span>
+              <span className="mx-2 text-slate-300">|</span>
+              Calculado em:{" "}
+              <span className="font-semibold text-rpx-ink">{formatDateTime(savedCalculation.calculated_at)}</span>
+            </>
+          ) : null}
+        </div>
+
+        {savedTotals ? (
           <>
             <dl className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <SummaryItem label="FOB BRL" value={currentPreview.totals.total_fob_brl} />
-              <SummaryItem label="Despesas BRL" value={currentPreview.totals.total_expenses_brl} />
-              <SummaryItem label="Base aduaneira" value={currentPreview.totals.total_customs_base_brl} />
-              <SummaryItem label="Impostos brutos" value={currentPreview.totals.gross_taxes_brl} />
-              <SummaryItem label="Créditos" value={currentPreview.totals.tax_credits_brl} />
-              <SummaryItem label="Impostos líquidos" value={currentPreview.totals.net_taxes_brl} />
-              <SummaryItem label="Comissão trade" value={currentPreview.totals.trade_commission_brl} />
-              <SummaryItem label="Custo total estimado" value={currentPreview.totals.estimated_total_cost_brl} />
+              <SummaryItem label="FOB BRL" value={savedTotals.total_fob_brl} />
+              <SummaryItem label="Despesas BRL" value={savedTotals.total_expenses_brl} />
+              <SummaryItem label="Base aduaneira" value={savedTotals.total_customs_base_brl} />
+              <SummaryItem label="Impostos brutos" value={savedTotals.gross_taxes_brl} />
+              <SummaryItem label="Créditos" value={savedTotals.tax_credits_brl} />
+              <SummaryItem label="Impostos líquidos" value={savedTotals.net_taxes_brl} />
+              <SummaryItem label="Comissão trade" value={savedTotals.trade_commission_brl} />
+              <SummaryItem label="Custo total estimado" value={savedTotals.estimated_total_cost_brl} />
             </dl>
 
             <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
@@ -100,11 +170,11 @@ export function FinalSimulationTaxPreviewSection({
               para esta simulação.
             </div>
 
-            {currentPreview.warnings.length > 0 ? (
+            {savedWarnings.length > 0 ? (
               <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
                 <p className="text-sm font-semibold text-amber-900">Avisos do cálculo V1</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-900">
-                  {currentPreview.warnings.map((warning, index) => (
+                  {savedWarnings.map((warning, index) => (
                     <li key={`${warning.code}-${warning.itemId ?? "simulation"}-${index}`}>{warning.message}</li>
                   ))}
                 </ul>
@@ -113,9 +183,48 @@ export function FinalSimulationTaxPreviewSection({
           </>
         ) : (
           <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-            Preview fiscal indisponível para esta simulação.
+            Nenhum cálculo fiscal salvo ainda. Use Recalcular impostos para gerar as linhas.
           </div>
         )}
+
+        {taxLines.length > 0 ? (
+          <div className="overflow-x-auto rounded-md border border-slate-200">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500">
+                <tr>
+                  <th className="px-3 py-2">Produto</th>
+                  <th className="px-3 py-2">NCM</th>
+                  <th className="px-3 py-2">Imposto</th>
+                  <th className="px-3 py-2 text-right">Base BRL</th>
+                  <th className="px-3 py-2 text-right">Alíquota %</th>
+                  <th className="px-3 py-2 text-right">Valor BRL</th>
+                  <th className="px-3 py-2">Manual?</th>
+                  <th className="px-3 py-2">Observação/ajuste</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {taxLines.map((line) => (
+                  <tr key={line.id}>
+                    <td className="px-3 py-2 text-rpx-ink">{line.product_description || "-"}</td>
+                    <td className="px-3 py-2 text-slate-600">{line.ncm || "-"}</td>
+                    <td className="px-3 py-2 font-semibold text-rpx-ink">{taxTypeLabel(line.tax_type)}</td>
+                    <td className="px-3 py-2 text-right text-slate-700">{formatMoney(line.base_amount_brl)}</td>
+                    <td className="px-3 py-2 text-right text-slate-700">{formatNumber(line.rate_percent)}%</td>
+                    <td className="px-3 py-2 text-right font-semibold text-rpx-ink">{formatMoney(line.amount_brl)}</td>
+                    <td className="px-3 py-2 text-slate-600">{line.is_manual_adjustment ? "Sim" : "Não"}</td>
+                    <td className="px-3 py-2 text-slate-600">{line.manual_adjustment_reason || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
+        {currentPreview && !savedTotals ? (
+          <div className="rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-500">
+            Preview atual disponível em memória. O resumo e as linhas serão exibidos após o recálculo manual.
+          </div>
+        ) : null}
 
         {canEdit ? (
           <form action={formAction} className="flex justify-end">

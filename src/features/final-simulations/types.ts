@@ -479,6 +479,11 @@ export type SimulationTaxLine = {
   created_at: string;
 };
 
+export type SimulationTaxLineWithProduct = SimulationTaxLine & {
+  product_description: string | null;
+  ncm: string | null;
+};
+
 export type InvoiceParametrization = {
   id: string;
   code: string;

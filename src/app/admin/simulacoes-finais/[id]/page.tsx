@@ -251,6 +251,8 @@ export default async function FinalSimulationDetailPage({
       <FinalSimulationTaxPreviewSection
         simulationId={simulation.id}
         preview={taxPreview}
+        savedSnapshot={simulation.calculation_snapshot ?? {}}
+        taxLines={taxLines}
         persistedTaxLinesCount={taxLines.length}
         canEdit={canEdit}
       />

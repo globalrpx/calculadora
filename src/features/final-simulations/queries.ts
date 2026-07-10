@@ -20,7 +20,8 @@ import type {
   InvoiceParametrizationOperationType,
   InvoiceParametrizationOption,
   SimulationExpenseLine,
-  SimulationTaxLine
+  SimulationTaxLine,
+  SimulationTaxLineWithProduct
 } from "./types";
 
 const finalSimulationListSelect = [
@@ -381,7 +382,7 @@ export async function getSimulationExpenseLines(simulationId: string): Promise<S
   return (data ?? []) as SimulationExpenseLine[];
 }
 
-export async function getSimulationTaxLines(simulationId: string): Promise<SimulationTaxLine[]> {
+export async function getSimulationTaxLines(simulationId: string): Promise<SimulationTaxLineWithProduct[]> {
   await requireRole("admin");
 
   const supabase = await createClient();
@@ -392,7 +393,44 @@ export async function getSimulationTaxLines(simulationId: string): Promise<Simul
     .order("tax_type", { ascending: true })
     .order("created_at", { ascending: true });
 
-  return (data ?? []) as SimulationTaxLine[];
+  const taxLines = (data ?? []) as SimulationTaxLine[];
+  const itemIds = Array.from(new Set(taxLines.map((line) => line.item_id).filter(Boolean))) as string[];
+
+  if (itemIds.length === 0) {
+    return taxLines.map((line) => ({
+      ...line,
+      product_description: null,
+      ncm: null
+    }));
+  }
+
+  const { data: items } = await supabase
+    .from("final_simulation_items")
+    .select("id, product_description, ncm")
+    .in("id", itemIds);
+  const itemsById = new Map(
+    ((items ?? []) as Pick<FinalSimulationItemRow, "id" | "product_description" | "ncm">[]).map((item) => [item.id, item])
+  );
+
+  return taxLines
+    .map((line) => {
+      const item = line.item_id ? itemsById.get(line.item_id) : null;
+
+      return {
+        ...line,
+        product_description: item?.product_description ?? null,
+        ncm: item?.ncm ?? null
+      };
+    })
+    .sort((left, right) => {
+      const productComparison = (left.product_description ?? "").localeCompare(right.product_description ?? "", "pt-BR");
+
+      if (productComparison !== 0) {
+        return productComparison;
+      }
+
+      return left.tax_type.localeCompare(right.tax_type, "pt-BR");
+    });
 }
 
 export async function listActiveExpensePresetsForSimulation(simulationId: string): Promise<ExpensePreset[]> {

@@ -1029,6 +1029,7 @@ export async function recalculateFinalSimulationTaxesAction(formData: FormData) 
       calculation_snapshot: {
         formula_version: "tax-preview-v1",
         scope: "tax_recalculation",
+        calculated_at: new Date().toISOString(),
         totals: preview.totals,
         warnings: preview.warnings,
         meta: preview.meta,
