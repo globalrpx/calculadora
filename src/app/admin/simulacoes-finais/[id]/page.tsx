@@ -273,11 +273,14 @@ export default async function FinalSimulationDetailPage({
             </dl>
           </Card>
 
-          <Card title="Documentos e relatórios" description="Geração de PDF cliente e relatório interno será feita em etapa posterior.">
+          <Card title="Documentos e relatórios" description="Preview cliente e PDF temporário a partir do snapshot público.">
             <p className="mt-4 text-sm leading-6 text-slate-600">
-              O mapeamento do PDF/planilha real já está documentado. Esta tela ainda não gera PDF, preview de PDF ou
-              relatório interno.
+              Gere os snapshots dos documentos no preview cliente antes de abrir o PDF. O arquivo ainda não é salvo em
+              Storage nem registrado como documento definitivo.
             </p>
+            <ButtonLink href={`/admin/simulacoes-finais/${simulation.id}/preview-cliente`} variant="secondary" className="mt-4">
+              Abrir preview cliente
+            </ButtonLink>
           </Card>
         </div>
       </div>

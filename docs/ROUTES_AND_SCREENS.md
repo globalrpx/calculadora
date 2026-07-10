@@ -38,7 +38,8 @@
 | `/admin/simulacoes-finais/nova` | Admin | Parcial | `final_simulations`, `clients` | Criação dos dados principais em status `draft`; produtos e cálculo avançado entram depois. |
 | `/admin/simulacoes-finais/[id]` | Admin | Parcial | `final_simulations`, `simulation_tax_lines` | Detalhe com dados principais, produtos, despesas, parametrização fiscal, recálculo fiscal V1, resumo salvo e linhas fiscais por produto. |
 | `/admin/simulacoes-finais/[id]/editar` | Admin | Parcial | `final_simulations`, `clients` | Edição dos dados principais; bloqueio de edição comum para status finais via action. |
-| `/admin/simulacoes-finais/[id]/preview-cliente` | Admin | Parcial | `final_simulations`, `final_simulation_items`, `simulation_tax_lines`, `simulation_expense_lines`, `calculation_snapshot` | Preview HTML do PDF cliente para validação visual; não gera PDF nem grava arquivo. |
+| `/admin/simulacoes-finais/[id]/preview-cliente` | Admin | Parcial | `final_simulations`, `final_simulation_items`, `simulation_tax_lines`, `simulation_expense_lines`, `calculation_snapshot`, `public_snapshot` | Preview HTML do PDF cliente para validação visual, geração dos snapshots e acesso ao PDF temporário. |
+| `/admin/simulacoes-finais/[id]/pdf-cliente` | Admin | Parcial | `final_simulations.public_snapshot` | Rota temporária que gera PDF cliente em memória a partir do `public_snapshot`; não grava Storage nem cria `simulation_documents`. |
 | `/admin/cadastros/tipos-despesa` | Admin | Parcial | `expense_types` | Listagem e inativação de tipos mestres de despesa. |
 | `/admin/cadastros/tipos-despesa/novo` | Admin | Parcial | `expense_types` | Criação de tipo mestre de despesa. |
 | `/admin/cadastros/tipos-despesa/[id]/editar` | Admin | Parcial | `expense_types` | Edição de tipo mestre de despesa. |

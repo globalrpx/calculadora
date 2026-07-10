@@ -16,7 +16,7 @@ export default async function FinalSimulationClientPreviewPage({ params }: { par
       <PageHeader
         eyebrow="Preview cliente"
         title={`Preview HTML - ${report.header.identifier}`}
-        description="Prévia visual do documento do cliente. Ainda não gera PDF nem grava arquivo."
+        description="Prévia visual do documento do cliente e geração temporária do PDF a partir do snapshot público."
       />
 
       <FinalSimulationClientPreview report={report} />

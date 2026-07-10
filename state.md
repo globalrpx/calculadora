@@ -59,6 +59,56 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - PDF cliente temporario a partir do public_snapshot
+
+- Criada a rota admin `/admin/simulacoes-finais/[id]/pdf-cliente`.
+- A rota:
+  - exige admin;
+  - consulta somente `final_simulations.id` e `final_simulations.public_snapshot`;
+  - retorna erro amigavel quando o snapshot publico ainda nao foi gerado;
+  - gera PDF em memoria com `content-type: application/pdf`;
+  - usa nome de arquivo amigavel `simulacao-cliente-<codigo-ou-id>.pdf`;
+  - nao grava arquivo em Storage;
+  - nao cria registro definitivo em `simulation_documents`;
+  - nao recalcula impostos nem consulta dados vivos para preencher o PDF.
+- Criado gerador `client-pdf-generator.ts` em TypeScript puro, sem dependencia nova e sem alterar `package.json`.
+- O PDF V1 contem:
+  - cabecalho da simulacao;
+  - dados comerciais/logisticos;
+  - tabela de produtos;
+  - NF entrada aproximada;
+  - NF saida aproximada;
+  - composicao da base ICMS;
+  - observacoes, disclaimers e warnings publicos.
+- O preview cliente ganhou link `Abrir PDF cliente`.
+- O detalhe da simulacao agora aponta para o preview cliente como caminho para gerar snapshots e abrir PDF temporario.
+- Atualizado `docs/ROUTES_AND_SCREENS.md`.
+- Nao houve migration, alteracao de schema, RLS, auth, middleware, permissoes, calculo fiscal, action de recalculo, `package.json`, producao, Storage, `simulation_documents` ou `temp/`.
+
+Validado nesta etapa:
+
+- `git diff --check`: sem erros.
+- `npm run typecheck`: passou.
+- `npm run lint`: passou sem warnings ou erros.
+- Browser no Supabase Dev:
+  - preview cliente exibiu o link `Abrir PDF cliente`;
+  - rota `/pdf-cliente` abriu com `content-type: application/pdf` para simulacao com `public_snapshot`;
+  - simulacao sem `public_snapshot` retornou `Gere os snapshots dos documentos antes de gerar o PDF cliente.`;
+  - rota nao exibiu JSON cru no preview.
+- Validacao temporaria do PDF gerado a partir do snapshot real:
+  - cabecalho;
+  - dados comerciais/logisticos;
+  - produtos;
+  - NF entrada;
+  - NF saida;
+  - composicao da base ICMS;
+  - observacoes;
+  - campos `N/A`;
+  - ausencia de `internal_snapshot` e `calculation_snapshot` cru.
+- Supabase Dev:
+  - `simulation_documents` permaneceu sem registro para a simulacao testada;
+  - nao houve gravacao em Storage.
+
 ### 2026-07-10 - Snapshots public/internal dos documentos da Simulacao Final
 
 - Confirmado no schema que `final_simulations` ja possui os campos JSONB:

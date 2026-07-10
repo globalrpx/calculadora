@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { DismissibleAlert } from "@/components/ui/DismissibleAlert";
 import { generateFinalSimulationDocumentSnapshotsAction } from "./actions";
 
@@ -72,7 +72,12 @@ export function FinalSimulationDocumentSnapshotsPanel({
         </div>
         <form action={formAction} className="flex justify-end">
           <input type="hidden" name="simulationId" value={simulationId} />
-          <SubmitButton />
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <SubmitButton />
+            <ButtonLink href={`/admin/simulacoes-finais/${simulationId}/pdf-cliente`} variant="secondary">
+              Abrir PDF cliente
+            </ButtonLink>
+          </div>
         </form>
       </div>
 
