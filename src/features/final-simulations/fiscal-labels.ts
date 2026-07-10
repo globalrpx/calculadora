@@ -3,7 +3,8 @@ import type {
   InvoiceParametrizationDestinationScope,
   InvoiceParametrizationOperationGroup,
   InvoiceParametrizationOperationType,
-  InvoiceParametrizationTaxRegime
+  InvoiceParametrizationTaxRegime,
+  TradeCommissionMode
 } from "./types";
 
 export const invoiceParametrizationOperationTypeLabels: Record<InvoiceParametrizationOperationType, string> = {
@@ -40,4 +41,10 @@ export const invoiceParametrizationCustomerProfileLabels: Record<InvoiceParametr
   consumidor_final: "Consumidor final",
   industria: "Indústria",
   outro: "Outro"
+};
+
+export const tradeCommissionModeLabels: Record<TradeCommissionMode, string> = {
+  none: "Não considerar",
+  percent: "Percentual",
+  fixed_expense: "Valor fixo"
 };

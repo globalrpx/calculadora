@@ -59,6 +59,53 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Secao Fiscal no detalhe da Simulacao Final
+
+- Adicionada a secao `Parametrização Fiscal` no detalhe de `/admin/simulacoes-finais/[id]`.
+- A secao permite selecionar parametrizacao ativa de NF Entrada e NF Saida, usando as options de `invoice_parametrizations`.
+- Snapshots atuais de entrada/saida sao exibidos com codigo, descricao, CFOP, regime e ICMS.
+- Adicionados controles para creditos IPI, PIS, COFINS e ICMS, notas fiscais internas e comissao trade.
+- O modo de comissao trade controla os campos visiveis:
+  - `none`: zera percentual e valor fixo;
+  - `percent`: exige percentual e zera valor fixo;
+  - `fixed_expense`: exige valor fixo BRL e zera percentual.
+- A action server-side continua montando snapshots e validando que entrada usa `operation_type = entrada` e saida usa `operation_type = saida`.
+- Ajustado o retorno de sucesso da action fiscal para preservar os valores salvos na UI apos submit.
+- Atualizado `docs/ROUTES_AND_SCREENS.md`.
+- Nao houve migration, RLS, auth, middleware, layout global, `package.json`, `temp/`, calculo fiscal final, `simulation_tax_lines`, PDF, alteracao de totais financeiros ou producao.
+
+Arquivos principais:
+
+- `src/app/admin/simulacoes-finais/[id]/page.tsx`
+- `src/features/final-simulations/FinalSimulationFiscalSection.tsx`
+- `src/features/final-simulations/actions.ts`
+- `src/features/final-simulations/schemas.ts`
+- `src/features/final-simulations/fiscal-labels.ts`
+- `docs/ROUTES_AND_SCREENS.md`
+- `state.md`
+
+Validado:
+
+- Teste browser no Supabase Dev em `http://localhost:3003`:
+  - selecao de NF Entrada e NF Saida;
+  - marcacao de creditos;
+  - comissao percentual `2,5`;
+  - salvamento com snapshots exibidos;
+  - limpeza de NF Entrada mantendo NF Saida.
+- Validacao direta no Supabase Dev confirmou:
+  - `entry_invoice_parametrization_id = null` apos limpar;
+  - `entry_invoice_parametrization_snapshot = {}`;
+  - `exit_invoice_parametrization_id` preservado;
+  - snapshot de saida preenchido;
+  - `credits_* = true`;
+  - `trade_commission_mode = percent`;
+  - `trade_commission_percent = 2.5`;
+  - totais financeiros finais permaneceram sem alteracao.
+
+Proxima etapa recomendada:
+
+- Fechar checkpoint da secao fiscal ou iniciar parametrizacao de impostos por encomenda sem calcular impostos finais ainda.
+
 ### 2026-07-10 - UI admin de Parametrizacoes Fiscais
 
 - Criadas rotas administrativas para CRUD de `invoice_parametrizations`:

@@ -1622,6 +1622,10 @@ export async function updateFinalSimulationFiscalSettingsAction(
 
   const entryInvoiceParametrizationId = parsed.data.entryInvoiceParametrizationId || null;
   const exitInvoiceParametrizationId = parsed.data.exitInvoiceParametrizationId || null;
+  const tradeCommissionMode = parsed.data.tradeCommissionMode || "none";
+  const tradeCommissionPercent = tradeCommissionMode === "percent" ? parsed.data.tradeCommissionPercent ?? 0 : 0;
+  const tradeCommissionAmountBrl =
+    tradeCommissionMode === "fixed_expense" ? parsed.data.tradeCommissionAmountBrl ?? 0 : 0;
   let entryInvoiceParametrizationSnapshot: Record<string, unknown> = {};
   let exitInvoiceParametrizationSnapshot: Record<string, unknown> = {};
 
@@ -1652,9 +1656,9 @@ export async function updateFinalSimulationFiscalSettingsAction(
   const { error } = await adminSupabase
     .from("final_simulations")
     .update({
-      trade_commission_mode: emptyToNull(parsed.data.tradeCommissionMode),
-      trade_commission_percent: parsed.data.tradeCommissionPercent ?? 0,
-      trade_commission_amount_brl: parsed.data.tradeCommissionAmountBrl ?? 0,
+      trade_commission_mode: tradeCommissionMode,
+      trade_commission_percent: tradeCommissionPercent,
+      trade_commission_amount_brl: tradeCommissionAmountBrl,
       ignore_trade_commission_contract: parsed.data.ignoreTradeCommissionContract ?? false,
       credits_ipi: parsed.data.creditsIpi ?? false,
       credits_pis: parsed.data.creditsPis ?? false,
@@ -1678,6 +1682,12 @@ export async function updateFinalSimulationFiscalSettingsAction(
   return {
     success: true,
     message: "Parametrização fiscal da simulação atualizada.",
-    id: editable.simulation.id
+    id: editable.simulation.id,
+    values: {
+      ...parsed.data,
+      tradeCommissionMode,
+      tradeCommissionPercent,
+      tradeCommissionAmountBrl
+    }
   };
 }

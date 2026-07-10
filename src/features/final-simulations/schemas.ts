@@ -1014,6 +1014,18 @@ function validateFinalSimulationFiscalSettingsData(
     values.tradeCommissionAmountBrl,
     "Informe um valor de comissão válido."
   );
+
+  if (values.tradeCommissionMode === "percent" && (!values.tradeCommissionPercent || values.tradeCommissionPercent <= 0)) {
+    fieldErrors.tradeCommissionPercent = "Informe o percentual da comissão.";
+  }
+
+  if (
+    values.tradeCommissionMode === "fixed_expense" &&
+    (!values.tradeCommissionAmountBrl || values.tradeCommissionAmountBrl <= 0)
+  ) {
+    fieldErrors.tradeCommissionAmountBrl = "Informe o valor fixo da comissão.";
+  }
+
   validateOptionalUuid(
     fieldErrors,
     "entryInvoiceParametrizationId",

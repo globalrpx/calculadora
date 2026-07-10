@@ -3,12 +3,15 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { FinalSimulationFiscalSection } from "@/features/final-simulations/FinalSimulationFiscalSection";
 import { FinalSimulationItemsSection } from "@/features/final-simulations/FinalSimulationItemsSection";
 import { SimulationExpensesSection } from "@/features/final-simulations/SimulationExpensesSection";
 import {
   getFinalSimulationById,
+  getFinalSimulationFiscalSettings,
   getFinalSimulationItems,
   getSimulationExpenseLines,
+  listInvoiceParametrizationOptions,
   listActiveExpensePresetsForSimulation,
   searchNcmCodes
 } from "@/features/final-simulations/queries";
@@ -106,13 +109,30 @@ export default async function FinalSimulationDetailPage({
   }
 
   const ncmSearch = readSearchParam(queryParams, "ncmSearch");
-  const [items, ncmOptions, expenses, expensePresets] = await Promise.all([
+  const [items, ncmOptions, expenses, expensePresets, fiscalSettings, entryInvoiceOptions, exitInvoiceOptions] = await Promise.all([
     getFinalSimulationItems(simulation.id),
     ncmSearch.length >= 2 ? searchNcmCodes(ncmSearch, 20) : Promise.resolve([]),
     getSimulationExpenseLines(simulation.id),
-    listActiveExpensePresetsForSimulation(simulation.id)
+    listActiveExpensePresetsForSimulation(simulation.id),
+    getFinalSimulationFiscalSettings(simulation.id),
+    listInvoiceParametrizationOptions("entrada"),
+    listInvoiceParametrizationOptions("saida")
   ]);
   const canEdit = !isFinalSimulationLocked(simulation.status);
+  const fiscalValues = fiscalSettings ?? {
+    simulationId: simulation.id,
+    tradeCommissionMode: simulation.trade_commission_mode ?? "none",
+    tradeCommissionPercent: simulation.trade_commission_percent ?? 0,
+    tradeCommissionAmountBrl: simulation.trade_commission_amount_brl ?? 0,
+    ignoreTradeCommissionContract: simulation.ignore_trade_commission_contract ?? false,
+    creditsIpi: simulation.credits_ipi ?? false,
+    creditsPis: simulation.credits_pis ?? false,
+    creditsCofins: simulation.credits_cofins ?? false,
+    creditsIcms: simulation.credits_icms ?? false,
+    taxCreditNotes: simulation.tax_credit_notes ?? undefined,
+    entryInvoiceParametrizationId: simulation.entry_invoice_parametrization_id ?? undefined,
+    exitInvoiceParametrizationId: simulation.exit_invoice_parametrization_id ?? undefined
+  };
 
   return (
     <>
@@ -198,6 +218,16 @@ export default async function FinalSimulationDetailPage({
         expenses={expenses}
         presets={expensePresets}
         totalExpensesBrl={simulation.total_expenses_brl}
+        canEdit={canEdit}
+      />
+
+      <FinalSimulationFiscalSection
+        simulationId={simulation.id}
+        values={fiscalValues}
+        entryOptions={entryInvoiceOptions}
+        exitOptions={exitInvoiceOptions}
+        entrySnapshot={simulation.entry_invoice_parametrization_snapshot ?? {}}
+        exitSnapshot={simulation.exit_invoice_parametrization_snapshot ?? {}}
         canEdit={canEdit}
       />
     </>

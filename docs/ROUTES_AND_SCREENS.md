@@ -36,7 +36,7 @@
 | `/admin/simulacoes/[id]` | Admin | Funcional | `simulations`, `quotes`, `clients`, `uploads`, Storage | Detalhe e edição de status/observações, com upload real de múltiplos arquivos da simulação via bucket privado. |
 | `/admin/simulacoes-finais` | Admin | Parcial | `final_simulations` | Listagem inicial do novo módulo, com filtros simples e ações de abrir/editar. |
 | `/admin/simulacoes-finais/nova` | Admin | Parcial | `final_simulations`, `clients` | Criação dos dados principais em status `draft`; produtos e cálculo avançado entram depois. |
-| `/admin/simulacoes-finais/[id]` | Admin | Parcial | `final_simulations` | Detalhe simples com dados principais, status e totais básicos. |
+| `/admin/simulacoes-finais/[id]` | Admin | Parcial | `final_simulations` | Detalhe com dados principais, produtos, despesas, parametrização fiscal, status e totais básicos. |
 | `/admin/simulacoes-finais/[id]/editar` | Admin | Parcial | `final_simulations`, `clients` | Edição dos dados principais; bloqueio de edição comum para status finais via action. |
 | `/admin/cadastros/tipos-despesa` | Admin | Parcial | `expense_types` | Listagem e inativação de tipos mestres de despesa. |
 | `/admin/cadastros/tipos-despesa/novo` | Admin | Parcial | `expense_types` | Criação de tipo mestre de despesa. |
