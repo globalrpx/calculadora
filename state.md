@@ -59,6 +59,37 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Etapa 6.2: camada TypeScript de tipos de despesa e pre-calculos
+
+- Criada a camada TypeScript server-side para os cadastros mestres `expense_types`, `expense_presets` e `expense_preset_items`.
+- Adicionados tipos de dominio, valores enumerados e valores de formulario para modalidades, tipos de rateio, tipos de calculo, comportamentos e vias de transporte.
+- Criados schemas manuais para criar/editar tipos de despesa, pre-calculos e itens de pre-calculo.
+- Criadas queries administrativas para listar, buscar por ID, listar ativos, listar itens de preset e listar presets ativos por via de transporte.
+- Criadas actions administrativas para criar, atualizar e desativar tipos de despesa e pre-calculos.
+- Criadas actions para adicionar, atualizar e remover fisicamente itens de pre-calculo.
+- As actions usam `requireRole("admin")`, validam entrada antes de gravar e usam `createAdminClient()` para writes server-side.
+- Tipos de despesa e pre-calculos sao desativados via `is_active = false`; itens de preset podem ser removidos fisicamente por afetarem apenas o cadastro mestre.
+- Nao foi criado processamento para gerar `simulation_expense_lines`.
+- Nao foram criadas migrations, UI, rotas, calculo fiscal, PDF, dependencias novas, alteracoes em auth/middleware/layout global, `package.json` ou `temp/`.
+
+Arquivos principais:
+
+- `src/features/final-simulations/types.ts`
+- `src/features/final-simulations/schemas.ts`
+- `src/features/final-simulations/queries.ts`
+- `src/features/final-simulations/actions.ts`
+- `state.md`
+
+Validado:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+
+Proxima etapa recomendada:
+
+- Revisar diff e, depois, implementar UI administrativa dos cadastros mestres de despesas ou a aplicacao de presets em uma Simulacao Final.
+
 ### 2026-07-09 - Etapa 6.1: migration de tipos de despesa e pre-calculos
 
 - Criada migration incremental para os cadastros mestres de despesas do modulo Simulacoes Finais.

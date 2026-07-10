@@ -1,8 +1,16 @@
 import {
   editableFinalSimulationStatusValues,
+  expenseAllocationTypeValues,
+  expenseBehaviorValues,
+  expenseCalculationTypeValues,
+  expenseModalityValues,
+  expensePresetTransportModeValues,
   finalSimulationImportModalityValues,
   finalSimulationStatusValues,
   finalSimulationTransportModeValues,
+  type ExpensePresetItemValues,
+  type ExpensePresetValues,
+  type ExpenseTypeValues,
   type FinalSimulationItemValues,
   type FinalSimulationMainDataValues,
   type FinalSimulationStatus
@@ -357,5 +365,290 @@ export const updateFinalSimulationItemSchema = {
       success: true,
       data: values
     };
+  }
+};
+
+function readExpenseTypeData(formData: FormData): ExpenseTypeValues {
+  return {
+    expenseTypeId: optionalUuid(formData.get("expenseTypeId")),
+    code: optionalText(formData.get("code")),
+    description: normalizeText(formData.get("description")),
+    key: optionalText(formData.get("key")),
+    printOrder: normalizeNumber(formData.get("printOrder")),
+    expenseModality: normalizeText(formData.get("expenseModality")) || "expense",
+    expenseModalityLabel: optionalText(formData.get("expenseModalityLabel")),
+    allocationType: normalizeText(formData.get("allocationType")) || "value",
+    allocationTypeLabel: optionalText(formData.get("allocationTypeLabel")),
+    expenseCalculationType: normalizeText(formData.get("expenseCalculationType")) || "parameters",
+    expenseCalculationLabel: optionalText(formData.get("expenseCalculationLabel")),
+    ownImportBehavior: normalizeText(formData.get("ownImportBehavior")) || "not_applicable",
+    ownImportBehaviorLabel: optionalText(formData.get("ownImportBehaviorLabel")),
+    orderAccountBehavior: normalizeText(formData.get("orderAccountBehavior")) || "not_applicable",
+    orderAccountBehaviorLabel: optionalText(formData.get("orderAccountBehaviorLabel")),
+    encomendaBehavior: normalizeText(formData.get("encomendaBehavior")) || "not_applicable",
+    encomendaBehaviorLabel: optionalText(formData.get("encomendaBehaviorLabel")),
+    expenseResulting: optionalText(formData.get("expenseResulting")),
+    siscomexAdditionId: optionalUuid(formData.get("siscomexAdditionId")),
+    expenseGroupId: optionalUuid(formData.get("expenseGroupId")),
+    expenseGroupName: optionalText(formData.get("expenseGroupName")),
+    considersContainer: normalizeBoolean(formData.get("considersContainer")),
+    considersIcmsEntryInvoice: normalizeBoolean(formData.get("considersIcmsEntryInvoice")),
+    composesServiceInvoice: normalizeBoolean(formData.get("composesServiceInvoice")),
+    titleTypeId: optionalUuid(formData.get("titleTypeId")),
+    titleTypeName: optionalText(formData.get("titleTypeName")),
+    serviceId: optionalUuid(formData.get("serviceId")),
+    serviceName: optionalText(formData.get("serviceName")),
+    bankAccountId: optionalUuid(formData.get("bankAccountId")),
+    bankAccountName: optionalText(formData.get("bankAccountName")),
+    erpKey: optionalText(formData.get("erpKey")),
+    paidByCashOwnImport: normalizeBoolean(formData.get("paidByCashOwnImport")),
+    paidByCashEncomenda: normalizeBoolean(formData.get("paidByCashEncomenda")),
+    paidByCashOrderAccount: normalizeBoolean(formData.get("paidByCashOrderAccount")),
+    paidByCashDirectExport: normalizeBoolean(formData.get("paidByCashDirectExport")),
+    paidByCashIndirectExport: normalizeBoolean(formData.get("paidByCashIndirectExport")),
+    isActive: formData.has("isActive") ? normalizeBoolean(formData.get("isActive")) : true
+  };
+}
+
+function validateExpenseTypeData(
+  values: ExpenseTypeValues,
+  options: { requireExpenseTypeId: boolean }
+): Partial<Record<keyof ExpenseTypeValues | "form", string>> {
+  const fieldErrors: Partial<Record<keyof ExpenseTypeValues | "form", string>> = {};
+
+  if (options.requireExpenseTypeId && !values.expenseTypeId) {
+    fieldErrors.expenseTypeId = "Informe o tipo de despesa.";
+  }
+
+  validateOptionalUuid(fieldErrors, "expenseTypeId", values.expenseTypeId, "Tipo de despesa inválido.");
+  validateOptionalUuid(fieldErrors, "siscomexAdditionId", values.siscomexAdditionId, "Adição Siscomex inválida.");
+  validateOptionalUuid(fieldErrors, "expenseGroupId", values.expenseGroupId, "Grupo de despesa inválido.");
+  validateOptionalUuid(fieldErrors, "titleTypeId", values.titleTypeId, "Tipo de título inválido.");
+  validateOptionalUuid(fieldErrors, "serviceId", values.serviceId, "Serviço inválido.");
+  validateOptionalUuid(fieldErrors, "bankAccountId", values.bankAccountId, "Conta bancária inválida.");
+
+  if (!values.description) {
+    fieldErrors.description = "Informe a descrição.";
+  }
+
+  if (values.printOrder !== undefined && values.printOrder < 0) {
+    fieldErrors.printOrder = "Informe uma ordem válida.";
+  }
+
+  if (!expenseModalityValues.includes(values.expenseModality as (typeof expenseModalityValues)[number])) {
+    fieldErrors.expenseModality = "Selecione uma modalidade válida.";
+  }
+
+  if (!expenseAllocationTypeValues.includes(values.allocationType as (typeof expenseAllocationTypeValues)[number])) {
+    fieldErrors.allocationType = "Selecione um tipo de rateio válido.";
+  }
+
+  if (
+    !expenseCalculationTypeValues.includes(values.expenseCalculationType as (typeof expenseCalculationTypeValues)[number])
+  ) {
+    fieldErrors.expenseCalculationType = "Selecione um tipo de cálculo válido.";
+  }
+
+  if (!expenseBehaviorValues.includes(values.ownImportBehavior as (typeof expenseBehaviorValues)[number])) {
+    fieldErrors.ownImportBehavior = "Selecione um comportamento válido.";
+  }
+
+  if (!expenseBehaviorValues.includes(values.orderAccountBehavior as (typeof expenseBehaviorValues)[number])) {
+    fieldErrors.orderAccountBehavior = "Selecione um comportamento válido.";
+  }
+
+  if (!expenseBehaviorValues.includes(values.encomendaBehavior as (typeof expenseBehaviorValues)[number])) {
+    fieldErrors.encomendaBehavior = "Selecione um comportamento válido.";
+  }
+
+  return fieldErrors;
+}
+
+function readExpensePresetData(formData: FormData): ExpensePresetValues {
+  return {
+    expensePresetId: optionalUuid(formData.get("expensePresetId")),
+    name: normalizeText(formData.get("name")),
+    description: optionalText(formData.get("description")),
+    transportMode: normalizeText(formData.get("transportMode")),
+    isActive: formData.has("isActive") ? normalizeBoolean(formData.get("isActive")) : true
+  };
+}
+
+function validateExpensePresetData(
+  values: ExpensePresetValues,
+  options: { requireExpensePresetId: boolean }
+): Partial<Record<keyof ExpensePresetValues | "form", string>> {
+  const fieldErrors: Partial<Record<keyof ExpensePresetValues | "form", string>> = {};
+
+  if (options.requireExpensePresetId && !values.expensePresetId) {
+    fieldErrors.expensePresetId = "Informe o pré-cálculo.";
+  }
+
+  validateOptionalUuid(fieldErrors, "expensePresetId", values.expensePresetId, "Pré-cálculo inválido.");
+
+  if (!values.name) {
+    fieldErrors.name = "Informe o nome.";
+  }
+
+  if (!expensePresetTransportModeValues.includes(values.transportMode as (typeof expensePresetTransportModeValues)[number])) {
+    fieldErrors.transportMode = "Selecione uma via de transporte válida.";
+  }
+
+  return fieldErrors;
+}
+
+function readExpensePresetItemData(formData: FormData): ExpensePresetItemValues {
+  return {
+    expensePresetItemId: optionalUuid(formData.get("expensePresetItemId")),
+    presetId: normalizeText(formData.get("presetId")),
+    expenseTypeId: normalizeText(formData.get("expenseTypeId")),
+    defaultAmountBrl: normalizeNumber(formData.get("defaultAmountBrl")),
+    defaultAmountUsd: normalizeNumber(formData.get("defaultAmountUsd")),
+    defaultCurrency: normalizeCurrency(formData.get("defaultCurrency"), "BRL"),
+    overrideCalculationType: optionalText(formData.get("overrideCalculationType")),
+    overrideAllocationType: optionalText(formData.get("overrideAllocationType")),
+    overrideBehavior: optionalText(formData.get("overrideBehavior")),
+    isEditable: formData.has("isEditable") ? normalizeBoolean(formData.get("isEditable")) : true,
+    sortOrder: normalizeNumber(formData.get("sortOrder")),
+    notes: optionalText(formData.get("notes"))
+  };
+}
+
+function validateExpensePresetItemData(
+  values: ExpensePresetItemValues,
+  options: { requireExpensePresetItemId: boolean }
+): Partial<Record<keyof ExpensePresetItemValues | "form", string>> {
+  const fieldErrors: Partial<Record<keyof ExpensePresetItemValues | "form", string>> = {};
+
+  if (options.requireExpensePresetItemId && !values.expensePresetItemId) {
+    fieldErrors.expensePresetItemId = "Informe o item do pré-cálculo.";
+  }
+
+  validateOptionalUuid(
+    fieldErrors,
+    "expensePresetItemId",
+    values.expensePresetItemId,
+    "Item do pré-cálculo inválido."
+  );
+
+  if (!values.presetId || !uuidPattern.test(values.presetId)) {
+    fieldErrors.presetId = "Informe um pré-cálculo válido.";
+  }
+
+  if (!values.expenseTypeId || !uuidPattern.test(values.expenseTypeId)) {
+    fieldErrors.expenseTypeId = "Informe um tipo de despesa válido.";
+  }
+
+  if ((values.defaultAmountBrl ?? 0) < 0) {
+    fieldErrors.defaultAmountBrl = "Informe um valor BRL válido.";
+  }
+
+  if ((values.defaultAmountUsd ?? 0) < 0) {
+    fieldErrors.defaultAmountUsd = "Informe um valor USD válido.";
+  }
+
+  if (values.defaultCurrency && values.defaultCurrency.length > 3) {
+    fieldErrors.defaultCurrency = "Informe uma moeda com até 3 caracteres.";
+  }
+
+  if (
+    values.overrideCalculationType &&
+    !expenseCalculationTypeValues.includes(values.overrideCalculationType as (typeof expenseCalculationTypeValues)[number])
+  ) {
+    fieldErrors.overrideCalculationType = "Selecione um tipo de cálculo válido.";
+  }
+
+  if (
+    values.overrideAllocationType &&
+    !expenseAllocationTypeValues.includes(values.overrideAllocationType as (typeof expenseAllocationTypeValues)[number])
+  ) {
+    fieldErrors.overrideAllocationType = "Selecione um tipo de rateio válido.";
+  }
+
+  if (
+    values.overrideBehavior &&
+    !expenseBehaviorValues.includes(values.overrideBehavior as (typeof expenseBehaviorValues)[number])
+  ) {
+    fieldErrors.overrideBehavior = "Selecione um comportamento válido.";
+  }
+
+  return fieldErrors;
+}
+
+export const createExpenseTypeSchema = {
+  parse(formData: FormData): SchemaResult<ExpenseTypeValues> {
+    const values = readExpenseTypeData(formData);
+    const fieldErrors = validateExpenseTypeData(values, { requireExpenseTypeId: false });
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
+  }
+};
+
+export const updateExpenseTypeSchema = {
+  parse(formData: FormData): SchemaResult<ExpenseTypeValues> {
+    const values = readExpenseTypeData(formData);
+    const fieldErrors = validateExpenseTypeData(values, { requireExpenseTypeId: true });
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
+  }
+};
+
+export const createExpensePresetSchema = {
+  parse(formData: FormData): SchemaResult<ExpensePresetValues> {
+    const values = readExpensePresetData(formData);
+    const fieldErrors = validateExpensePresetData(values, { requireExpensePresetId: false });
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
+  }
+};
+
+export const updateExpensePresetSchema = {
+  parse(formData: FormData): SchemaResult<ExpensePresetValues> {
+    const values = readExpensePresetData(formData);
+    const fieldErrors = validateExpensePresetData(values, { requireExpensePresetId: true });
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
+  }
+};
+
+export const createExpensePresetItemSchema = {
+  parse(formData: FormData): SchemaResult<ExpensePresetItemValues> {
+    const values = readExpensePresetItemData(formData);
+    const fieldErrors = validateExpensePresetItemData(values, { requireExpensePresetItemId: false });
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
+  }
+};
+
+export const updateExpensePresetItemSchema = {
+  parse(formData: FormData): SchemaResult<ExpensePresetItemValues> {
+    const values = readExpensePresetItemData(formData);
+    const fieldErrors = validateExpensePresetItemData(values, { requireExpensePresetItemId: true });
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
   }
 };

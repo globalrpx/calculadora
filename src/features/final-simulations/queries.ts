@@ -1,6 +1,10 @@
 import { requireRole } from "@/lib/auth/get-session-profile";
 import { createClient } from "@/lib/supabase/server";
 import type {
+  ExpensePreset,
+  ExpensePresetItem,
+  ExpensePresetTransportMode,
+  ExpenseType,
   FinalSimulationItemRow,
   FinalSimulationListFilters,
   FinalSimulationListRow,
@@ -171,4 +175,92 @@ export async function searchNcmCodes(term: string, limit = 20): Promise<NcmCodeR
     .limit(Math.max(1, Math.min(limit, 50)));
 
   return (data ?? []) as NcmCodeRow[];
+}
+
+export async function listExpenseTypes(): Promise<ExpenseType[]> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("expense_types")
+    .select("*")
+    .order("print_order", { ascending: true })
+    .order("description", { ascending: true });
+
+  return (data ?? []) as ExpenseType[];
+}
+
+export async function getExpenseTypeById(id: string): Promise<ExpenseType | null> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase.from("expense_types").select("*").eq("id", id).maybeSingle();
+
+  return (data ?? null) as ExpenseType | null;
+}
+
+export async function listActiveExpenseTypes(): Promise<ExpenseType[]> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("expense_types")
+    .select("*")
+    .eq("is_active", true)
+    .order("print_order", { ascending: true })
+    .order("description", { ascending: true });
+
+  return (data ?? []) as ExpenseType[];
+}
+
+export async function listExpensePresets(): Promise<ExpensePreset[]> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("expense_presets")
+    .select("*")
+    .order("transport_mode", { ascending: true })
+    .order("name", { ascending: true });
+
+  return (data ?? []) as ExpensePreset[];
+}
+
+export async function getExpensePresetById(id: string): Promise<ExpensePreset | null> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase.from("expense_presets").select("*").eq("id", id).maybeSingle();
+
+  return (data ?? null) as ExpensePreset | null;
+}
+
+export async function getExpensePresetItems(presetId: string): Promise<ExpensePresetItem[]> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("expense_preset_items")
+    .select("*")
+    .eq("preset_id", presetId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  return (data ?? []) as ExpensePresetItem[];
+}
+
+export async function listExpensePresetsByTransportMode(
+  transportMode: ExpensePresetTransportMode
+): Promise<ExpensePreset[]> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("expense_presets")
+    .select("*")
+    .eq("transport_mode", transportMode)
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  return (data ?? []) as ExpensePreset[];
 }

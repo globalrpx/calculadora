@@ -8,13 +8,23 @@ import {
   calculateSimulationBasicTotals
 } from "./calculation-engine";
 import {
+  createExpensePresetItemSchema,
+  createExpensePresetSchema,
+  createExpenseTypeSchema,
   createFinalSimulationSchema,
   finalSimulationItemSchema,
   isFinalSimulationLocked,
+  updateExpensePresetItemSchema,
+  updateExpensePresetSchema,
+  updateExpenseTypeSchema,
   updateFinalSimulationItemSchema,
   updateFinalSimulationMainDataSchema
 } from "./schemas";
 import type {
+  ExpensePresetItemValues,
+  ExpensePresetValues,
+  ExpenseType,
+  ExpenseTypeValues,
   FinalSimulationActionState,
   FinalSimulationItemRow,
   FinalSimulationItemValues,
@@ -38,6 +48,10 @@ function revalidateFinalSimulationPaths(simulationId?: string) {
   if (simulationId) {
     revalidatePath(`/admin/simulacoes-finais/${simulationId}`);
   }
+}
+
+function revalidateExpenseMasterPaths() {
+  revalidatePath("/admin/simulacoes-finais");
 }
 
 function buildActionError<TValues>(
@@ -141,6 +155,113 @@ function buildMainDataPayload(values: FinalSimulationMainDataValues, appUserId: 
     currency: values.currency || "USD",
     exchange_rate: values.exchangeRate ?? 0,
     updated_by: appUserId
+  };
+}
+
+function buildExpenseTypePayload(values: ExpenseTypeValues, appUserId: string) {
+  return {
+    code: emptyToNull(values.code),
+    description: values.description,
+    key: emptyToNull(values.key),
+    print_order: values.printOrder ?? 0,
+    expense_modality: values.expenseModality || "expense",
+    expense_modality_label: emptyToNull(values.expenseModalityLabel),
+    allocation_type: values.allocationType || "value",
+    allocation_type_label: emptyToNull(values.allocationTypeLabel),
+    expense_calculation_type: values.expenseCalculationType || "parameters",
+    expense_calculation_label: emptyToNull(values.expenseCalculationLabel),
+    own_import_behavior: values.ownImportBehavior || "not_applicable",
+    own_import_behavior_label: emptyToNull(values.ownImportBehaviorLabel),
+    order_account_behavior: values.orderAccountBehavior || "not_applicable",
+    order_account_behavior_label: emptyToNull(values.orderAccountBehaviorLabel),
+    encomenda_behavior: values.encomendaBehavior || "not_applicable",
+    encomenda_behavior_label: emptyToNull(values.encomendaBehaviorLabel),
+    expense_resulting: emptyToNull(values.expenseResulting),
+    siscomex_addition_id: values.siscomexAdditionId || null,
+    expense_group_id: values.expenseGroupId || null,
+    expense_group_name: emptyToNull(values.expenseGroupName),
+    considers_container: Boolean(values.considersContainer),
+    considers_icms_entry_invoice: Boolean(values.considersIcmsEntryInvoice),
+    composes_service_invoice: Boolean(values.composesServiceInvoice),
+    title_type_id: values.titleTypeId || null,
+    title_type_name: emptyToNull(values.titleTypeName),
+    service_id: values.serviceId || null,
+    service_name: emptyToNull(values.serviceName),
+    bank_account_id: values.bankAccountId || null,
+    bank_account_name: emptyToNull(values.bankAccountName),
+    erp_key: emptyToNull(values.erpKey),
+    paid_by_cash_own_import: Boolean(values.paidByCashOwnImport),
+    paid_by_cash_encomenda: Boolean(values.paidByCashEncomenda),
+    paid_by_cash_order_account: Boolean(values.paidByCashOrderAccount),
+    paid_by_cash_direct_export: Boolean(values.paidByCashDirectExport),
+    paid_by_cash_indirect_export: Boolean(values.paidByCashIndirectExport),
+    is_active: values.isActive ?? true,
+    updated_by: appUserId
+  };
+}
+
+function buildExpensePresetPayload(values: ExpensePresetValues, appUserId: string) {
+  return {
+    name: values.name,
+    description: emptyToNull(values.description),
+    transport_mode: values.transportMode,
+    is_active: values.isActive ?? true,
+    updated_by: appUserId
+  };
+}
+
+async function findExpenseTypeSnapshot(adminSupabase: ReturnType<typeof createAdminClient>, expenseTypeId: string) {
+  const { data, error } = await adminSupabase
+    .from("expense_types")
+    .select("id, code, description")
+    .eq("id", expenseTypeId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      error: "Tipo de despesa não encontrado.",
+      expenseType: null
+    };
+  }
+
+  return {
+    error: null,
+    expenseType: data as Pick<ExpenseType, "id" | "code" | "description">
+  };
+}
+
+async function buildExpensePresetItemPayload(
+  adminSupabase: ReturnType<typeof createAdminClient>,
+  values: ExpensePresetItemValues,
+  appUserId: string
+) {
+  const expenseType = await findExpenseTypeSnapshot(adminSupabase, values.expenseTypeId);
+
+  if (expenseType.error || !expenseType.expenseType) {
+    return {
+      error: expenseType.error ?? unexpectedSaveMessage,
+      payload: null
+    };
+  }
+
+  return {
+    error: null,
+    payload: {
+      preset_id: values.presetId,
+      expense_type_id: values.expenseTypeId,
+      expense_code_snapshot: emptyToNull(expenseType.expenseType.code ?? undefined),
+      expense_description_snapshot: expenseType.expenseType.description,
+      default_amount_brl: values.defaultAmountBrl ?? 0,
+      default_amount_usd: values.defaultAmountUsd ?? 0,
+      default_currency: values.defaultCurrency || "BRL",
+      override_calculation_type: emptyToNull(values.overrideCalculationType),
+      override_allocation_type: emptyToNull(values.overrideAllocationType),
+      override_behavior: emptyToNull(values.overrideBehavior),
+      is_editable: values.isEditable ?? true,
+      sort_order: values.sortOrder ?? 0,
+      notes: emptyToNull(values.notes),
+      updated_by: appUserId
+    }
   };
 }
 
@@ -516,5 +637,317 @@ export async function recalculateFinalSimulationBasicTotalsAction(formData: Form
     success: true,
     message: "Totais básicos recalculados.",
     totals
+  };
+}
+
+export async function createExpenseTypeAction(
+  _previousState: FinalSimulationActionState<ExpenseTypeValues>,
+  formData: FormData
+): Promise<FinalSimulationActionState<ExpenseTypeValues>> {
+  const adminUser = await requireAdminUser();
+  const parsed = createExpenseTypeSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const { data, error } = await adminSupabase
+    .from("expense_types")
+    .insert({
+      ...buildExpenseTypePayload(parsed.data, adminUser.id),
+      created_by: adminUser.id,
+      updated_by: adminUser.id
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Tipo de despesa criado.",
+    id: data.id
+  };
+}
+
+export async function updateExpenseTypeAction(
+  _previousState: FinalSimulationActionState<ExpenseTypeValues>,
+  formData: FormData
+): Promise<FinalSimulationActionState<ExpenseTypeValues>> {
+  const adminUser = await requireAdminUser();
+  const parsed = updateExpenseTypeSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("expense_types")
+    .update(buildExpenseTypePayload(parsed.data, adminUser.id))
+    .eq("id", parsed.data.expenseTypeId);
+
+  if (error) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Tipo de despesa atualizado.",
+    id: parsed.data.expenseTypeId
+  };
+}
+
+export async function archiveOrDeactivateExpenseTypeAction(formData: FormData) {
+  const adminUser = await requireAdminUser();
+  const expenseTypeId = String(formData.get("expenseTypeId") ?? "").trim();
+
+  if (!expenseTypeId) {
+    return {
+      success: false,
+      message: "Informe o tipo de despesa."
+    };
+  }
+
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("expense_types")
+    .update({
+      is_active: false,
+      updated_by: adminUser.id
+    })
+    .eq("id", expenseTypeId);
+
+  if (error) {
+    return {
+      success: false,
+      message: unexpectedSaveMessage
+    };
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Tipo de despesa desativado."
+  };
+}
+
+export async function createExpensePresetAction(
+  _previousState: FinalSimulationActionState<ExpensePresetValues>,
+  formData: FormData
+): Promise<FinalSimulationActionState<ExpensePresetValues>> {
+  const adminUser = await requireAdminUser();
+  const parsed = createExpensePresetSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const { data, error } = await adminSupabase
+    .from("expense_presets")
+    .insert({
+      ...buildExpensePresetPayload(parsed.data, adminUser.id),
+      created_by: adminUser.id,
+      updated_by: adminUser.id
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Pré-cálculo criado.",
+    id: data.id
+  };
+}
+
+export async function updateExpensePresetAction(
+  _previousState: FinalSimulationActionState<ExpensePresetValues>,
+  formData: FormData
+): Promise<FinalSimulationActionState<ExpensePresetValues>> {
+  const adminUser = await requireAdminUser();
+  const parsed = updateExpensePresetSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("expense_presets")
+    .update(buildExpensePresetPayload(parsed.data, adminUser.id))
+    .eq("id", parsed.data.expensePresetId);
+
+  if (error) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Pré-cálculo atualizado.",
+    id: parsed.data.expensePresetId
+  };
+}
+
+export async function archiveOrDeactivateExpensePresetAction(formData: FormData) {
+  const adminUser = await requireAdminUser();
+  const expensePresetId = String(formData.get("expensePresetId") ?? "").trim();
+
+  if (!expensePresetId) {
+    return {
+      success: false,
+      message: "Informe o pré-cálculo."
+    };
+  }
+
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("expense_presets")
+    .update({
+      is_active: false,
+      updated_by: adminUser.id
+    })
+    .eq("id", expensePresetId);
+
+  if (error) {
+    return {
+      success: false,
+      message: unexpectedSaveMessage
+    };
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Pré-cálculo desativado."
+  };
+}
+
+export async function addExpensePresetItemAction(
+  _previousState: FinalSimulationActionState<ExpensePresetItemValues>,
+  formData: FormData
+): Promise<FinalSimulationActionState<ExpensePresetItemValues>> {
+  const adminUser = await requireAdminUser();
+  const parsed = createExpensePresetItemSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const built = await buildExpensePresetItemPayload(adminSupabase, parsed.data, adminUser.id);
+
+  if (built.error || !built.payload) {
+    return buildActionError<ExpensePresetItemValues>(parsed.data, { expenseTypeId: built.error ?? unexpectedSaveMessage });
+  }
+
+  const { data, error } = await adminSupabase
+    .from("expense_preset_items")
+    .insert({
+      ...built.payload,
+      created_by: adminUser.id,
+      updated_by: adminUser.id
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Item do pré-cálculo adicionado.",
+    id: data.id
+  };
+}
+
+export async function updateExpensePresetItemAction(
+  _previousState: FinalSimulationActionState<ExpensePresetItemValues>,
+  formData: FormData
+): Promise<FinalSimulationActionState<ExpensePresetItemValues>> {
+  const adminUser = await requireAdminUser();
+  const parsed = updateExpensePresetItemSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const built = await buildExpensePresetItemPayload(adminSupabase, parsed.data, adminUser.id);
+
+  if (built.error || !built.payload) {
+    return buildActionError<ExpensePresetItemValues>(parsed.data, { expenseTypeId: built.error ?? unexpectedSaveMessage });
+  }
+
+  const { error } = await adminSupabase
+    .from("expense_preset_items")
+    .update(built.payload)
+    .eq("id", parsed.data.expensePresetItemId)
+    .eq("preset_id", parsed.data.presetId);
+
+  if (error) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Item do pré-cálculo atualizado.",
+    id: parsed.data.expensePresetItemId
+  };
+}
+
+export async function deleteExpensePresetItemAction(formData: FormData) {
+  await requireAdminUser();
+  const expensePresetItemId = String(formData.get("expensePresetItemId") ?? "").trim();
+  const presetId = String(formData.get("presetId") ?? "").trim();
+
+  if (!expensePresetItemId || !presetId) {
+    return {
+      success: false,
+      message: "Informe o pré-cálculo e o item."
+    };
+  }
+
+  const adminSupabase = createAdminClient();
+  const { error } = await adminSupabase
+    .from("expense_preset_items")
+    .delete()
+    .eq("id", expensePresetItemId)
+    .eq("preset_id", presetId);
+
+  if (error) {
+    return {
+      success: false,
+      message: unexpectedSaveMessage
+    };
+  }
+
+  revalidateExpenseMasterPaths();
+
+  return {
+    success: true,
+    message: "Item do pré-cálculo removido."
   };
 }

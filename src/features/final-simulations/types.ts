@@ -21,6 +21,34 @@ export const finalSimulationTransportModeValues = ["maritimo", "aereo", "rodovia
 
 export type FinalSimulationTransportMode = (typeof finalSimulationTransportModeValues)[number];
 
+export const expenseModalityValues = ["tax", "expense", "calculation_base"] as const;
+
+export type ExpenseModality = (typeof expenseModalityValues)[number];
+
+export const expenseAllocationTypeValues = ["value", "net_weight", "cif", "gross_weight"] as const;
+
+export type ExpenseAllocationType = (typeof expenseAllocationTypeValues)[number];
+
+export const expenseCalculationTypeValues = ["parameters", "fob", "freight", "insurance", "cif", "ii", "ipi", "icms"] as const;
+
+export type ExpenseCalculationType = (typeof expenseCalculationTypeValues)[number];
+
+export const expenseBehaviorValues = [
+  "accessory_expense",
+  "tax_base",
+  "icms_base",
+  "not_applicable",
+  "product_cost_only",
+  "icms_base_courier_fine",
+  "ipi_base"
+] as const;
+
+export type ExpenseBehavior = (typeof expenseBehaviorValues)[number];
+
+export const expensePresetTransportModeValues = finalSimulationTransportModeValues;
+
+export type ExpensePresetTransportMode = (typeof expensePresetTransportModeValues)[number];
+
 export type FinalSimulationRow = {
   id: string;
   code: string | null;
@@ -271,4 +299,144 @@ export type FinalSimulationPagination = {
 export type FinalSimulationClientOption = {
   id: string;
   label: string;
+};
+
+export type ExpenseType = {
+  id: string;
+  code: string | null;
+  description: string;
+  key: string | null;
+  print_order: number;
+  expense_modality: ExpenseModality;
+  expense_modality_label: string | null;
+  allocation_type: ExpenseAllocationType;
+  allocation_type_label: string | null;
+  expense_calculation_type: ExpenseCalculationType;
+  expense_calculation_label: string | null;
+  own_import_behavior: ExpenseBehavior;
+  own_import_behavior_label: string | null;
+  order_account_behavior: ExpenseBehavior;
+  order_account_behavior_label: string | null;
+  encomenda_behavior: ExpenseBehavior;
+  encomenda_behavior_label: string | null;
+  expense_resulting: string | null;
+  siscomex_addition_id: string | null;
+  expense_group_id: string | null;
+  expense_group_name: string | null;
+  considers_container: boolean;
+  considers_icms_entry_invoice: boolean;
+  composes_service_invoice: boolean;
+  title_type_id: string | null;
+  title_type_name: string | null;
+  service_id: string | null;
+  service_name: string | null;
+  bank_account_id: string | null;
+  bank_account_name: string | null;
+  erp_key: string | null;
+  paid_by_cash_own_import: boolean;
+  paid_by_cash_encomenda: boolean;
+  paid_by_cash_order_account: boolean;
+  paid_by_cash_direct_export: boolean;
+  paid_by_cash_indirect_export: boolean;
+  is_active: boolean;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ExpensePreset = {
+  id: string;
+  name: string;
+  description: string | null;
+  transport_mode: ExpensePresetTransportMode;
+  is_active: boolean;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ExpensePresetItem = {
+  id: string;
+  preset_id: string;
+  expense_type_id: string;
+  expense_code_snapshot: string | null;
+  expense_description_snapshot: string | null;
+  default_amount_brl: number;
+  default_amount_usd: number;
+  default_currency: string | null;
+  override_calculation_type: ExpenseCalculationType | null;
+  override_allocation_type: ExpenseAllocationType | null;
+  override_behavior: ExpenseBehavior | null;
+  is_editable: boolean;
+  sort_order: number;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ExpenseTypeValues = {
+  expenseTypeId?: string;
+  code?: string;
+  description: string;
+  key?: string;
+  printOrder?: number;
+  expenseModality?: string;
+  expenseModalityLabel?: string;
+  allocationType?: string;
+  allocationTypeLabel?: string;
+  expenseCalculationType?: string;
+  expenseCalculationLabel?: string;
+  ownImportBehavior?: string;
+  ownImportBehaviorLabel?: string;
+  orderAccountBehavior?: string;
+  orderAccountBehaviorLabel?: string;
+  encomendaBehavior?: string;
+  encomendaBehaviorLabel?: string;
+  expenseResulting?: string;
+  siscomexAdditionId?: string;
+  expenseGroupId?: string;
+  expenseGroupName?: string;
+  considersContainer?: boolean;
+  considersIcmsEntryInvoice?: boolean;
+  composesServiceInvoice?: boolean;
+  titleTypeId?: string;
+  titleTypeName?: string;
+  serviceId?: string;
+  serviceName?: string;
+  bankAccountId?: string;
+  bankAccountName?: string;
+  erpKey?: string;
+  paidByCashOwnImport?: boolean;
+  paidByCashEncomenda?: boolean;
+  paidByCashOrderAccount?: boolean;
+  paidByCashDirectExport?: boolean;
+  paidByCashIndirectExport?: boolean;
+  isActive?: boolean;
+};
+
+export type ExpensePresetValues = {
+  expensePresetId?: string;
+  name: string;
+  description?: string;
+  transportMode?: string;
+  isActive?: boolean;
+};
+
+export type ExpensePresetItemValues = {
+  expensePresetItemId?: string;
+  presetId: string;
+  expenseTypeId: string;
+  defaultAmountBrl?: number;
+  defaultAmountUsd?: number;
+  defaultCurrency?: string;
+  overrideCalculationType?: string;
+  overrideAllocationType?: string;
+  overrideBehavior?: string;
+  isEditable?: boolean;
+  sortOrder?: number;
+  notes?: string;
 };
