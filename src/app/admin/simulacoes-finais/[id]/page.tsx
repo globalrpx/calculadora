@@ -4,9 +4,12 @@ import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { FinalSimulationItemsSection } from "@/features/final-simulations/FinalSimulationItemsSection";
+import { SimulationExpensesSection } from "@/features/final-simulations/SimulationExpensesSection";
 import {
   getFinalSimulationById,
   getFinalSimulationItems,
+  getSimulationExpenseLines,
+  listActiveExpensePresetsForSimulation,
   searchNcmCodes
 } from "@/features/final-simulations/queries";
 import { isFinalSimulationLocked } from "@/features/final-simulations/schemas";
@@ -103,9 +106,11 @@ export default async function FinalSimulationDetailPage({
   }
 
   const ncmSearch = readSearchParam(queryParams, "ncmSearch");
-  const [items, ncmOptions] = await Promise.all([
+  const [items, ncmOptions, expenses, expensePresets] = await Promise.all([
     getFinalSimulationItems(simulation.id),
-    ncmSearch.length >= 2 ? searchNcmCodes(ncmSearch, 20) : Promise.resolve([])
+    ncmSearch.length >= 2 ? searchNcmCodes(ncmSearch, 20) : Promise.resolve([]),
+    getSimulationExpenseLines(simulation.id),
+    listActiveExpensePresetsForSimulation(simulation.id)
   ]);
   const canEdit = !isFinalSimulationLocked(simulation.status);
 
@@ -185,6 +190,14 @@ export default async function FinalSimulationDetailPage({
         items={items}
         ncmOptions={ncmOptions}
         ncmSearch={ncmSearch}
+        canEdit={canEdit}
+      />
+
+      <SimulationExpensesSection
+        simulationId={simulation.id}
+        expenses={expenses}
+        presets={expensePresets}
+        totalExpensesBrl={simulation.total_expenses_brl}
         canEdit={canEdit}
       />
     </>

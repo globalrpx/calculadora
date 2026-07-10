@@ -4,6 +4,7 @@ import type {
   ExpensePreset,
   ExpensePresetItem,
   ExpensePresetTransportMode,
+  ExpensePresetWithItems,
   ExpenseType,
   FinalSimulationItemRow,
   FinalSimulationListFilters,
@@ -11,7 +12,8 @@ import type {
   FinalSimulationPagination,
   FinalSimulationRow,
   FinalSimulationClientOption,
-  NcmCodeRow
+  NcmCodeRow,
+  SimulationExpenseLine
 } from "./types";
 
 const finalSimulationListSelect = [
@@ -263,4 +265,74 @@ export async function listExpensePresetsByTransportMode(
     .order("name", { ascending: true });
 
   return (data ?? []) as ExpensePreset[];
+}
+
+export async function getSimulationExpenseLines(simulationId: string): Promise<SimulationExpenseLine[]> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("simulation_expense_lines")
+    .select("*")
+    .eq("simulation_id", simulationId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  return (data ?? []) as SimulationExpenseLine[];
+}
+
+export async function listActiveExpensePresetsForSimulation(simulationId: string): Promise<ExpensePreset[]> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const [{ data: simulation }, { data: presets }] = await Promise.all([
+    supabase.from("final_simulations").select("id, transport_mode").eq("id", simulationId).maybeSingle(),
+    supabase
+      .from("expense_presets")
+      .select("*")
+      .eq("is_active", true)
+      .order("name", { ascending: true })
+  ]);
+
+  const transportMode = (simulation as Pick<FinalSimulationRow, "transport_mode"> | null)?.transport_mode ?? null;
+  const rows = (presets ?? []) as ExpensePreset[];
+
+  if (!transportMode) {
+    return rows;
+  }
+
+  return [...rows].sort((left, right) => {
+    const leftCompatible = left.transport_mode === transportMode ? 0 : 1;
+    const rightCompatible = right.transport_mode === transportMode ? 0 : 1;
+
+    if (leftCompatible !== rightCompatible) {
+      return leftCompatible - rightCompatible;
+    }
+
+    return left.name.localeCompare(right.name, "pt-BR");
+  });
+}
+
+export async function getExpensePresetWithItems(presetId: string): Promise<ExpensePresetWithItems | null> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const [{ data: preset }, { data: items }] = await Promise.all([
+    supabase.from("expense_presets").select("*").eq("id", presetId).maybeSingle(),
+    supabase
+      .from("expense_preset_items")
+      .select("*")
+      .eq("preset_id", presetId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true })
+  ]);
+
+  if (!preset) {
+    return null;
+  }
+
+  return {
+    ...((preset ?? {}) as ExpensePreset),
+    items: (items ?? []) as ExpensePresetItem[]
+  };
 }

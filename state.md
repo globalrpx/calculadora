@@ -1,6 +1,6 @@
 # State - Plataforma Global RPX
 
-Ultima atualizacao: 2026-07-09
+Ultima atualizacao: 2026-07-10
 
 ## Como usar este arquivo
 
@@ -58,6 +58,44 @@ http://127.0.0.1:3001
 Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As dependencias do app Next agora estao instaladas e o build passou; o ambiente ainda nao possui npm convencional no PATH, entao a estabilizacao usou um npm temporario.
 
 ## Entregue ate agora
+
+### 2026-07-10 - Etapa 6.4: processamento de pre-calculo em Simulacoes Finais
+
+- Adicionada a seção `Despesas` no detalhe de `/admin/simulacoes-finais/[id]`.
+- Implementado processamento de `expense_presets` ativos para gerar `simulation_expense_lines`.
+- Reprocessar o mesmo pre-calculo remove apenas linhas anteriores geradas por ele e preserva despesas manuais.
+- Criadas actions server-side para:
+  - processar pre-calculo na simulacao;
+  - adicionar despesa manual;
+  - editar despesa manual ou linha editavel gerada por preset;
+  - remover despesa manual ou linha editavel gerada por preset.
+- Criadas queries para listar despesas da simulacao, listar presets ativos compatíveis com a via de transporte e buscar preset com itens.
+- Criados schemas para validar processamento de preset, despesa manual e edicao de linha de despesa.
+- `calculation-engine.ts` passou a calcular somente o total basico de despesas BRL por soma de `amount_brl`.
+- `final_simulations.total_expenses_brl` e recalculado apos processar, adicionar, editar ou remover despesas.
+- O comportamento aplicado respeita a modalidade da simulacao (`propria`, `conta_e_ordem`, `encomenda`) e pula itens com comportamento `not_applicable`.
+- Nao foram criadas migrations, policies, rotas novas, calculo fiscal final, rateio por produto, CIF final, PDF, dependencias novas, alteracoes em auth/middleware/layout global, `package.json` ou `temp/`.
+
+Arquivos principais:
+
+- `src/app/admin/simulacoes-finais/[id]/page.tsx`
+- `src/features/final-simulations/SimulationExpensesSection.tsx`
+- `src/features/final-simulations/actions.ts`
+- `src/features/final-simulations/calculation-engine.ts`
+- `src/features/final-simulations/queries.ts`
+- `src/features/final-simulations/schemas.ts`
+- `src/features/final-simulations/types.ts`
+- `state.md`
+
+Validado:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+
+Proxima etapa recomendada:
+
+- Validar manualmente em uma simulação final com pre-calculo cadastrado; depois avançar para despesas/rateios mais completos ou parametrização fiscal, sem ainda fechar impostos finais.
 
 ### 2026-07-09 - Etapa 6.3: UI admin de tipos de despesa e pre-calculos
 

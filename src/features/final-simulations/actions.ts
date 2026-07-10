@@ -5,8 +5,10 @@ import { requireRole } from "@/lib/auth/get-session-profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   calculateItemTotalsFromValues,
-  calculateSimulationBasicTotals
+  calculateSimulationBasicTotals,
+  calculateSimulationExpensesTotal
 } from "./calculation-engine";
+import { expenseBehaviorLabels } from "./expense-labels";
 import {
   createExpensePresetItemSchema,
   createExpensePresetSchema,
@@ -14,13 +16,18 @@ import {
   createFinalSimulationSchema,
   finalSimulationItemSchema,
   isFinalSimulationLocked,
+  manualSimulationExpenseSchema,
+  processExpensePresetSchema,
   updateExpensePresetItemSchema,
   updateExpensePresetSchema,
   updateExpenseTypeSchema,
   updateFinalSimulationItemSchema,
-  updateFinalSimulationMainDataSchema
+  updateFinalSimulationMainDataSchema,
+  updateSimulationExpenseLineSchema
 } from "./schemas";
 import type {
+  ExpenseBehavior,
+  ExpensePresetItem,
   ExpensePresetItemValues,
   ExpensePresetValues,
   ExpenseType,
@@ -31,7 +38,10 @@ import type {
   FinalSimulationMainDataValues,
   FinalSimulationRow,
   NcmCodeRow,
-  NcmTaxProfileRow
+  NcmTaxProfileRow,
+  ProcessExpensePresetValues,
+  SimulationExpenseLine,
+  SimulationExpenseLineValues
 } from "./types";
 
 const reviewFieldsMessage = "Revise os campos destacados antes de continuar.";
@@ -75,7 +85,7 @@ async function requireAdminUser() {
 async function getEditableSimulation(adminSupabase: ReturnType<typeof createAdminClient>, simulationId: string) {
   const { data, error } = await adminSupabase
     .from("final_simulations")
-    .select("id, status")
+    .select("id, status, import_modality, transport_mode")
     .eq("id", simulationId)
     .maybeSingle();
 
@@ -86,7 +96,7 @@ async function getEditableSimulation(adminSupabase: ReturnType<typeof createAdmi
     };
   }
 
-  const simulation = data as Pick<FinalSimulationRow, "id" | "status">;
+  const simulation = data as Pick<FinalSimulationRow, "id" | "status" | "import_modality" | "transport_mode">;
 
   if (isFinalSimulationLocked(simulation.status)) {
     return {
@@ -395,6 +405,118 @@ async function recalculateSimulationBasicTotals(adminSupabase: ReturnType<typeof
   return { error: updateError, totals };
 }
 
+async function recalculateSimulationExpensesTotal(adminSupabase: ReturnType<typeof createAdminClient>, simulationId: string) {
+  const { data, error } = await adminSupabase
+    .from("simulation_expense_lines")
+    .select("amount_brl")
+    .eq("simulation_id", simulationId);
+
+  if (error) {
+    return { error };
+  }
+
+  const totalExpensesBrl = calculateSimulationExpensesTotal(data ?? []);
+  const { error: updateError } = await adminSupabase
+    .from("final_simulations")
+    .update({
+      total_expenses_brl: totalExpensesBrl
+    })
+    .eq("id", simulationId);
+
+  return { error: updateError, totalExpensesBrl };
+}
+
+function getExpenseBehaviorForImportModality(
+  expenseType: ExpenseType,
+  importModality: FinalSimulationRow["import_modality"]
+) {
+  if (importModality === "propria") {
+    return expenseType.own_import_behavior;
+  }
+
+  if (importModality === "conta_e_ordem") {
+    return expenseType.order_account_behavior;
+  }
+
+  if (importModality === "encomenda") {
+    return expenseType.encomenda_behavior;
+  }
+
+  return "not_applicable";
+}
+
+function buildExpenseTypeSnapshot(expenseType: ExpenseType) {
+  return {
+    id: expenseType.id,
+    code: expenseType.code,
+    description: expenseType.description,
+    key: expenseType.key,
+    expense_modality: expenseType.expense_modality,
+    allocation_type: expenseType.allocation_type,
+    expense_calculation_type: expenseType.expense_calculation_type,
+    own_import_behavior: expenseType.own_import_behavior,
+    order_account_behavior: expenseType.order_account_behavior,
+    encomenda_behavior: expenseType.encomenda_behavior,
+    expense_group_id: expenseType.expense_group_id,
+    expense_group_name: expenseType.expense_group_name,
+    erp_key: expenseType.erp_key
+  };
+}
+
+function buildManualExpensePayload(values: SimulationExpenseLineValues, appUserId: string) {
+  const appliedBehavior = emptyToNull(values.appliedBehavior) as ExpenseBehavior | null;
+
+  return {
+    expense_code: emptyToNull(values.expenseCode),
+    expense_name: values.expenseName,
+    expense_category: emptyToNull(values.expenseCategory),
+    description: emptyToNull(values.description),
+    currency: values.currency || "BRL",
+    amount_brl: values.amountBrl ?? 0,
+    amount_usd: values.amountUsd ?? 0,
+    calculation_type: emptyToNull(values.calculationType),
+    allocation_type: emptyToNull(values.allocationType),
+    applied_behavior: appliedBehavior,
+    applied_behavior_label: appliedBehavior ? expenseBehaviorLabels[appliedBehavior] : null,
+    notes: emptyToNull(values.notes),
+    updated_by: appUserId
+  };
+}
+
+async function getEditableExpenseLine(
+  adminSupabase: ReturnType<typeof createAdminClient>,
+  simulationId: string,
+  expenseLineId: string
+) {
+  const { data, error } = await adminSupabase
+    .from("simulation_expense_lines")
+    .select("id, is_manual, is_editable")
+    .eq("id", expenseLineId)
+    .eq("simulation_id", simulationId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      error: "Despesa não encontrada.",
+      expenseLine: null
+    };
+  }
+
+  const expenseLine = data as Pick<SimulationExpenseLine, "id" | "is_manual" | "is_editable">;
+
+  if (!expenseLine.is_manual && !expenseLine.is_editable) {
+    return {
+      error: "Esta despesa foi gerada por pré-cálculo e não permite edição.",
+      expenseLine: null
+    };
+  }
+
+  return {
+    error: null,
+    expenseLine
+  };
+}
+
 export async function createFinalSimulationAction(
   _previousState: FinalSimulationActionState<FinalSimulationMainDataValues>,
   formData: FormData
@@ -637,6 +759,308 @@ export async function recalculateFinalSimulationBasicTotalsAction(formData: Form
     success: true,
     message: "Totais básicos recalculados.",
     totals
+  };
+}
+
+export async function processExpensePresetForSimulationAction(
+  _previousState: FinalSimulationActionState<ProcessExpensePresetValues>,
+  formData: FormData
+): Promise<FinalSimulationActionState<ProcessExpensePresetValues>> {
+  const adminUser = await requireAdminUser();
+  const parsed = processExpensePresetSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const editable = await getEditableSimulation(adminSupabase, parsed.data.simulationId);
+
+  if (editable.error || !editable.simulation) {
+    return buildActionError(parsed.data, { form: editable.error ?? unexpectedSaveMessage });
+  }
+
+  const [{ data: preset }, { data: presetItems }] = await Promise.all([
+    adminSupabase
+      .from("expense_presets")
+      .select("*")
+      .eq("id", parsed.data.presetId)
+      .eq("is_active", true)
+      .maybeSingle(),
+    adminSupabase
+      .from("expense_preset_items")
+      .select("*")
+      .eq("preset_id", parsed.data.presetId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true })
+  ]);
+
+  if (!preset) {
+    return buildActionError<ProcessExpensePresetValues>(parsed.data, {
+      presetId: "Pré-cálculo ativo não encontrado."
+    });
+  }
+
+  const items = (presetItems ?? []) as ExpensePresetItem[];
+
+  if (items.length === 0) {
+    return buildActionError<ProcessExpensePresetValues>(parsed.data, {
+      presetId: "Este pré-cálculo não possui itens."
+    });
+  }
+
+  const expenseTypeIds = [...new Set(items.map((item) => item.expense_type_id))];
+  const { data: expenseTypes, error: expenseTypesError } = await adminSupabase
+    .from("expense_types")
+    .select("*")
+    .in("id", expenseTypeIds);
+
+  if (expenseTypesError) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  const expenseTypesById = new Map((expenseTypes ?? []).map((expenseType) => [expenseType.id, expenseType as ExpenseType]));
+  const payload = [];
+
+  for (const item of items) {
+    const expenseType = expenseTypesById.get(item.expense_type_id);
+
+    if (!expenseType) {
+      return buildActionError<ProcessExpensePresetValues>(parsed.data, {
+        presetId: "O pré-cálculo possui item com tipo de despesa inválido."
+      });
+    }
+
+    const appliedBehavior =
+      item.override_behavior ?? getExpenseBehaviorForImportModality(expenseType, editable.simulation.import_modality);
+
+    if (appliedBehavior === "not_applicable") {
+      continue;
+    }
+
+    payload.push({
+      simulation_id: editable.simulation.id,
+      source_preset_id: parsed.data.presetId,
+      source_preset_item_id: item.id,
+      expense_type_id: expenseType.id,
+      expense_code: item.expense_code_snapshot ?? expenseType.code,
+      expense_name: item.expense_description_snapshot ?? expenseType.description,
+      expense_category: expenseType.expense_modality,
+      description: item.notes,
+      currency: item.default_currency || "BRL",
+      amount_brl: item.default_amount_brl ?? 0,
+      amount_usd: item.default_amount_usd ?? 0,
+      calculation_type: item.override_calculation_type ?? expenseType.expense_calculation_type,
+      allocation_type: item.override_allocation_type ?? expenseType.allocation_type,
+      allocation_snapshot: {},
+      applied_import_modality: editable.simulation.import_modality,
+      applied_behavior: appliedBehavior,
+      applied_behavior_label: expenseBehaviorLabels[appliedBehavior],
+      expense_type_snapshot: buildExpenseTypeSnapshot(expenseType),
+      is_from_preset: true,
+      is_manual: false,
+      is_editable: item.is_editable,
+      sort_order: item.sort_order ?? 0,
+      notes: item.notes,
+      created_by: adminUser.id,
+      updated_by: adminUser.id
+    });
+  }
+
+  const { error: deleteError } = await adminSupabase
+    .from("simulation_expense_lines")
+    .delete()
+    .eq("simulation_id", editable.simulation.id)
+    .eq("source_preset_id", parsed.data.presetId)
+    .eq("is_from_preset", true);
+
+  if (deleteError) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  if (payload.length > 0) {
+    const { error: insertError } = await adminSupabase.from("simulation_expense_lines").insert(payload);
+
+    if (insertError) {
+      return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+    }
+  }
+
+  const { error: totalError } = await recalculateSimulationExpensesTotal(adminSupabase, editable.simulation.id);
+
+  if (totalError) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateFinalSimulationPaths(editable.simulation.id);
+
+  return {
+    success: true,
+    message:
+      payload.length > 0
+        ? "Pré-cálculo processado para a simulação."
+        : "Pré-cálculo processado, mas nenhuma despesa se aplica a esta modalidade.",
+    id: editable.simulation.id
+  };
+}
+
+export async function addManualSimulationExpenseAction(
+  _previousState: FinalSimulationActionState<SimulationExpenseLineValues>,
+  formData: FormData
+): Promise<FinalSimulationActionState<SimulationExpenseLineValues>> {
+  const adminUser = await requireAdminUser();
+  const parsed = manualSimulationExpenseSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const editable = await getEditableSimulation(adminSupabase, parsed.data.simulationId);
+
+  if (editable.error || !editable.simulation) {
+    return buildActionError(parsed.data, { form: editable.error ?? unexpectedSaveMessage });
+  }
+
+  const { data, error } = await adminSupabase
+    .from("simulation_expense_lines")
+    .insert({
+      ...buildManualExpensePayload(parsed.data, adminUser.id),
+      simulation_id: editable.simulation.id,
+      applied_import_modality: editable.simulation.import_modality,
+      expense_type_snapshot: {},
+      allocation_snapshot: {},
+      is_from_preset: false,
+      is_manual: true,
+      is_editable: true,
+      created_by: adminUser.id,
+      updated_by: adminUser.id
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  const { error: totalError } = await recalculateSimulationExpensesTotal(adminSupabase, editable.simulation.id);
+
+  if (totalError) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateFinalSimulationPaths(editable.simulation.id);
+
+  return {
+    success: true,
+    message: "Despesa manual adicionada.",
+    id: data.id
+  };
+}
+
+export async function updateSimulationExpenseLineAction(
+  _previousState: FinalSimulationActionState<SimulationExpenseLineValues>,
+  formData: FormData
+): Promise<FinalSimulationActionState<SimulationExpenseLineValues>> {
+  const adminUser = await requireAdminUser();
+  const parsed = updateSimulationExpenseLineSchema.parse(formData);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.values, parsed.fieldErrors);
+  }
+
+  const adminSupabase = createAdminClient();
+  const editable = await getEditableSimulation(adminSupabase, parsed.data.simulationId);
+
+  if (editable.error || !editable.simulation) {
+    return buildActionError(parsed.data, { form: editable.error ?? unexpectedSaveMessage });
+  }
+
+  const expenseLine = await getEditableExpenseLine(
+    adminSupabase,
+    parsed.data.simulationId,
+    parsed.data.expenseLineId ?? ""
+  );
+
+  if (expenseLine.error || !expenseLine.expenseLine) {
+    return buildActionError(parsed.data, { form: expenseLine.error ?? unexpectedSaveMessage });
+  }
+
+  const { error } = await adminSupabase
+    .from("simulation_expense_lines")
+    .update(buildManualExpensePayload(parsed.data, adminUser.id))
+    .eq("id", parsed.data.expenseLineId)
+    .eq("simulation_id", parsed.data.simulationId);
+
+  if (error) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  const { error: totalError } = await recalculateSimulationExpensesTotal(adminSupabase, parsed.data.simulationId);
+
+  if (totalError) {
+    return buildActionError(parsed.data, {}, unexpectedSaveMessage);
+  }
+
+  revalidateFinalSimulationPaths(parsed.data.simulationId);
+
+  return {
+    success: true,
+    message: "Despesa atualizada.",
+    id: parsed.data.expenseLineId
+  };
+}
+
+export async function deleteSimulationExpenseLineAction(formData: FormData) {
+  await requireAdminUser();
+  const simulationId = String(formData.get("simulationId") ?? "").trim();
+  const expenseLineId = String(formData.get("expenseLineId") ?? "").trim();
+
+  if (!simulationId || !expenseLineId) {
+    return {
+      success: false,
+      message: "Informe a simulação e a despesa."
+    };
+  }
+
+  const adminSupabase = createAdminClient();
+  const editable = await getEditableSimulation(adminSupabase, simulationId);
+
+  if (editable.error || !editable.simulation) {
+    return {
+      success: false,
+      message: editable.error ?? unexpectedSaveMessage
+    };
+  }
+
+  const expenseLine = await getEditableExpenseLine(adminSupabase, simulationId, expenseLineId);
+
+  if (expenseLine.error || !expenseLine.expenseLine) {
+    return {
+      success: false,
+      message: expenseLine.error ?? unexpectedSaveMessage
+    };
+  }
+
+  const { error } = await adminSupabase
+    .from("simulation_expense_lines")
+    .delete()
+    .eq("id", expenseLineId)
+    .eq("simulation_id", simulationId);
+
+  if (error) {
+    return {
+      success: false,
+      message: unexpectedSaveMessage
+    };
+  }
+
+  await recalculateSimulationExpensesTotal(adminSupabase, simulationId);
+  revalidateFinalSimulationPaths(simulationId);
+
+  return {
+    success: true,
+    message: "Despesa removida."
   };
 }
 

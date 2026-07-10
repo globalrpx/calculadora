@@ -13,7 +13,9 @@ import {
   type ExpenseTypeValues,
   type FinalSimulationItemValues,
   type FinalSimulationMainDataValues,
-  type FinalSimulationStatus
+  type FinalSimulationStatus,
+  type ProcessExpensePresetValues,
+  type SimulationExpenseLineValues
 } from "./types";
 
 type SchemaResult<TValues> =
@@ -654,6 +656,142 @@ export const updateExpensePresetItemSchema = {
   parse(formData: FormData): SchemaResult<ExpensePresetItemValues> {
     const values = readExpensePresetItemData(formData);
     const fieldErrors = validateExpensePresetItemData(values, { requireExpensePresetItemId: true });
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
+  }
+};
+
+function readProcessExpensePresetData(formData: FormData): ProcessExpensePresetValues {
+  return {
+    simulationId: normalizeText(formData.get("simulationId")),
+    presetId: normalizeText(formData.get("presetId"))
+  };
+}
+
+function validateProcessExpensePresetData(
+  values: ProcessExpensePresetValues
+): Partial<Record<keyof ProcessExpensePresetValues | "form", string>> {
+  const fieldErrors: Partial<Record<keyof ProcessExpensePresetValues | "form", string>> = {};
+
+  if (!values.simulationId || !uuidPattern.test(values.simulationId)) {
+    fieldErrors.simulationId = "Informe uma simulação válida.";
+  }
+
+  if (!values.presetId || !uuidPattern.test(values.presetId)) {
+    fieldErrors.presetId = "Selecione um pré-cálculo válido.";
+  }
+
+  return fieldErrors;
+}
+
+function readSimulationExpenseLineData(formData: FormData): SimulationExpenseLineValues {
+  return {
+    expenseLineId: optionalUuid(formData.get("expenseLineId")),
+    simulationId: normalizeText(formData.get("simulationId")),
+    expenseName: normalizeText(formData.get("expenseName")),
+    expenseCode: optionalText(formData.get("expenseCode")),
+    expenseCategory: optionalText(formData.get("expenseCategory")),
+    description: optionalText(formData.get("description")),
+    amountBrl: normalizeNumber(formData.get("amountBrl")),
+    amountUsd: normalizeNumber(formData.get("amountUsd")),
+    currency: normalizeCurrency(formData.get("currency"), "BRL"),
+    calculationType: optionalText(formData.get("calculationType")),
+    allocationType: optionalText(formData.get("allocationType")),
+    appliedBehavior: optionalText(formData.get("appliedBehavior")),
+    notes: optionalText(formData.get("notes"))
+  };
+}
+
+function validateSimulationExpenseLineData(
+  values: SimulationExpenseLineValues,
+  options: { requireExpenseLineId: boolean }
+): Partial<Record<keyof SimulationExpenseLineValues | "form", string>> {
+  const fieldErrors: Partial<Record<keyof SimulationExpenseLineValues | "form", string>> = {};
+
+  if (options.requireExpenseLineId && !values.expenseLineId) {
+    fieldErrors.expenseLineId = "Informe a despesa.";
+  }
+
+  validateOptionalUuid(fieldErrors, "expenseLineId", values.expenseLineId, "Despesa inválida.");
+
+  if (!values.simulationId || !uuidPattern.test(values.simulationId)) {
+    fieldErrors.simulationId = "Informe uma simulação válida.";
+  }
+
+  if (!values.expenseName) {
+    fieldErrors.expenseName = "Informe a despesa.";
+  }
+
+  if ((values.amountBrl ?? 0) < 0) {
+    fieldErrors.amountBrl = "Informe um valor BRL válido.";
+  }
+
+  if ((values.amountUsd ?? 0) < 0) {
+    fieldErrors.amountUsd = "Informe um valor USD válido.";
+  }
+
+  if (values.currency && values.currency.length > 3) {
+    fieldErrors.currency = "Informe uma moeda com até 3 caracteres.";
+  }
+
+  if (
+    values.calculationType &&
+    !expenseCalculationTypeValues.includes(values.calculationType as (typeof expenseCalculationTypeValues)[number])
+  ) {
+    fieldErrors.calculationType = "Selecione um tipo de cálculo válido.";
+  }
+
+  if (
+    values.allocationType &&
+    !expenseAllocationTypeValues.includes(values.allocationType as (typeof expenseAllocationTypeValues)[number])
+  ) {
+    fieldErrors.allocationType = "Selecione um tipo de rateio válido.";
+  }
+
+  if (
+    values.appliedBehavior &&
+    !expenseBehaviorValues.includes(values.appliedBehavior as (typeof expenseBehaviorValues)[number])
+  ) {
+    fieldErrors.appliedBehavior = "Selecione um comportamento válido.";
+  }
+
+  return fieldErrors;
+}
+
+export const processExpensePresetSchema = {
+  parse(formData: FormData): SchemaResult<ProcessExpensePresetValues> {
+    const values = readProcessExpensePresetData(formData);
+    const fieldErrors = validateProcessExpensePresetData(values);
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
+  }
+};
+
+export const manualSimulationExpenseSchema = {
+  parse(formData: FormData): SchemaResult<SimulationExpenseLineValues> {
+    const values = readSimulationExpenseLineData(formData);
+    const fieldErrors = validateSimulationExpenseLineData(values, { requireExpenseLineId: false });
+
+    if (hasFieldErrors(fieldErrors)) {
+      return { success: false, fieldErrors, values };
+    }
+
+    return { success: true, data: values };
+  }
+};
+
+export const updateSimulationExpenseLineSchema = {
+  parse(formData: FormData): SchemaResult<SimulationExpenseLineValues> {
+    const values = readSimulationExpenseLineData(formData);
+    const fieldErrors = validateSimulationExpenseLineData(values, { requireExpenseLineId: true });
 
     if (hasFieldErrors(fieldErrors)) {
       return { success: false, fieldErrors, values };

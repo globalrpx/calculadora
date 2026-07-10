@@ -378,6 +378,42 @@ export type ExpensePresetItem = {
   updated_at: string;
 };
 
+export type SimulationExpenseLine = {
+  id: string;
+  simulation_id: string;
+  item_id: string | null;
+  source_preset_id: string | null;
+  source_preset_item_id: string | null;
+  expense_type_id: string | null;
+  expense_code: string | null;
+  expense_name: string;
+  expense_category: string | null;
+  description: string | null;
+  currency: string | null;
+  amount_brl: number;
+  amount_usd: number;
+  calculation_type: ExpenseCalculationType | null;
+  allocation_type: ExpenseAllocationType | null;
+  allocation_snapshot: Record<string, unknown>;
+  applied_import_modality: FinalSimulationImportModality | null;
+  applied_behavior: ExpenseBehavior | null;
+  applied_behavior_label: string | null;
+  expense_type_snapshot: Record<string, unknown>;
+  is_from_preset: boolean;
+  is_manual: boolean;
+  is_editable: boolean;
+  sort_order: number;
+  notes: string | null;
+  created_by: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ExpensePresetWithItems = ExpensePreset & {
+  items: ExpensePresetItem[];
+};
+
 export type ExpenseTypeValues = {
   expenseTypeId?: string;
   code?: string;
@@ -438,5 +474,26 @@ export type ExpensePresetItemValues = {
   overrideBehavior?: string;
   isEditable?: boolean;
   sortOrder?: number;
+  notes?: string;
+};
+
+export type ProcessExpensePresetValues = {
+  simulationId: string;
+  presetId: string;
+};
+
+export type SimulationExpenseLineValues = {
+  expenseLineId?: string;
+  simulationId: string;
+  expenseName: string;
+  expenseCode?: string;
+  expenseCategory?: string;
+  description?: string;
+  amountBrl?: number;
+  amountUsd?: number;
+  currency?: string;
+  calculationType?: string;
+  allocationType?: string;
+  appliedBehavior?: string;
   notes?: string;
 };

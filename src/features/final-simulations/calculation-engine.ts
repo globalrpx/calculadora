@@ -19,6 +19,10 @@ export type BasicSimulationTotals = {
   grossWeight: number;
 };
 
+export type SimulationExpensesTotalInput = {
+  amount_brl: number | string | null;
+};
+
 export function normalizeNumber(value: unknown) {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : 0;
@@ -71,4 +75,8 @@ export function calculateSimulationBasicTotals(items: Array<Pick<FinalSimulation
       grossWeight: 0
     }
   );
+}
+
+export function calculateSimulationExpensesTotal(expenses: SimulationExpensesTotalInput[]) {
+  return roundSix(expenses.reduce((total, expense) => total + normalizeNumber(expense.amount_brl), 0));
 }
