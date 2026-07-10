@@ -275,18 +275,84 @@ export function FinalSimulationItemsSection({
         </div>
       )
     },
-    { key: "ncm", header: "NCM" },
-    { key: "ii_rate", header: "II", render: (item) => `${formatNumber(item.ii_rate, { maximumFractionDigits: 4 })}%` },
-    { key: "ipi_rate", header: "IPI", render: (item) => `${formatNumber(item.ipi_rate, { maximumFractionDigits: 4 })}%` },
-    { key: "pis_rate", header: "PIS", render: (item) => `${formatNumber(item.pis_rate, { maximumFractionDigits: 4 })}%` },
-    { key: "cofins_rate", header: "COFINS", render: (item) => `${formatNumber(item.cofins_rate, { maximumFractionDigits: 4 })}%` },
-    { key: "unit_net_weight", header: "PL unit.", render: (item) => `${formatNumber(item.unit_net_weight)} kg` },
-    { key: "unit_gross_weight", header: "PB unit.", render: (item) => `${formatNumber(item.unit_gross_weight)} kg` },
-    { key: "quantity", header: "Qtd.", render: (item) => formatNumber(item.quantity, { maximumFractionDigits: 6 }) },
-    { key: "unit_price", header: "Unitário", render: (item) => formatMoney(item.unit_price, item.currency ?? "USD") },
-    { key: "total_net_weight", header: "PL total", render: (item) => `${formatNumber(item.total_net_weight)} kg` },
-    { key: "total_gross_weight", header: "PB total", render: (item) => `${formatNumber(item.total_gross_weight)} kg` },
-    { key: "total_price", header: "Total", render: (item) => formatMoney(item.total_price, item.currency ?? "USD") },
+    { key: "ncm", header: "NCM", className: "whitespace-nowrap font-mono text-xs" },
+    {
+      key: "ii_rate",
+      header: "II",
+      headerClassName: "text-right",
+      className: "text-right tabular-nums",
+      render: (item) => `${formatNumber(item.ii_rate, { maximumFractionDigits: 4 })}%`
+    },
+    {
+      key: "ipi_rate",
+      header: "IPI",
+      headerClassName: "text-right",
+      className: "text-right tabular-nums",
+      render: (item) => `${formatNumber(item.ipi_rate, { maximumFractionDigits: 4 })}%`
+    },
+    {
+      key: "pis_rate",
+      header: "PIS",
+      headerClassName: "text-right",
+      className: "text-right tabular-nums",
+      render: (item) => `${formatNumber(item.pis_rate, { maximumFractionDigits: 4 })}%`
+    },
+    {
+      key: "cofins_rate",
+      header: "COFINS",
+      headerClassName: "text-right",
+      className: "text-right tabular-nums",
+      render: (item) => `${formatNumber(item.cofins_rate, { maximumFractionDigits: 4 })}%`
+    },
+    {
+      key: "unit_net_weight",
+      header: "PL unit.",
+      headerClassName: "text-right",
+      className: "text-right tabular-nums",
+      render: (item) => `${formatNumber(item.unit_net_weight)} kg`
+    },
+    {
+      key: "unit_gross_weight",
+      header: "PB unit.",
+      headerClassName: "text-right",
+      className: "text-right tabular-nums",
+      render: (item) => `${formatNumber(item.unit_gross_weight)} kg`
+    },
+    {
+      key: "quantity",
+      header: "Qtd.",
+      headerClassName: "text-right",
+      className: "text-right tabular-nums",
+      render: (item) => formatNumber(item.quantity, { maximumFractionDigits: 6 })
+    },
+    {
+      key: "unit_price",
+      header: "Unitário",
+      headerClassName: "text-right",
+      className: "text-right tabular-nums",
+      render: (item) => formatMoney(item.unit_price, item.currency ?? "USD")
+    },
+    {
+      key: "total_net_weight",
+      header: "PL total",
+      headerClassName: "text-right",
+      className: "text-right tabular-nums",
+      render: (item) => `${formatNumber(item.total_net_weight)} kg`
+    },
+    {
+      key: "total_gross_weight",
+      header: "PB total",
+      headerClassName: "text-right",
+      className: "text-right tabular-nums",
+      render: (item) => `${formatNumber(item.total_gross_weight)} kg`
+    },
+    {
+      key: "total_price",
+      header: "Total",
+      headerClassName: "text-right",
+      className: "text-right font-semibold tabular-nums text-rpx-ink",
+      render: (item) => formatMoney(item.total_price, item.currency ?? "USD")
+    },
     {
       key: "actions",
       header: "Ações",
@@ -319,9 +385,13 @@ export function FinalSimulationItemsSection({
   ];
 
   return (
-    <section className="mt-6 grid gap-5">
-      <Card title="Produtos" description={ncmValidationMessage}>
-        <form action={`/admin/simulacoes-finais/${simulationId}`} className="mt-4 flex flex-col gap-3 sm:flex-row">
+    <section className="mt-6 grid gap-5 scroll-mt-24">
+      <Card title="Produtos" description="Itens importados, NCM local, alíquotas e totais básicos por produto.">
+        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {ncmValidationMessage}
+        </div>
+
+        <form action={`/admin/simulacoes-finais/${simulationId}`} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <TextInput
             name="ncmSearch"
             defaultValue={ncmSearch ?? ""}

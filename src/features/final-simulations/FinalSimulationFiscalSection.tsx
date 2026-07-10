@@ -61,7 +61,7 @@ function SnapshotSummary({
 }) {
   if (!isFiscalSnapshot(snapshot)) {
     return (
-      <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-500">
+      <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
         Nenhum snapshot salvo para {title}.
       </div>
     );
@@ -73,8 +73,8 @@ function SnapshotSummary({
       : "-";
 
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-      <p className="text-xs font-semibold uppercase text-slate-500">Snapshot atual de {title}</p>
+    <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Snapshot atual de {title}</p>
       <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
         <div>
           <dt className="font-semibold text-slate-600">Código</dt>
@@ -184,7 +184,8 @@ export function FinalSimulationFiscalSection({
   return (
     <Card
       title="Parametrização Fiscal"
-      description="Selecione NF entrada/saída, créditos tributários e comissão da trade. Impostos finais ainda não são calculados nesta etapa."
+      description="Selecione NF entrada/saída, créditos tributários e comissão da trade. O snapshot é salvo no servidor."
+      className="mt-6"
     >
       <form action={formAction} className="mt-4 grid gap-5" noValidate>
         <input type="hidden" name="simulationId" value={simulationId} />
@@ -206,7 +207,7 @@ export function FinalSimulationFiscalSection({
         ) : null}
 
         <div className="grid gap-5 lg:grid-cols-2">
-          <section className="grid gap-4 rounded-md border border-slate-200 p-4">
+          <section className="grid gap-4 rounded-md border border-slate-200 bg-white p-4">
             <div>
               <h2 className="text-sm font-bold uppercase text-rpx-ink">NF Entrada</h2>
               <p className="mt-1 text-sm text-slate-600">A opção ativa selecionada será salva em snapshot pela action server-side.</p>
@@ -235,7 +236,7 @@ export function FinalSimulationFiscalSection({
             <SnapshotSummary title="NF Entrada" snapshot={entrySnapshot} />
           </section>
 
-          <section className="grid gap-4 rounded-md border border-slate-200 p-4">
+          <section className="grid gap-4 rounded-md border border-slate-200 bg-white p-4">
             <div>
               <h2 className="text-sm font-bold uppercase text-rpx-ink">NF Saída</h2>
               <p className="mt-1 text-sm text-slate-600">A opção ativa selecionada será salva em snapshot pela action server-side.</p>
@@ -265,7 +266,7 @@ export function FinalSimulationFiscalSection({
           </section>
         </div>
 
-        <section className="grid gap-4 rounded-md border border-slate-200 p-4">
+        <section className="grid gap-4 rounded-md border border-slate-200 bg-slate-50 p-4">
           <div>
             <h2 className="text-sm font-bold uppercase text-rpx-ink">Créditos tributários</h2>
             <p className="mt-1 text-sm text-slate-600">Registre a configuração para validação fiscal posterior.</p>
@@ -287,7 +288,7 @@ export function FinalSimulationFiscalSection({
           </FormField>
         </section>
 
-        <section className="grid gap-4 rounded-md border border-slate-200 p-4">
+        <section className="grid gap-4 rounded-md border border-slate-200 bg-slate-50 p-4">
           <div>
             <h2 className="text-sm font-bold uppercase text-rpx-ink">Comissão Trade</h2>
             <p className="mt-1 text-sm text-slate-600">A comissão é apenas registrada; ainda não altera totais financeiros finais.</p>

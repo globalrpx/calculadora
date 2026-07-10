@@ -66,8 +66,8 @@ function SubmitButton() {
 function SummaryItem({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-md border border-slate-200 bg-white p-3">
-      <dt className="text-xs font-semibold uppercase text-slate-500">{label}</dt>
-      <dd className="mt-1 text-sm font-bold text-rpx-ink">{formatMoney(value)}</dd>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
+      <dd className="mt-1 text-base font-bold text-rpx-ink">{formatMoney(value)}</dd>
     </div>
   );
 }
@@ -130,6 +130,7 @@ export function FinalSimulationTaxPreviewSection({
     <Card
       title="Cálculo Fiscal V1"
       description="Preview simplificado em memória e persistência das linhas fiscais brutas. Ainda não é o cálculo fiscal final."
+      className="mt-6"
     >
       <div className="mt-4 grid gap-4">
         {state.message ? (
@@ -138,17 +139,22 @@ export function FinalSimulationTaxPreviewSection({
           </DismissibleAlert>
         ) : null}
 
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-          Status:{" "}
-          <span className="font-semibold text-rpx-ink">{isCalculated ? "calculado" : "não calculado"}</span>
+        <div className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status do cálculo</p>
+            <p className="mt-1 text-base font-bold text-rpx-ink">{isCalculated ? "Calculado" : "Não calculado"}</p>
+          </div>
           {savedCalculation ? (
-            <>
-              <span className="mx-2 text-slate-300">|</span>
-              Fórmula: <span className="font-semibold text-rpx-ink">{savedCalculation.formula_version ?? "tax-preview-v1"}</span>
-              <span className="mx-2 text-slate-300">|</span>
-              Calculado em:{" "}
-              <span className="font-semibold text-rpx-ink">{formatDateTime(savedCalculation.calculated_at)}</span>
-            </>
+            <dl className="grid gap-3 sm:grid-cols-2 lg:text-right">
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Fórmula</dt>
+                <dd className="mt-1 font-semibold text-rpx-ink">{savedCalculation.formula_version ?? "tax-preview-v1"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Calculado em</dt>
+                <dd className="mt-1 font-semibold text-rpx-ink">{formatDateTime(savedCalculation.calculated_at)}</dd>
+              </div>
+            </dl>
           ) : null}
         </div>
 
@@ -205,12 +211,12 @@ export function FinalSimulationTaxPreviewSection({
               <tbody className="divide-y divide-slate-100 bg-white">
                 {taxLines.map((line) => (
                   <tr key={line.id}>
-                    <td className="px-3 py-2 text-rpx-ink">{line.product_description || "-"}</td>
-                    <td className="px-3 py-2 text-slate-600">{line.ncm || "-"}</td>
+                    <td className="min-w-48 px-3 py-2 text-rpx-ink">{line.product_description || "-"}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-slate-600">{line.ncm || "-"}</td>
                     <td className="px-3 py-2 font-semibold text-rpx-ink">{taxTypeLabel(line.tax_type)}</td>
-                    <td className="px-3 py-2 text-right text-slate-700">{formatMoney(line.base_amount_brl)}</td>
-                    <td className="px-3 py-2 text-right text-slate-700">{formatNumber(line.rate_percent)}%</td>
-                    <td className="px-3 py-2 text-right font-semibold text-rpx-ink">{formatMoney(line.amount_brl)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-slate-700">{formatMoney(line.base_amount_brl)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-slate-700">{formatNumber(line.rate_percent)}%</td>
+                    <td className="px-3 py-2 text-right font-semibold tabular-nums text-rpx-ink">{formatMoney(line.amount_brl)}</td>
                     <td className="px-3 py-2 text-slate-600">{line.is_manual_adjustment ? "Sim" : "Não"}</td>
                     <td className="px-3 py-2 text-slate-600">{line.manual_adjustment_reason || "-"}</td>
                   </tr>

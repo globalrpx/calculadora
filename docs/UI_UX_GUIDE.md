@@ -96,6 +96,7 @@ Diretrizes:
 - Rolagem horizontal deve ficar restrita ao container da tabela, nunca a pagina inteira.
 - Status visiveis por badges.
 - Acoes em menu por linha.
+- Detalhes operacionais longos devem abrir com um resumo executivo no topo antes dos blocos editaveis.
 - Detalhe da cotacao com duas areas claras:
   - Dados enviados pelo cliente.
   - Validacao e notas internas.

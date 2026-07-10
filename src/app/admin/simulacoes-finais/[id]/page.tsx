@@ -59,6 +59,17 @@ function formatMoney(value: number | null | undefined, currency = "BRL") {
   }).format(value ?? 0);
 }
 
+function readSnapshotTotal(snapshot: Record<string, unknown> | null | undefined, key: string) {
+  const totals = snapshot?.totals;
+
+  if (!totals || typeof totals !== "object" || !(key in totals)) {
+    return null;
+  }
+
+  const value = (totals as Record<string, unknown>)[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 function mapStatusVariant(status: string): "success" | "neutral" | "warning" | "info" {
   switch (status) {
     case "approved":
@@ -80,6 +91,23 @@ function DetailItem({ label, value }: { label: string; value: string | number | 
     <div>
       <dt className="text-xs font-semibold uppercase text-slate-500">{label}</dt>
       <dd className="mt-1 text-sm text-rpx-ink">{value || "-"}</dd>
+    </div>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  accent = false
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className={accent ? "rounded-md border border-rpx-blue/20 bg-rpx-sky p-4" : "rounded-md border border-slate-200 bg-white p-4"}>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
+      <dd className={accent ? "mt-2 text-lg font-bold text-rpx-blue" : "mt-2 text-lg font-bold text-rpx-ink"}>{value}</dd>
     </div>
   );
 }
@@ -136,6 +164,16 @@ export default async function FinalSimulationDetailPage({
   ]);
   const canEdit = !isFinalSimulationLocked(simulation.status);
   const taxPreview = taxPreviewInput ? calculateFinalSimulationTaxPreview(taxPreviewInput) : null;
+  const snapshot = simulation.calculation_snapshot ?? {};
+  const quickFobBrl =
+    readSnapshotTotal(snapshot, "total_fob_brl") ?? simulation.total_products_usd * simulation.exchange_rate;
+  const quickCustomsBase = readSnapshotTotal(snapshot, "total_customs_base_brl") ?? simulation.customs_value_brl;
+  const quickTaxes =
+    readSnapshotTotal(snapshot, "net_taxes_brl") ??
+    readSnapshotTotal(snapshot, "gross_taxes_brl") ??
+    simulation.total_taxes_brl;
+  const quickCommission = readSnapshotTotal(snapshot, "trade_commission_brl") ?? simulation.trade_commission_amount_brl;
+  const quickTotalCost = readSnapshotTotal(snapshot, "estimated_total_cost_brl") ?? simulation.total_cost_brl;
   const fiscalValues = fiscalSettings ?? {
     simulationId: simulation.id,
     tradeCommissionMode: simulation.trade_commission_mode ?? "none",
@@ -155,7 +193,7 @@ export default async function FinalSimulationDetailPage({
     <>
       <PageHeader
         title={buildTitle(simulation)}
-        description="Detalhe inicial da simulação final."
+        description={simulation.customer_name ? `Cliente: ${simulation.customer_name}` : "Detalhe da simulação final."}
         action={
           <div className="flex flex-wrap gap-3">
             <ButtonLink href="/admin/simulacoes-finais" variant="secondary">
@@ -166,17 +204,36 @@ export default async function FinalSimulationDetailPage({
         }
       />
 
-      <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <Card title="Dados principais">
-          <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+      <Card className="mb-5" title="Resumo da simulação" description="Visão rápida para conferência antes de editar produtos, despesas ou fiscal.">
+        <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.6fr)]">
+          <dl className="grid gap-4 rounded-md border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 xl:grid-cols-1">
             <div>
-              <dt className="text-xs font-semibold uppercase text-slate-500">Status</dt>
-              <dd className="mt-1">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</dt>
+              <dd className="mt-2">
                 <StatusBadge variant={mapStatusVariant(simulation.status)}>
                   {statusLabels[simulation.status] ?? simulation.status}
                 </StatusBadge>
               </dd>
             </div>
+            <DetailItem label="Data da cotação" value={formatDate(simulation.quote_date)} />
+            <DetailItem label="Validade" value={formatDate(simulation.valid_until)} />
+            <DetailItem label="Cliente" value={simulation.customer_name} />
+          </dl>
+
+          <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <MetricCard label="FOB BRL" value={formatMoney(quickFobBrl)} />
+            <MetricCard label="Despesas" value={formatMoney(simulation.total_expenses_brl)} />
+            <MetricCard label="Base aduaneira" value={formatMoney(quickCustomsBase)} />
+            <MetricCard label="Impostos" value={formatMoney(quickTaxes)} />
+            <MetricCard label="Comissão" value={formatMoney(quickCommission)} />
+            <MetricCard label="Custo total estimado" value={formatMoney(quickTotalCost)} accent />
+          </dl>
+        </div>
+      </Card>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
+        <Card title="Dados principais" description="Dados comerciais, logísticos e cambiais usados como base da simulação.">
+          <dl className="mt-4 grid gap-4 sm:grid-cols-2">
             <DetailItem label="Cliente" value={simulation.customer_name} />
             <DetailItem label="Fornecedor" value={simulation.supplier_name} />
             <DetailItem label="Data da cotação" value={formatDate(simulation.quote_date)} />
@@ -202,7 +259,7 @@ export default async function FinalSimulationDetailPage({
         </Card>
 
         <div className="grid gap-5">
-          <Card title="Totais básicos">
+          <Card title="Totais operacionais" description="Totais persistidos nos dados principais da simulação.">
             <dl className="mt-4 grid gap-4">
               <DetailItem label="Produtos USD" value={formatMoney(simulation.total_products_usd, "USD")} />
               <DetailItem label="Peso bruto" value={`${formatNumber(simulation.gross_weight)} kg`} />
@@ -213,10 +270,10 @@ export default async function FinalSimulationDetailPage({
             </dl>
           </Card>
 
-          <Card title="Próximas etapas">
+          <Card title="Documentos e relatórios" description="Geração de PDF cliente e relatório interno será feita em etapa posterior.">
             <p className="mt-4 text-sm leading-6 text-slate-600">
-              Despesas, parametrização fiscal, impostos por encomenda, PDF cliente e relatório interno entram nas
-              próximas etapas do módulo.
+              O mapeamento do PDF/planilha real já está documentado. Esta tela ainda não gera PDF, preview de PDF ou
+              relatório interno.
             </p>
           </Card>
         </div>

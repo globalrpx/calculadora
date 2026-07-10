@@ -316,8 +316,20 @@ export function SimulationExpensesSection({
           ? expenseModalityLabels[expense.expense_category as keyof typeof expenseModalityLabels]
           : "-"
     },
-    { key: "amount_brl", header: "Valor BRL", render: (expense) => formatMoney(expense.amount_brl, "BRL") },
-    { key: "amount_usd", header: "Valor USD", render: (expense) => formatMoney(expense.amount_usd, "USD") },
+    {
+      key: "amount_brl",
+      header: "Valor BRL",
+      headerClassName: "text-right",
+      className: "text-right font-semibold tabular-nums text-rpx-ink",
+      render: (expense) => formatMoney(expense.amount_brl, "BRL")
+    },
+    {
+      key: "amount_usd",
+      header: "Valor USD",
+      headerClassName: "text-right",
+      className: "text-right tabular-nums",
+      render: (expense) => formatMoney(expense.amount_usd, "USD")
+    },
     { key: "currency", header: "Moeda", render: (expense) => expense.currency || "-" },
     { key: "is_from_preset", header: "Origem", render: (expense) => (expense.is_from_preset ? "Pré-cálculo" : "Manual") },
     { key: "applied_behavior", header: "Comportamento", render: (expense) => expense.applied_behavior_label || "-" },
@@ -354,11 +366,16 @@ export function SimulationExpensesSection({
   ];
 
   return (
-    <section className="mt-6 grid gap-5">
+    <section className="mt-6 grid gap-5 scroll-mt-24">
       <Card title="Despesas" description="Pré-cálculos e despesas manuais da simulação final.">
-        <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
-          <p className="text-xs font-semibold uppercase text-slate-500">Total de despesas BRL</p>
-          <p className="mt-1 text-lg font-semibold text-rpx-ink">{formatMoney(totalExpensesBrl, "BRL")}</p>
+        <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total de despesas BRL</p>
+            <p className="mt-1 text-2xl font-bold text-rpx-ink">{formatMoney(totalExpensesBrl, "BRL")}</p>
+          </div>
+          <div className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+            {expenses.length} {expenses.length === 1 ? "linha cadastrada" : "linhas cadastradas"}
+          </div>
         </div>
 
         {canEdit && presets.length > 0 ? <ProcessPresetForm simulationId={simulationId} presets={presets} /> : null}

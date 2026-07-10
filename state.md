@@ -59,6 +59,57 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Ajuste visual do detalhe de Simulacao Final
+
+- Reorganizada a pagina `/admin/simulacoes-finais/[id]` sem alterar regra de negocio, calculo, actions, schemas, banco ou permissoes.
+- Adicionado card superior `Resumo da simulação` com contexto rapido:
+  - status;
+  - cliente;
+  - data da cotacao;
+  - validade;
+  - FOB BRL;
+  - despesas;
+  - base aduaneira;
+  - impostos;
+  - comissao;
+  - custo total estimado.
+- Melhorada a hierarquia dos cards:
+  - Dados principais;
+  - Totais operacionais;
+  - Documentos e relatórios como estado informativo, sem gerar PDF;
+  - Produtos;
+  - Despesas;
+  - Parametrização Fiscal;
+  - Cálculo Fiscal V1.
+- Melhorada a leitura das tabelas de produtos, despesas e linhas fiscais com alinhamento numerico, valores tabulares e containers com overflow horizontal restrito.
+- Reforcado no card fiscal que o calculo V1 e simplificado e nao recalcula automaticamente ao abrir a pagina.
+- Atualizado `docs/UI_UX_GUIDE.md` com a diretriz de resumo executivo em detalhes operacionais longos.
+- Nao houve migration, banco, RLS, auth, middleware, permissao, calculo fiscal, PDF, `package.json`, producao ou `temp/`.
+
+Arquivos principais:
+
+- `src/app/admin/simulacoes-finais/[id]/page.tsx`
+- `src/features/final-simulations/FinalSimulationItemsSection.tsx`
+- `src/features/final-simulations/SimulationExpensesSection.tsx`
+- `src/features/final-simulations/FinalSimulationFiscalSection.tsx`
+- `src/features/final-simulations/FinalSimulationTaxPreviewSection.tsx`
+- `docs/UI_UX_GUIDE.md`
+- `state.md`
+
+Validado:
+
+- `git diff --check` passou.
+- `npm run typecheck` passou.
+- `npm run lint` passou.
+- Browser no Supabase Dev:
+  - simulacao completa exibiu todos os blocos e botao `Recalcular impostos`;
+  - simulacao incompleta/sem calculo exibiu estados vazios de produtos, despesas e calculo;
+  - viewport mobile `390x844` nao apresentou overflow horizontal e manteve botoes principais acessiveis.
+
+Proxima etapa recomendada:
+
+- Revisar visualmente com usuario e, se aprovado, fechar checkpoint em commit.
+
 ### 2026-07-10 - Organizacao visual da sidebar admin
 
 - Reorganizada a navegacao lateral administrativa em tres grupos visuais:
