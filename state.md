@@ -59,6 +59,52 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Mapeamento de output PDF/planilha da Simulacao Final
+
+- Analisados os arquivos reais de referencia:
+  - `/Users/hugoferreira/Downloads/MOBITA CAPACETE.pdf`;
+  - `/Users/hugoferreira/Downloads/MOBITA CAPACETE.xlsx`.
+- Criado `docs/FINAL_SIMULATION_OUTPUT_MAPPING.md` com o mapeamento dos blocos do PDF cliente:
+  - cabecalho;
+  - dados da simulacao;
+  - dados logisticos;
+  - tabela de produtos;
+  - nota fiscal de entrada;
+  - nota fiscal de saida;
+  - composicao da base de ICMS;
+  - observacoes/disclaimers.
+- Mapeada tambem a planilha interna:
+  - relatorio detalhado de despesas aduaneiras;
+  - bloco interno de Encomenda;
+  - campos internos que nao devem aparecer no PDF cliente.
+- Comparado o output real com as tabelas atuais do modulo:
+  - `final_simulations`;
+  - `final_simulation_items`;
+  - `simulation_expense_lines`;
+  - `simulation_tax_lines`;
+  - `invoice_parametrizations`;
+  - `calculation_snapshot`;
+  - `simulation_documents`;
+  - `uploads`.
+- Atualizado `docs/DATABASE_MODEL.md` com observacoes de lacunas para PDF cliente e relatorio interno, sem criar migration.
+- Nao houve alteracao em `src/`, migrations, calculo, `package.json`, Supabase ou producao.
+
+Arquivos principais:
+
+- `docs/FINAL_SIMULATION_OUTPUT_MAPPING.md`
+- `docs/DATABASE_MODEL.md`
+- `state.md`
+
+Validado:
+
+- Extracao textual/visual do PDF de uma pagina.
+- Leitura da planilha `Sheet`, incluindo blocos de PDF, despesas e Encomenda.
+- Revisao documental cruzada com migrations e modelo atual.
+
+Proxima etapa recomendada:
+
+- Fechar contrato de `public_snapshot`/`internal_snapshot`, formulas oficiais e lacunas de modelagem antes de iniciar PDF cliente.
+
 ### 2026-07-10 - Visualizacao detalhada do calculo fiscal salvo
 
 - Evoluida a secao `Cálculo Fiscal V1` no detalhe da Simulacao Final para exibir o calculo salvo, sem recalcular automaticamente ao abrir a pagina.

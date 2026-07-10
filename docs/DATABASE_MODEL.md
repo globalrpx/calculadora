@@ -422,6 +422,20 @@ Observacao: `pricing_excel` fica preparado no modelo, mas a funcionalidade esta 
 
 Pendencia conhecida: como `uploads` ainda exige dono entre `simulation_id` e `quote_id`, uma migration posterior deve avaliar `uploads.final_simulation_id` e ajuste do CHECK antes de usar `uploads` como dono direto de documentos de Simulacao Final.
 
+### Lacunas para PDF cliente e relatorio interno
+
+O mapeamento em `docs/FINAL_SIMULATION_OUTPUT_MAPPING.md` comparou o PDF/planilha real `MOBITA CAPACETE` com o modelo atual.
+
+Campos/decisoes ainda pendentes antes da geracao fiel do PDF cliente:
+
+- regra oficial de numero sequencial e revisao da simulacao;
+- snapshot final publico (`public_snapshot`) e interno (`internal_snapshot`) com estrutura fechada para documentos;
+- formula oficial de CIF, base aduaneira, base ICMS, NF entrada, NF saida e custo unitario;
+- rateio de despesas por item e separacao de despesas publicas vs. internas;
+- modelagem ou snapshot para carga IMO, credito presumido, ICMS ST, IPI NF, honorarios, imposto sobre faturamento e desembolso total USD;
+- observacoes comerciais/disclaimers publicos separados de notas internas;
+- avaliacao futura de `uploads.final_simulation_id` para documentos gerados do modulo.
+
 ### `states`
 
 Cadastro local de UFs brasileiras.
