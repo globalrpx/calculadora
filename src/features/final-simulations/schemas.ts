@@ -1,3 +1,4 @@
+import { parseLocalizedNumber } from "./calculation-engine";
 import {
   editableFinalSimulationStatusValues,
   expenseAllocationTypeValues,
@@ -47,13 +48,8 @@ function normalizeCurrency(value: FormDataEntryValue | string | null | undefined
 }
 
 function normalizeNumber(value: FormDataEntryValue | string | number | null | undefined) {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  const normalized = normalizeText(value).replace(/\./g, "").replace(",", ".");
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : 0;
+  const parsed = parseLocalizedNumber(value);
+  return parsed ?? Number.NaN;
 }
 
 function normalizeBoolean(value: FormDataEntryValue | string | boolean | null | undefined) {
@@ -104,6 +100,30 @@ function validateOptionalDate(
 
 function hasFieldErrors(fieldErrors: Record<string, string | undefined>) {
   return Object.values(fieldErrors).some(Boolean);
+}
+
+function validateNumber(
+  fieldErrors: Record<string, string | undefined>,
+  field: string,
+  value: number | undefined,
+  message: string
+) {
+  if (!Number.isFinite(value ?? 0)) {
+    fieldErrors[field] = message;
+  }
+}
+
+function validateNonNegativeNumber(
+  fieldErrors: Record<string, string | undefined>,
+  field: string,
+  value: number | undefined,
+  message: string
+) {
+  validateNumber(fieldErrors, field, value, message);
+
+  if (Number.isFinite(value ?? 0) && (value ?? 0) < 0) {
+    fieldErrors[field] = message;
+  }
 }
 
 export function isEditableFinalSimulationStatus(status: string | null | undefined): status is FinalSimulationStatus {
@@ -201,9 +221,7 @@ function validateMainData(
     fieldErrors.currency = "Informe uma moeda com até 3 caracteres.";
   }
 
-  if ((values.exchangeRate ?? 0) < 0) {
-    fieldErrors.exchangeRate = "Informe uma taxa de câmbio válida.";
-  }
+  validateNonNegativeNumber(fieldErrors, "exchangeRate", values.exchangeRate, "Informe uma taxa de câmbio válida.");
 
   return fieldErrors;
 }
@@ -297,41 +315,15 @@ function validateItemData(
     fieldErrors.ncm = "Informe o NCM.";
   }
 
-  if (values.quantity < 0) {
-    fieldErrors.quantity = "Informe uma quantidade válida.";
-  }
-
-  if (values.unitPrice < 0) {
-    fieldErrors.unitPrice = "Informe um valor unitário válido.";
-  }
-
-  if (values.unitNetWeight < 0) {
-    fieldErrors.unitNetWeight = "Informe um peso líquido válido.";
-  }
-
-  if (values.unitGrossWeight < 0) {
-    fieldErrors.unitGrossWeight = "Informe um peso bruto válido.";
-  }
-
-  if ((values.iiRate ?? 0) < 0) {
-    fieldErrors.iiRate = "Informe uma alíquota II válida.";
-  }
-
-  if ((values.ipiRate ?? 0) < 0) {
-    fieldErrors.ipiRate = "Informe uma alíquota IPI válida.";
-  }
-
-  if ((values.pisRate ?? 0) < 0) {
-    fieldErrors.pisRate = "Informe uma alíquota PIS válida.";
-  }
-
-  if ((values.cofinsRate ?? 0) < 0) {
-    fieldErrors.cofinsRate = "Informe uma alíquota COFINS válida.";
-  }
-
-  if ((values.reducedBaseRate ?? 0) < 0) {
-    fieldErrors.reducedBaseRate = "Informe uma taxa base reduzida válida.";
-  }
+  validateNonNegativeNumber(fieldErrors, "quantity", values.quantity, "Informe uma quantidade válida.");
+  validateNonNegativeNumber(fieldErrors, "unitPrice", values.unitPrice, "Informe um valor unitário válido.");
+  validateNonNegativeNumber(fieldErrors, "unitNetWeight", values.unitNetWeight, "Informe um peso líquido válido.");
+  validateNonNegativeNumber(fieldErrors, "unitGrossWeight", values.unitGrossWeight, "Informe um peso bruto válido.");
+  validateNonNegativeNumber(fieldErrors, "iiRate", values.iiRate, "Informe uma alíquota II válida.");
+  validateNonNegativeNumber(fieldErrors, "ipiRate", values.ipiRate, "Informe uma alíquota IPI válida.");
+  validateNonNegativeNumber(fieldErrors, "pisRate", values.pisRate, "Informe uma alíquota PIS válida.");
+  validateNonNegativeNumber(fieldErrors, "cofinsRate", values.cofinsRate, "Informe uma alíquota COFINS válida.");
+  validateNonNegativeNumber(fieldErrors, "reducedBaseRate", values.reducedBaseRate, "Informe uma taxa base reduzida válida.");
 
   if (values.currency && values.currency.length > 3) {
     fieldErrors.currency = "Informe uma moeda com até 3 caracteres.";
@@ -443,9 +435,7 @@ function validateExpenseTypeData(
     fieldErrors.description = "Informe a descrição.";
   }
 
-  if (values.printOrder !== undefined && values.printOrder < 0) {
-    fieldErrors.printOrder = "Informe uma ordem válida.";
-  }
+  validateNonNegativeNumber(fieldErrors, "printOrder", values.printOrder, "Informe uma ordem válida.");
 
   if (!expenseModalityValues.includes(values.expenseModality as (typeof expenseModalityValues)[number])) {
     fieldErrors.expenseModality = "Selecione uma modalidade válida.";
@@ -551,13 +541,9 @@ function validateExpensePresetItemData(
     fieldErrors.expenseTypeId = "Informe um tipo de despesa válido.";
   }
 
-  if ((values.defaultAmountBrl ?? 0) < 0) {
-    fieldErrors.defaultAmountBrl = "Informe um valor BRL válido.";
-  }
-
-  if ((values.defaultAmountUsd ?? 0) < 0) {
-    fieldErrors.defaultAmountUsd = "Informe um valor USD válido.";
-  }
+  validateNonNegativeNumber(fieldErrors, "defaultAmountBrl", values.defaultAmountBrl, "Informe um valor BRL válido.");
+  validateNonNegativeNumber(fieldErrors, "defaultAmountUsd", values.defaultAmountUsd, "Informe um valor USD válido.");
+  validateNonNegativeNumber(fieldErrors, "sortOrder", values.sortOrder, "Informe uma ordem válida.");
 
   if (values.defaultCurrency && values.defaultCurrency.length > 3) {
     fieldErrors.defaultCurrency = "Informe uma moeda com até 3 caracteres.";
@@ -726,13 +712,8 @@ function validateSimulationExpenseLineData(
     fieldErrors.expenseName = "Informe a despesa.";
   }
 
-  if ((values.amountBrl ?? 0) < 0) {
-    fieldErrors.amountBrl = "Informe um valor BRL válido.";
-  }
-
-  if ((values.amountUsd ?? 0) < 0) {
-    fieldErrors.amountUsd = "Informe um valor USD válido.";
-  }
+  validateNonNegativeNumber(fieldErrors, "amountBrl", values.amountBrl, "Informe um valor BRL válido.");
+  validateNonNegativeNumber(fieldErrors, "amountUsd", values.amountUsd, "Informe um valor USD válido.");
 
   if (values.currency && values.currency.length > 3) {
     fieldErrors.currency = "Informe uma moeda com até 3 caracteres.";

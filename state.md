@@ -59,6 +59,42 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Correcao de normalizacao numerica em Simulacoes Finais
+
+- Corrigido o parser numerico usado pelos schemas e calculos basicos de Simulacoes Finais.
+- Valores com ponto decimal internacional deixam de ser tratados como milhares:
+  - `5.20` vira `5.2`
+  - `1.7` vira `1.7`
+  - `2.1` vira `2.1`
+  - `9.65` vira `9.65`
+- Mantido suporte para formato brasileiro com virgula decimal e milhares:
+  - `5,20` vira `5.2`
+  - `1.234,56` vira `1234.56`
+- Adicionado suporte contextual para milhares internacionais, como `1,234.56`.
+- Entradas invalidas agora viram erro de validacao nos schemas em vez de passarem como numero silenciosamente incorreto.
+- Nao houve migration, RLS, auth, `package.json`, producao ou `temp/`.
+
+Arquivos principais:
+
+- `src/features/final-simulations/calculation-engine.ts`
+- `src/features/final-simulations/schemas.ts`
+- `state.md`
+
+Validado:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+- Teste manual no browser local apontando para Supabase Dev:
+  - criada simulacao `011f45ab-57e6-41e2-ac02-c29536bf74d1`;
+  - cambio `5.20` exibido como `5,20`;
+  - produto com quantidade `10`, preco `10.98`, PL `1.7`, PB `2`, PIS `2.1` e COFINS `9.65`;
+  - totais exibidos: `US$ 109,80`, `17,00 kg` liquido e `20,00 kg` bruto.
+
+Proxima etapa recomendada:
+
+- Revisar dados de teste antigos criados antes da correcao, pois podem manter valores ja gravados com escala errada.
+
 ### 2026-07-10 - Estrutura local Supabase Dev/Prod
 
 - Criados arquivos locais ignorados pelo Git para configurar Supabase CLI por ambiente:

@@ -23,17 +23,58 @@ export type SimulationExpensesTotalInput = {
   amount_brl: number | string | null;
 };
 
-export function normalizeNumber(value: unknown) {
+export function parseLocalizedNumber(value: unknown): number | null {
   if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
+    return Number.isFinite(value) ? value : null;
   }
 
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(/\./g, "").replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
+  if (value == null) {
+    return 0;
   }
 
-  return 0;
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const text = value.trim().replace(/\s+/g, "");
+
+  if (!text) {
+    return 0;
+  }
+
+  if (!/^-?[\d.,]+$/.test(text)) {
+    return null;
+  }
+
+  const lastComma = text.lastIndexOf(",");
+  const lastDot = text.lastIndexOf(".");
+  let normalized = text;
+
+  if (lastComma >= 0 && lastDot >= 0) {
+    const decimalSeparator = lastComma > lastDot ? "," : ".";
+    const thousandsSeparator = decimalSeparator === "," ? "." : ",";
+    normalized = text.split(thousandsSeparator).join("").replace(decimalSeparator, ".");
+  } else if (lastComma >= 0) {
+    normalized = text.replace(",", ".");
+  } else if (lastDot >= 0) {
+    const thousandsOnly = /^-?\d{1,3}(\.\d{3})+$/.test(text);
+    normalized = thousandsOnly ? text.replace(/\./g, "") : text;
+  }
+
+  if (!/^-?\d+(\.\d+)?$/.test(normalized)) {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function normalizeNumber(value: unknown) {
+  return parseLocalizedNumber(value) ?? 0;
+}
+
+export function isValidLocalizedNumber(value: unknown) {
+  return parseLocalizedNumber(value) !== null;
 }
 
 function roundSix(value: number) {
