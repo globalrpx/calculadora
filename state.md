@@ -59,6 +59,42 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Fechamento documental da V1 de Simulacoes Finais
+
+- Criado `docs/FINAL_SIMULATIONS_V1_CLOSEOUT.md` consolidando o ciclo V1 do modulo Simulacoes Finais.
+- Documentado o fluxo operacional validado no Supabase Dev:
+  - dados principais;
+  - produtos;
+  - despesas;
+  - parametrizacao fiscal;
+  - recalculo fiscal V1;
+  - snapshots publico/interno;
+  - preview cliente;
+  - PDF cliente salvo;
+  - relatorio interno simples;
+  - historico de documentos gerados.
+- Registrado que a simulacao completa de referencia no Supabase Dev e `0358251e-4d4a-4709-b522-97ef94fe73be` (`DEV-DOC-364682`).
+- Registradas as limitacoes da V1:
+  - ICMS simplificado;
+  - despesas rateadas por FOB;
+  - creditos sem linhas fiscais negativas;
+  - `total_taxes_brl` como impostos brutos;
+  - `total_cost_brl` incluindo comissao trade;
+  - formulas pendentes de validacao fiscal com Rodrigo/RPX.
+- Registrado checklist antes de producao cobrindo ambiente, deploy, banco, seguranca, Storage, cadastros mestres e teste controlado.
+- Atualizadas referencias em `docs/ROUTES_AND_SCREENS.md`, `docs/DATABASE_MODEL.md` e `docs/FINAL_SIMULATION_OUTPUT_MAPPING.md`.
+- Nao houve alteracao em `src/`, migrations, banco, RLS, auth/middleware/permissoes, calculo, PDF, Storage, `package.json`, producao ou `temp/`.
+
+Validado nesta etapa:
+
+- `git diff --check`;
+- `npm run typecheck`;
+- `npm run lint`.
+
+Proxima etapa recomendada:
+
+- Revisar a V1 com Rodrigo/equipe fiscal usando `docs/FINAL_SIMULATIONS_V1_CLOSEOUT.md` e decidir as formulas/campos obrigatorios antes de promover o modulo para producao.
+
 ### 2026-07-10 - Tipo de cliente lead/client
 
 - Criada migration para adicionar `clients.client_type` com:

@@ -317,6 +317,8 @@ O bucket e privado. Policies em `storage.objects` permitem acesso somente a usua
 
 A migration `20260709200000_create_final_simulations_core.sql` cria a base estrutural do modulo futuro de Simulacoes Finais.
 
+Referencia de fechamento V1: `docs/FINAL_SIMULATIONS_V1_CLOSEOUT.md` consolida o uso operacional validado no Supabase Dev, os documentos gerados, os snapshots, as limitacoes fiscais e o checklist antes de producao.
+
 Escopo desta migration:
 
 - modelo de dados inicial;

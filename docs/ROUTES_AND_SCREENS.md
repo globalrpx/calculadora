@@ -68,6 +68,10 @@
 - Cliente tentando acessar area admin volta para `/app`.
 - A fonte de verdade para role/status e `app_users`.
 
+## Fechamento V1 - Simulacoes Finais
+
+O ciclo V1 do modulo Simulacoes Finais foi validado no Supabase Dev em 2026-07-10, cobrindo dados principais, produtos, despesas, parametrizacao fiscal, recalculo fiscal V1, snapshots, preview cliente, PDF cliente salvo, relatorio interno e historico de documentos. O checklist de promocao para producao, limitacoes e pendencias de validacao com Rodrigo estao documentados em `docs/FINAL_SIMULATIONS_V1_CLOSEOUT.md`.
+
 ## Rotas Recomendadas Ainda Futuras
 
 | Rota | Finalidade |

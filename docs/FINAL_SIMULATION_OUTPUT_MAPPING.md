@@ -6,6 +6,8 @@ Data: 2026-07-10
 
 Este documento mapeia o modelo real de output usado como referencia para Simulacoes Finais contra o modulo atual da plataforma Global RPX.
 
+Referencia complementar: `docs/FINAL_SIMULATIONS_V1_CLOSEOUT.md` registra o fechamento operacional da V1, incluindo fluxo validado no Supabase Dev, checklist de producao e pendencias finais para Rodrigo/RPX.
+
 Arquivos analisados:
 
 - `/Users/hugoferreira/Downloads/MOBITA CAPACETE.pdf`
