@@ -59,6 +59,27 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-09 - Ajuste de navegacao das Simulacoes Finais
+
+- Adicionado o item `Simulações Finais` na navegacao administrativa existente.
+- O link aponta para `/admin/simulacoes-finais` e reutiliza o mesmo padrao visual, mobile/desktop e regra de acesso do menu admin.
+- Nenhuma rota, migration, auth, middleware, `package.json`, `temp/`, produto, despesa, PDF, NCM UI ou calculo fiscal avancado foi alterado.
+
+Arquivos principais:
+
+- `src/lib/navigation.ts`
+- `state.md`
+
+Validado:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+
+Proxima etapa recomendada:
+
+- Testar visualmente o menu admin e seguir para a etapa de produtos/NCM quando o CRUD minimo estiver validado no ambiente conectado.
+
 ### 2026-07-09 - Etapa 4: UI administrativa minima das Simulacoes Finais
 
 - Criada a primeira interface administrativa do modulo em `/admin/simulacoes-finais`.
