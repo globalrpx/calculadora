@@ -59,6 +59,59 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Persistencia do calculo fiscal V1
+
+- Criada action administrativa `recalculateFinalSimulationTaxesAction` para recalcular impostos da Simulacao Final.
+- A action usa `getFinalSimulationTaxPreviewInput` e `calculateFinalSimulationTaxPreview`, mantendo a formula V1 pura como fonte do calculo.
+- Persistencia implementada sem migration:
+  - substitui linhas nao manuais antigas em `simulation_tax_lines`;
+  - insere 5 linhas brutas por item: `II`, `IPI`, `PIS_IMPORTACAO`, `COFINS_IMPORTACAO`, `ICMS`;
+  - atualiza em `final_simulations` os campos existentes `customs_value_brl`, `total_taxes_brl`, `total_cost_brl`, `calculation_snapshot` e `updated_by`.
+- Creditos tributarios nao viram linhas negativas porque o schema atual de `simulation_tax_lines.tax_type` nao tem tipo claro para credito; eles entram no total liquido (`total_taxes_brl`) e no `calculation_snapshot`.
+- Criada secao/card `Cálculo Fiscal V1` no detalhe da Simulacao Final com preview, warnings, quantidade de linhas persistidas e botao `Recalcular impostos`.
+- Recalculo e bloqueado com mensagem amigavel quando a simulacao nao tem produtos, cambio valido ou FOB positivo.
+- Nao houve migration, RLS, auth, middleware, layout global, `package.json`, `temp/`, PDF, producao ou alteracao da formula pura.
+
+Arquivos principais:
+
+- `src/features/final-simulations/actions.ts`
+- `src/features/final-simulations/queries.ts`
+- `src/features/final-simulations/types.ts`
+- `src/features/final-simulations/FinalSimulationTaxPreviewSection.tsx`
+- `src/app/admin/simulacoes-finais/[id]/page.tsx`
+- `docs/ROUTES_AND_SCREENS.md`
+- `state.md`
+
+Validado no Supabase Dev:
+
+- Simulacao com 1 produto FOB USD 100, cambio 5.20, despesa 150, II 18, IPI 0, PIS 2.1, COFINS 9.65, ICMS 18 e comissao 2.5%.
+- UI exibiu:
+  - FOB BRL `520`;
+  - despesas `150`;
+  - base aduaneira `670`;
+  - impostos brutos `355.81`;
+  - comissao `13.00`;
+  - custo total estimado `1038.81`.
+- Banco Dev confirmou:
+  - 5 linhas em `simulation_tax_lines`;
+  - sem duplicidade apos segundo recalculo;
+  - `customs_value_brl = 670`;
+  - `total_taxes_brl = 355.81`;
+  - `total_cost_brl = 1038.81`;
+  - `calculation_snapshot.scope = tax_recalculation`.
+- Simulacao sem produto exibiu erro amigavel e manteve `0` linhas fiscais.
+
+Limitacoes V1:
+
+- Linhas fiscais persistem impostos brutos; creditos ficam no consolidado/snapshot.
+- ICMS ainda nao faz gross-up por dentro.
+- Despesas continuam rateadas somente por FOB.
+- Comportamentos fiscais das despesas ainda nao alteram bases.
+
+Proxima etapa recomendada:
+
+- Fechar checkpoint desta persistencia ou evoluir a UI de detalhe das linhas fiscais salvas antes de PDF/relatorio.
+
 ### 2026-07-10 - Preview puro de calculo fiscal da Simulacao Final
 
 - Implementado o motor puro V1 em `calculation-engine.ts` para gerar preview fiscal em memoria, sem persistencia.

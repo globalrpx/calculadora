@@ -463,6 +463,22 @@ export type SimulationExpenseLine = {
   updated_at: string;
 };
 
+export type SimulationTaxLine = {
+  id: string;
+  simulation_id: string;
+  item_id: string | null;
+  tax_type: "II" | "IPI" | "PIS_IMPORTACAO" | "COFINS_IMPORTACAO" | "ICMS" | "AFRMM" | "ANTIDUMPING" | "OUTROS";
+  base_amount_brl: number;
+  rate_percent: number;
+  amount_brl: number;
+  formula_snapshot: Record<string, unknown>;
+  is_manual_adjustment: boolean;
+  manual_adjustment_reason: string | null;
+  adjusted_by: string | null;
+  adjusted_at: string | null;
+  created_at: string;
+};
+
 export type InvoiceParametrization = {
   id: string;
   code: string;

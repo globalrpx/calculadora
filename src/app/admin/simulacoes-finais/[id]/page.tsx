@@ -3,14 +3,18 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { calculateFinalSimulationTaxPreview } from "@/features/final-simulations/calculation-engine";
 import { FinalSimulationFiscalSection } from "@/features/final-simulations/FinalSimulationFiscalSection";
 import { FinalSimulationItemsSection } from "@/features/final-simulations/FinalSimulationItemsSection";
+import { FinalSimulationTaxPreviewSection } from "@/features/final-simulations/FinalSimulationTaxPreviewSection";
 import { SimulationExpensesSection } from "@/features/final-simulations/SimulationExpensesSection";
 import {
   getFinalSimulationById,
   getFinalSimulationFiscalSettings,
   getFinalSimulationItems,
+  getFinalSimulationTaxPreviewInput,
   getSimulationExpenseLines,
+  getSimulationTaxLines,
   listInvoiceParametrizationOptions,
   listActiveExpensePresetsForSimulation,
   searchNcmCodes
@@ -109,16 +113,29 @@ export default async function FinalSimulationDetailPage({
   }
 
   const ncmSearch = readSearchParam(queryParams, "ncmSearch");
-  const [items, ncmOptions, expenses, expensePresets, fiscalSettings, entryInvoiceOptions, exitInvoiceOptions] = await Promise.all([
+  const [
+    items,
+    ncmOptions,
+    expenses,
+    expensePresets,
+    fiscalSettings,
+    entryInvoiceOptions,
+    exitInvoiceOptions,
+    taxPreviewInput,
+    taxLines
+  ] = await Promise.all([
     getFinalSimulationItems(simulation.id),
     ncmSearch.length >= 2 ? searchNcmCodes(ncmSearch, 20) : Promise.resolve([]),
     getSimulationExpenseLines(simulation.id),
     listActiveExpensePresetsForSimulation(simulation.id),
     getFinalSimulationFiscalSettings(simulation.id),
     listInvoiceParametrizationOptions("entrada"),
-    listInvoiceParametrizationOptions("saida")
+    listInvoiceParametrizationOptions("saida"),
+    getFinalSimulationTaxPreviewInput(simulation.id),
+    getSimulationTaxLines(simulation.id)
   ]);
   const canEdit = !isFinalSimulationLocked(simulation.status);
+  const taxPreview = taxPreviewInput ? calculateFinalSimulationTaxPreview(taxPreviewInput) : null;
   const fiscalValues = fiscalSettings ?? {
     simulationId: simulation.id,
     tradeCommissionMode: simulation.trade_commission_mode ?? "none",
@@ -228,6 +245,13 @@ export default async function FinalSimulationDetailPage({
         exitOptions={exitInvoiceOptions}
         entrySnapshot={simulation.entry_invoice_parametrization_snapshot ?? {}}
         exitSnapshot={simulation.exit_invoice_parametrization_snapshot ?? {}}
+        canEdit={canEdit}
+      />
+
+      <FinalSimulationTaxPreviewSection
+        simulationId={simulation.id}
+        preview={taxPreview}
+        persistedTaxLinesCount={taxLines.length}
         canEdit={canEdit}
       />
     </>

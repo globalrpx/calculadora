@@ -19,7 +19,8 @@ import type {
   InvoiceParametrizationListFilters,
   InvoiceParametrizationOperationType,
   InvoiceParametrizationOption,
-  SimulationExpenseLine
+  SimulationExpenseLine,
+  SimulationTaxLine
 } from "./types";
 
 const finalSimulationListSelect = [
@@ -378,6 +379,20 @@ export async function getSimulationExpenseLines(simulationId: string): Promise<S
     .order("created_at", { ascending: true });
 
   return (data ?? []) as SimulationExpenseLine[];
+}
+
+export async function getSimulationTaxLines(simulationId: string): Promise<SimulationTaxLine[]> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("simulation_tax_lines")
+    .select("*")
+    .eq("simulation_id", simulationId)
+    .order("tax_type", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  return (data ?? []) as SimulationTaxLine[];
 }
 
 export async function listActiveExpensePresetsForSimulation(simulationId: string): Promise<ExpensePreset[]> {

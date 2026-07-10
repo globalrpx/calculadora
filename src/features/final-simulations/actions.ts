@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/get-session-profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  calculateFinalSimulationTaxPreview,
   calculateItemTotalsFromValues,
   calculateSimulationBasicTotals,
   calculateSimulationExpensesTotal
@@ -28,6 +29,7 @@ import {
   updateFinalSimulationMainDataSchema,
   updateSimulationExpenseLineSchema
 } from "./schemas";
+import { getFinalSimulationTaxPreviewInput } from "./queries";
 import type {
   ExpenseBehavior,
   ExpensePresetItem,
@@ -516,6 +518,107 @@ async function recalculateSimulationExpensesTotal(adminSupabase: ReturnType<type
   return { error: updateError, totalExpensesBrl };
 }
 
+function buildTaxLineRows(
+  simulationId: string,
+  preview: ReturnType<typeof calculateFinalSimulationTaxPreview>,
+  input: NonNullable<Awaited<ReturnType<typeof getFinalSimulationTaxPreviewInput>>>
+) {
+  const inputItemsById = new Map(input.items.map((item) => [item.itemId, item]));
+
+  return preview.items.flatMap((item) => {
+    const inputItem = inputItemsById.get(item.item_id);
+    const ipiBaseBrl = item.customs_base_brl + item.ii_brl;
+    const icmsBaseBrl = item.customs_base_brl + item.ii_brl + item.ipi_brl + item.pis_brl + item.cofins_brl;
+    const formulaSnapshot = {
+      formula_version: "tax-preview-v1",
+      item_id: item.item_id,
+      description: item.description,
+      fob_brl: item.fob_brl,
+      expense_allocation_brl: item.expense_allocation_brl,
+      customs_base_brl: item.customs_base_brl,
+      gross_taxes_brl: item.gross_taxes_brl,
+      tax_credits_brl: item.tax_credits_brl,
+      net_taxes_brl: item.net_taxes_brl,
+      estimated_total_cost_brl: item.estimated_total_cost_brl
+    };
+
+    return [
+      {
+        simulation_id: simulationId,
+        item_id: item.item_id,
+        tax_type: "II",
+        base_amount_brl: item.customs_base_brl,
+        rate_percent: inputItem?.iiRate ?? 0,
+        amount_brl: item.ii_brl,
+        formula_snapshot: {
+          ...formulaSnapshot,
+          calculation: "customs_base_brl * ii_rate / 100"
+        },
+        is_manual_adjustment: false
+      },
+      {
+        simulation_id: simulationId,
+        item_id: item.item_id,
+        tax_type: "IPI",
+        base_amount_brl: ipiBaseBrl,
+        rate_percent: inputItem?.ipiRate ?? 0,
+        amount_brl: item.ipi_brl,
+        formula_snapshot: {
+          ...formulaSnapshot,
+          ipi_base_brl: ipiBaseBrl,
+          calculation: "(customs_base_brl + ii_brl) * ipi_rate / 100"
+        },
+        is_manual_adjustment: false
+      },
+      {
+        simulation_id: simulationId,
+        item_id: item.item_id,
+        tax_type: "PIS_IMPORTACAO",
+        base_amount_brl: item.customs_base_brl,
+        rate_percent: inputItem?.pisRate ?? 0,
+        amount_brl: item.pis_brl,
+        formula_snapshot: {
+          ...formulaSnapshot,
+          calculation: "customs_base_brl * pis_rate / 100"
+        },
+        is_manual_adjustment: false
+      },
+      {
+        simulation_id: simulationId,
+        item_id: item.item_id,
+        tax_type: "COFINS_IMPORTACAO",
+        base_amount_brl: item.customs_base_brl,
+        rate_percent: inputItem?.cofinsRate ?? 0,
+        amount_brl: item.cofins_brl,
+        formula_snapshot: {
+          ...formulaSnapshot,
+          calculation: "customs_base_brl * cofins_rate / 100"
+        },
+        is_manual_adjustment: false
+      },
+      {
+        simulation_id: simulationId,
+        item_id: item.item_id,
+        tax_type: "ICMS",
+        base_amount_brl: icmsBaseBrl,
+        rate_percent: inputItem?.icmsRate ?? 0,
+        amount_brl: item.icms_brl,
+        formula_snapshot: {
+          ...formulaSnapshot,
+          icms_base_brl: icmsBaseBrl,
+          calculation: "(customs_base_brl + ii_brl + ipi_brl + pis_brl + cofins_brl) * icms_rate / 100"
+        },
+        is_manual_adjustment: false
+      }
+    ];
+  });
+}
+
+function hasCriticalTaxPreviewWarnings(preview: ReturnType<typeof calculateFinalSimulationTaxPreview>) {
+  const criticalCodes = new Set(["exchange_rate_invalid", "missing_items", "zero_total_fob"]);
+  return preview.warnings.some((warning) => criticalCodes.has(warning.code));
+}
+
 function getExpenseBehaviorForImportModality(
   expenseType: ExpenseType,
   importModality: FinalSimulationRow["import_modality"]
@@ -849,6 +952,105 @@ export async function recalculateFinalSimulationBasicTotalsAction(formData: Form
     success: true,
     message: "Totais básicos recalculados.",
     totals
+  };
+}
+
+export async function recalculateFinalSimulationTaxesAction(formData: FormData) {
+  const adminUser = await requireAdminUser();
+  const simulationId = String(formData.get("simulationId") ?? "").trim();
+
+  if (!simulationId) {
+    return {
+      success: false,
+      message: "Informe a simulação."
+    };
+  }
+
+  const adminSupabase = createAdminClient();
+  const editable = await getEditableSimulation(adminSupabase, simulationId);
+
+  if (editable.error || !editable.simulation) {
+    return {
+      success: false,
+      message: editable.error ?? unexpectedSaveMessage
+    };
+  }
+
+  const input = await getFinalSimulationTaxPreviewInput(simulationId);
+
+  if (!input) {
+    return {
+      success: false,
+      message: "Simulação final não encontrada."
+    };
+  }
+
+  const preview = calculateFinalSimulationTaxPreview(input);
+
+  if (hasCriticalTaxPreviewWarnings(preview)) {
+    return {
+      success: false,
+      message: "Não foi possível recalcular impostos. Revise produtos, FOB e câmbio antes de continuar.",
+      preview
+    };
+  }
+
+  const taxLineRows = buildTaxLineRows(simulationId, preview, input);
+  const { error: deleteError } = await adminSupabase
+    .from("simulation_tax_lines")
+    .delete()
+    .eq("simulation_id", simulationId)
+    .eq("is_manual_adjustment", false);
+
+  if (deleteError) {
+    return {
+      success: false,
+      message: unexpectedSaveMessage
+    };
+  }
+
+  if (taxLineRows.length > 0) {
+    const { error: insertError } = await adminSupabase.from("simulation_tax_lines").insert(taxLineRows);
+
+    if (insertError) {
+      return {
+        success: false,
+        message: unexpectedSaveMessage
+      };
+    }
+  }
+
+  const { error: updateError } = await adminSupabase
+    .from("final_simulations")
+    .update({
+      customs_value_brl: preview.totals.total_customs_base_brl,
+      total_taxes_brl: preview.totals.net_taxes_brl,
+      total_cost_brl: preview.totals.estimated_total_cost_brl,
+      calculation_snapshot: {
+        formula_version: "tax-preview-v1",
+        scope: "tax_recalculation",
+        totals: preview.totals,
+        warnings: preview.warnings,
+        meta: preview.meta,
+        persisted_tax_lines_count: taxLineRows.length
+      },
+      updated_by: adminUser.id
+    })
+    .eq("id", simulationId);
+
+  if (updateError) {
+    return {
+      success: false,
+      message: unexpectedSaveMessage
+    };
+  }
+
+  revalidateFinalSimulationPaths(simulationId);
+
+  return {
+    success: true,
+    message: "Impostos V1 recalculados.",
+    preview
   };
 }
 
