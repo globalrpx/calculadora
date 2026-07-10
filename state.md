@@ -59,6 +59,39 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Fornecedor opcional na cotacao do cliente
+
+- Criado/garantido usuario cliente de teste no Supabase Dev:
+  - e-mail `cliente1@globalrpx.com`;
+  - role `client`;
+  - status `active`;
+  - vinculado a `clients` e `app_users` usando Supabase Auth nativo.
+- Ajustada a calculadora/cotacao da area do cliente para deixar fornecedor totalmente opcional:
+  - nome do fornecedor opcional;
+  - e-mail do fornecedor opcional;
+  - telefone do fornecedor opcional;
+  - foto/cartao/arquivo de contato do fornecedor opcional.
+- Mantidas obrigatoriedades de nome do produto, HS/NCM, FOB e quantidade.
+- Mantida validacao de formato apenas quando o e-mail do fornecedor for preenchido.
+- Mantido upload de arquivos de fornecedor quando enviados.
+- Atualizada `docs/especificacao-calculadora.md` para remover a regra antiga de fornecedor obrigatorio.
+- Nao houve alteracao em banco, migrations, RLS, auth/middleware/permissoes, Storage, admin, Simulacoes Finais, calculo, `package.json`, producao ou `temp/`.
+
+Validado nesta etapa:
+
+- Criado/validado login de `cliente1@globalrpx.com` no Supabase Dev.
+- Browser no Supabase Dev/local:
+  - cotacao com fornecedor totalmente vazio gerou resultado sem erro de fornecedor;
+  - cotacao com apenas nome do fornecedor gerou resultado;
+  - cotacao com apenas e-mail valido do fornecedor gerou resultado;
+  - cotacao com apenas telefone do fornecedor gerou resultado;
+  - produto e HS/NCM vazios continuam bloqueados;
+  - e-mail de fornecedor invalido continua bloqueado quando preenchido.
+- Banco Dev:
+  - cotações de teste persistidas em `quotes` com fornecedor nulo ou parcial, conforme preenchimento.
+- Upload de fornecedor nao foi alterado; o input e o fluxo de arquivos seguem existentes, mas a selecao de arquivo nao foi exercitada pelo browser automatizado nesta rodada.
+- `git diff --check`, `npm run typecheck` e `npm run lint` passaram.
+
 ### 2026-07-10 - Refino da lista de documentos gerados
 
 - Refinada a secao `Documentos gerados` para suportar multiplos tipos com mais clareza operacional.

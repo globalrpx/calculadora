@@ -58,9 +58,9 @@ Subareas:
 3. Cliente inicia uma nova cotacao.
 4. Sistema carrega parametros ativos definidos no admin RPX.
 5. Cliente informa os dados principais do produto.
-6. Cliente identifica o fornecedor:
-   - Informando nome, e-mail e telefone; ou
-   - Anexando uma foto do cartao de visitas ou contato do fornecedor.
+6. Cliente pode informar dados do fornecedor, se tiver:
+   - Nome, e-mail e telefone; e/ou
+   - Foto do cartao de visitas ou contato do fornecedor.
 7. Cliente pode anexar uma ou mais imagens do produto.
 8. Cliente clica em `Fazer calculo`.
 9. Sistema valida os dados obrigatorios e calcula:
@@ -104,13 +104,11 @@ Foto do cartao ou contato do fornecedor
 
 Regras:
 
-- A cotacao deve registrar alguma forma de identificacao do fornecedor.
-- O cliente deve:
-  - Preencher nome, e-mail e telefone; ou
-  - Anexar pelo menos uma foto do cartao de visitas ou contato.
-- Se escolher preenchimento manual, os tres campos devem ser informados.
+- Todos os campos de fornecedor sao opcionais nesta fase.
+- O cliente pode preencher dados parciais do fornecedor sem bloquear a cotacao.
+- Se o e-mail do fornecedor for informado, deve ter formato valido.
 - Foto do contato pode registrar cartao de visita, anotacao, pagina de caderno ou outra referencia recebida do fornecedor.
-- Nesta fase, validar apenas a existencia e o formato de imagem do anexo.
+- Nesta fase, validar apenas formato e tamanho quando houver anexo.
 - OCR de cartoes e extracao automatica de dados ficam para uma etapa futura.
 - OCR futuro deve considerar conteudo em portugues, ingles, mandarim e outros idiomas.
 - Dados e anexos do fornecedor devem permanecer associados a cotacao no historico.
@@ -173,7 +171,7 @@ O fator RPX padrao e administrado por `config.import_factor`. Os demais valores 
 
 - Totalizadores nao devem aparecer durante o preenchimento inicial.
 - O cliente deve clicar em `Fazer calculo`.
-- Antes do calculo, validar produto, valores e identificacao do fornecedor.
+- Antes do calculo, validar produto, HS/NCM e valores obrigatorios.
 - As etapas devem funcionar como uma sanfona sequencial:
   - Etapa 1 aberta e Etapa 2 fechada no inicio.
   - Ao calcular, Etapa 1 recolhe e Etapa 2 abre.
@@ -288,7 +286,7 @@ Regras atuais da calculadora:
 - Cada arquivo final deve ter ate 6MB.
 - PDF e permitido sem compressao.
 - DOC, XLS, ZIP, SVG, JS e demais tipos fora da allowlist sao bloqueados nesta tela.
-- A validacao do fornecedor aceita nome, e-mail e telefone completos ou pelo menos um arquivo valido em `quote_supplier_contact`.
+- Dados do fornecedor sao opcionais; quando enviados, devem ser preservados na cotacao e nos uploads de contexto `quote_supplier_contact`.
 - Signed URLs sao geradas apenas sob demanda para visualizacao/download.
 - `product_image_urls` e `supplier_contact_image_urls` ficam como campos legados e nao sao a fonte principal da nova implementacao.
 

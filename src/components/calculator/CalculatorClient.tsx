@@ -367,15 +367,7 @@ export function CalculatorClient({
       return "Informe valores maiores que zero para FOB e quantidade.";
     }
 
-    const hasSupplierDetails =
-      supplierName.trim() && supplierEmail.trim() && supplierPhone.trim();
-    const hasSupplierCard = supplierContactFiles.length > 0;
-
-    if (!hasSupplierDetails && !hasSupplierCard) {
-      return "Informe nome, e-mail e telefone do fornecedor ou anexe ao menos uma foto/cartão de contato do fornecedor.";
-    }
-
-    if (hasSupplierDetails && !/^\S+@\S+\.\S+$/.test(supplierEmail.trim())) {
+    if (supplierEmail.trim() && !/^\S+@\S+\.\S+$/.test(supplierEmail.trim())) {
       return "Informe um e-mail válido para o fornecedor.";
     }
 
@@ -716,14 +708,14 @@ export function CalculatorClient({
               <FormField label="Quantidade">
                 <NumberInput step="1" value={input.quantity} onChange={(event) => updateInput("quantity", event.target.value)} />
               </FormField>
-              <FormField label="Nome do fornecedor">
+              <FormField label="Nome do fornecedor (opcional)">
                 <TextInput
                   value={supplierName}
                   onChange={(event) => updateSupplierField(setSupplierName, event.target.value)}
                   placeholder="Ex: Shenzhen ABC Trading"
                 />
               </FormField>
-              <FormField label="E-mail do fornecedor">
+              <FormField label="E-mail do fornecedor (opcional)">
                 <TextInput
                   type="email"
                   value={supplierEmail}
@@ -731,7 +723,7 @@ export function CalculatorClient({
                   placeholder="contato@fornecedor.com"
                 />
               </FormField>
-              <FormField label="Telefone do fornecedor">
+              <FormField label="Telefone do fornecedor (opcional)">
                 <TextInput
                   type="tel"
                   value={supplierPhone}
@@ -770,8 +762,8 @@ export function CalculatorClient({
                 ) : null}
               </FormField>
               <FormField
-                label="Foto do cartão ou contato do fornecedor"
-                help="Anexe cartão de visita, foto do estande ou outra referência de contato do fornecedor. Até 5 arquivos."
+                label="Foto do cartão ou contato do fornecedor (opcional)"
+                help="Dados do fornecedor são opcionais. Se tiver, anexe cartão de visita, foto do estande ou outra referência para ajudar a equipe na análise. Até 5 arquivos."
               >
                 <input
                   className="w-full min-w-0 text-sm text-slate-600 file:mr-3 file:min-h-10 file:rounded-md file:border-0 file:bg-rpx-sky file:px-3 file:text-sm file:font-bold file:text-rpx-blue"
@@ -818,7 +810,7 @@ export function CalculatorClient({
                 </div>
               ) : null}
               <div className="mt-6 rounded-md border border-rpx-blue/15 bg-rpx-sky p-4 text-sm leading-6 text-rpx-blue">
-                Para identificar o fornecedor, preencha nome, e-mail e telefone ou anexe uma foto do cartão de visitas.
+                Dados do fornecedor são opcionais. Se tiver, informe para ajudar a equipe na análise.
               </div>
               {validationMessage ? (
                 <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
