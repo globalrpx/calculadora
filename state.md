@@ -59,6 +59,51 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Relatorio interno simples da Simulacao Final
+
+- Implementada a geracao de PDF de relatorio interno a partir exclusivamente de `final_simulations.internal_snapshot`.
+- Criado gerador V1 `internal-report-generator.ts`, com blocos internos de:
+  - cabecalho;
+  - dados principais;
+  - produtos;
+  - despesas;
+  - linhas fiscais;
+  - parametrizacao fiscal;
+  - totais/calculo;
+  - warnings, limitacoes e pendencias.
+- Criada action admin `generateAndStoreFinalSimulationInternalReportAction`.
+- O relatorio interno:
+  - exige admin;
+  - nao recalcula impostos;
+  - nao consulta dados vivos para preencher o documento;
+  - bloqueia geracao sem `internal_snapshot` valido;
+  - salva no bucket privado `app-uploads`;
+  - usa path `final-simulations/{simulationId}/internal-report/{documentId}.pdf`;
+  - registra `simulation_documents.document_type = internal_detailed_report`;
+  - grava o `internal_snapshot` usado em `simulation_documents.snapshot_json`.
+- A rota segura de documentos passou a servir PDFs salvos de `client_pdf` e `internal_detailed_report`.
+- A secao `Documentos gerados` passou a listar PDF cliente e relatorio interno, mantendo `Mais recente` no primeiro item da lista geral.
+- Adicionado painel `Relatorio interno` no detalhe da Simulacao Final e no preview cliente.
+- Atualizados `docs/ROUTES_AND_SCREENS.md` e `docs/DATABASE_MODEL.md`.
+- Nao houve migration, bucket novo, alteracao de RLS, auth, middleware, permissoes, calculo fiscal, `package.json`, producao ou `temp/`.
+
+Validado nesta etapa:
+
+- `simulation_documents.document_type` ja aceitava `internal_detailed_report`; nao foi necessaria migration.
+- Browser no Supabase Dev com a simulacao `0358251e-4d4a-4709-b522-97ef94fe73be`:
+  - geracao do relatorio interno abriu modal sem sair da pagina;
+  - `Baixar PDF` apontou para a rota segura com `?download=1`;
+  - `Abrir em nova aba` manteve `target="_blank"`;
+  - o historico exibiu relatorio interno e PDF cliente antigo;
+  - uma segunda geracao criou novo documento, sem sobrescrever o anterior.
+- Supabase Dev:
+  - 2 registros `internal_detailed_report` criados para a simulacao completa;
+  - 1 registro `client_pdf` existente foi preservado;
+  - arquivos encontrados no bucket `app-uploads`;
+  - `snapshot_json` dos relatorios internos contem `internal_snapshot`;
+  - simulacao sem `internal_snapshot` exibiu erro amigavel e permaneceu com 0 documentos.
+- PDF interno salvo validado com `pdfinfo`: arquivo PDF reconhecido, 2 paginas, A4 horizontal.
+
 ### 2026-07-10 - Responsividade dos cards de documentos da Simulacao Final
 
 - Corrigido o layout dos cards na secao `Documentos gerados`.

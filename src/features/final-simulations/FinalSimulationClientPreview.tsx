@@ -3,6 +3,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { FinalSimulationClientPdfPanel } from "./FinalSimulationClientPdfPanel";
 import { FinalSimulationDocumentSnapshotsPanel } from "./FinalSimulationDocumentSnapshotsPanel";
+import { FinalSimulationInternalReportPanel } from "./FinalSimulationInternalReportPanel";
 import type { ClientReportData, ClientReportProduct, ClientReportTaxTotals } from "./client-report-builder";
 
 const statusLabels: Record<string, string> = {
@@ -127,6 +128,7 @@ export function FinalSimulationClientPreview({ report }: { report: ClientReportD
         internalSnapshotGeneratedAt={report.meta.internalSnapshotGeneratedAt}
       />
       <FinalSimulationClientPdfPanel simulationId={report.simulation.id} />
+      <FinalSimulationInternalReportPanel simulationId={report.simulation.id} />
 
       <div className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
         <div>

@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { calculateFinalSimulationTaxPreview } from "@/features/final-simulations/calculation-engine";
 import { FinalSimulationDocumentsSection } from "@/features/final-simulations/FinalSimulationDocumentsSection";
 import { FinalSimulationFiscalSection } from "@/features/final-simulations/FinalSimulationFiscalSection";
+import { FinalSimulationInternalReportPanel } from "@/features/final-simulations/FinalSimulationInternalReportPanel";
 import { FinalSimulationItemsSection } from "@/features/final-simulations/FinalSimulationItemsSection";
 import { FinalSimulationTaxPreviewSection } from "@/features/final-simulations/FinalSimulationTaxPreviewSection";
 import { SimulationExpensesSection } from "@/features/final-simulations/SimulationExpensesSection";
@@ -276,6 +277,8 @@ export default async function FinalSimulationDetailPage({
               <DetailItem label="Custo total BRL" value={formatMoney(simulation.total_cost_brl)} />
             </dl>
           </Card>
+
+          <FinalSimulationInternalReportPanel simulationId={simulation.id} />
 
           <FinalSimulationDocumentsSection documents={documents} />
         </div>

@@ -19,6 +19,11 @@ import {
   buildFinalSimulationClientPdfFilename,
   isUsableFinalSimulationPublicSnapshot
 } from "./client-pdf-generator";
+import {
+  buildFinalSimulationInternalReportFilename,
+  buildFinalSimulationInternalReportPdf,
+  isUsableFinalSimulationInternalSnapshot
+} from "./internal-report-generator";
 import { expenseBehaviorLabels } from "./expense-labels";
 import {
   createExpensePresetItemSchema,
@@ -1220,6 +1225,103 @@ export async function generateAndStoreFinalSimulationClientPdfAction(
   return {
     success: true,
     message: "PDF cliente gerado e salvo.",
+    documentId,
+    viewUrl: `/admin/simulacoes-finais/${simulation.id}/documentos/${documentId}/pdf`,
+    downloadUrl: `/admin/simulacoes-finais/${simulation.id}/documentos/${documentId}/pdf?download=1`,
+    fileName
+  };
+}
+
+export async function generateAndStoreFinalSimulationInternalReportAction(
+  _previousState: { success: boolean; message?: string; documentId?: string; viewUrl?: string; downloadUrl?: string; fileName?: string },
+  formData: FormData
+) {
+  const adminUser = await requireAdminUser();
+  const simulationId = String(formData.get("simulationId") ?? "").trim();
+
+  if (!simulationId) {
+    return {
+      success: false,
+      message: "Informe a simulação."
+    };
+  }
+
+  const adminSupabase = createAdminClient();
+  const { data: simulation, error: simulationError } = await adminSupabase
+    .from("final_simulations")
+    .select("id, internal_snapshot")
+    .eq("id", simulationId)
+    .maybeSingle();
+
+  if (simulationError || !simulation) {
+    return {
+      success: false,
+      message: "Simulação final não encontrada."
+    };
+  }
+
+  if (!isUsableFinalSimulationInternalSnapshot(simulation.internal_snapshot)) {
+    return {
+      success: false,
+      message: "Gere os snapshots dos documentos antes de gerar o relatório interno."
+    };
+  }
+
+  const documentId = crypto.randomUUID();
+  const fileName = buildFinalSimulationInternalReportFilename(simulation.internal_snapshot, simulation.id);
+  const storagePath = `final-simulations/${simulation.id}/internal-report/${documentId}.pdf`;
+  const pdf = buildFinalSimulationInternalReportPdf(simulation.internal_snapshot, simulation.id);
+  const generatedAt = new Date().toISOString();
+  const snapshotJson = {
+    internal_snapshot: simulation.internal_snapshot,
+    metadata: {
+      storage: {
+        bucket: uploadsBucket,
+        path: storagePath,
+        mime_type: "application/pdf",
+        size_bytes: pdf.byteLength
+      },
+      generated_at: generatedAt,
+      generated_by: adminUser.id
+    }
+  };
+
+  const { error: uploadError } = await adminSupabase.storage.from(uploadsBucket).upload(storagePath, pdf, {
+    contentType: "application/pdf",
+    upsert: false
+  });
+
+  if (uploadError) {
+    return {
+      success: false,
+      message: "Não foi possível salvar o relatório interno no Storage."
+    };
+  }
+
+  const { error: documentError } = await adminSupabase.from("simulation_documents").insert({
+    id: documentId,
+    simulation_id: simulation.id,
+    document_type: "internal_detailed_report",
+    file_name: fileName,
+    file_path: storagePath,
+    snapshot_json: snapshotJson,
+    generated_by: adminUser.id,
+    generated_at: generatedAt
+  });
+
+  if (documentError) {
+    await adminSupabase.storage.from(uploadsBucket).remove([storagePath]);
+    return {
+      success: false,
+      message: "Não foi possível registrar o relatório interno gerado."
+    };
+  }
+
+  revalidateFinalSimulationPaths(simulation.id);
+
+  return {
+    success: true,
+    message: "Relatório interno gerado e salvo.",
     documentId,
     viewUrl: `/admin/simulacoes-finais/${simulation.id}/documentos/${documentId}/pdf`,
     downloadUrl: `/admin/simulacoes-finais/${simulation.id}/documentos/${documentId}/pdf?download=1`,

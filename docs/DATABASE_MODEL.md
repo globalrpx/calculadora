@@ -438,9 +438,13 @@ Observacao: `pricing_excel` fica preparado no modelo, mas a funcionalidade esta 
 Uso atual:
 
 - PDF cliente salvo usa `document_type = client_pdf`.
-- O arquivo fica no bucket privado `app-uploads`, em path no formato `final-simulations/{simulationId}/client-pdf/{documentId}.pdf`.
-- Como `uploads` ainda referencia apenas a tabela legada `simulations`, o PDF cliente de Simulacoes Finais e registrado diretamente em `simulation_documents.file_path`, sem `uploads`.
+- Relatorio interno simples usa `document_type = internal_detailed_report`.
+- Os arquivos ficam no bucket privado `app-uploads`:
+  - PDF cliente: `final-simulations/{simulationId}/client-pdf/{documentId}.pdf`;
+  - relatorio interno: `final-simulations/{simulationId}/internal-report/{documentId}.pdf`.
+- Como `uploads` ainda referencia apenas a tabela legada `simulations`, documentos gerados de Simulacoes Finais sao registrados diretamente em `simulation_documents.file_path`, sem `uploads`.
 - O `public_snapshot` usado para gerar o PDF e gravado em `simulation_documents.snapshot_json`.
+- O `internal_snapshot` usado para gerar o relatorio interno e gravado em `simulation_documents.snapshot_json`.
 - A visualizacao/download passa por rota server-side autenticada; nao ha URL publica.
 
 Pendencia conhecida: como `uploads` ainda exige dono entre `simulation_id` e `quote_id`, uma migration posterior deve avaliar `uploads.final_simulation_id` e ajuste do CHECK antes de usar `uploads` como dono direto de documentos de Simulacao Final.

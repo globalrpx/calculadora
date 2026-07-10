@@ -47,7 +47,7 @@ export function FinalSimulationDocumentModal({
         <div className="min-h-0 flex-1 bg-slate-100 p-3">
           <object data={document.viewUrl} type="application/pdf" className="h-[70vh] w-full rounded-md bg-white">
             <iframe
-              title="Pré-visualização do PDF cliente"
+              title="Pré-visualização do documento"
               src={document.viewUrl}
               className="h-[70vh] w-full rounded-md bg-white"
             />

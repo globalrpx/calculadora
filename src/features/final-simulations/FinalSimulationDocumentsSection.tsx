@@ -85,14 +85,13 @@ export function FinalSimulationDocumentsSection({
   documents: FinalSimulationDocumentRow[];
 }) {
   const [previewDocument, setPreviewDocument] = useState<FinalSimulationDocumentRow | null>(null);
-  const clientPdfDocuments = documents.filter((document) => document.document_type === "client_pdf");
 
   return (
     <>
       <Card title="Documentos gerados" description="Histórico de documentos salvos para esta simulação, do mais recente para o mais antigo.">
-        {clientPdfDocuments.length > 0 ? (
+        {documents.length > 0 ? (
           <div className="mt-4 space-y-3">
-            {clientPdfDocuments.map((document, index) => (
+            {documents.map((document, index) => (
               <article
                 key={document.id}
                 className={
@@ -127,7 +126,7 @@ export function FinalSimulationDocumentsSection({
           </div>
         ) : (
           <div className="mt-4 rounded-md border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
-            Nenhum PDF cliente gerado ainda.
+            Nenhum documento gerado ainda.
           </div>
         )}
       </Card>

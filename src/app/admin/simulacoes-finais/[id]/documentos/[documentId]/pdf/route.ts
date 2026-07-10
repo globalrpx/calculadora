@@ -18,7 +18,7 @@ export async function GET(
     .select("id, simulation_id, document_type, file_name, file_path")
     .eq("id", documentId)
     .eq("simulation_id", id)
-    .eq("document_type", "client_pdf")
+    .in("document_type", ["client_pdf", "internal_detailed_report"])
     .maybeSingle();
 
   if (error || !document?.file_path) {
