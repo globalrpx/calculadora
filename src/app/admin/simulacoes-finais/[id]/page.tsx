@@ -4,12 +4,14 @@ import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { calculateFinalSimulationTaxPreview } from "@/features/final-simulations/calculation-engine";
+import { FinalSimulationDocumentsSection } from "@/features/final-simulations/FinalSimulationDocumentsSection";
 import { FinalSimulationFiscalSection } from "@/features/final-simulations/FinalSimulationFiscalSection";
 import { FinalSimulationItemsSection } from "@/features/final-simulations/FinalSimulationItemsSection";
 import { FinalSimulationTaxPreviewSection } from "@/features/final-simulations/FinalSimulationTaxPreviewSection";
 import { SimulationExpensesSection } from "@/features/final-simulations/SimulationExpensesSection";
 import {
   getFinalSimulationById,
+  listFinalSimulationDocuments,
   getFinalSimulationFiscalSettings,
   getFinalSimulationItems,
   getFinalSimulationTaxPreviewInput,
@@ -150,7 +152,8 @@ export default async function FinalSimulationDetailPage({
     entryInvoiceOptions,
     exitInvoiceOptions,
     taxPreviewInput,
-    taxLines
+    taxLines,
+    documents
   ] = await Promise.all([
     getFinalSimulationItems(simulation.id),
     ncmSearch.length >= 2 ? searchNcmCodes(ncmSearch, 20) : Promise.resolve([]),
@@ -160,7 +163,8 @@ export default async function FinalSimulationDetailPage({
     listInvoiceParametrizationOptions("entrada"),
     listInvoiceParametrizationOptions("saida"),
     getFinalSimulationTaxPreviewInput(simulation.id),
-    getSimulationTaxLines(simulation.id)
+    getSimulationTaxLines(simulation.id),
+    listFinalSimulationDocuments(simulation.id)
   ]);
   const canEdit = !isFinalSimulationLocked(simulation.status);
   const taxPreview = taxPreviewInput ? calculateFinalSimulationTaxPreview(taxPreviewInput) : null;
@@ -273,15 +277,7 @@ export default async function FinalSimulationDetailPage({
             </dl>
           </Card>
 
-          <Card title="Documentos e relatórios" description="Preview cliente e PDF temporário a partir do snapshot público.">
-            <p className="mt-4 text-sm leading-6 text-slate-600">
-              Gere os snapshots dos documentos no preview cliente antes de abrir o PDF. O arquivo ainda não é salvo em
-              Storage nem registrado como documento definitivo.
-            </p>
-            <ButtonLink href={`/admin/simulacoes-finais/${simulation.id}/preview-cliente`} variant="secondary" className="mt-4">
-              Abrir preview cliente
-            </ButtonLink>
-          </Card>
+          <FinalSimulationDocumentsSection documents={documents} />
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import type {
   ExpensePresetTransportMode,
   ExpensePresetWithItems,
   ExpenseType,
+  FinalSimulationDocumentRow,
   FinalSimulationItemRow,
   FinalSimulationListFilters,
   FinalSimulationListRow,
@@ -129,6 +130,74 @@ export async function getFinalSimulationItems(simulationId: string): Promise<Fin
 
 function hasJsonSnapshot(value: unknown) {
   return Boolean(value && typeof value === "object" && Object.keys(value).length > 0);
+}
+
+function readStorageMetadata(snapshotJson: Record<string, unknown>) {
+  const metadata = snapshotJson.metadata;
+  const storage = metadata && typeof metadata === "object" ? (metadata as Record<string, unknown>).storage : null;
+
+  if (!storage || typeof storage !== "object") {
+    return {
+      bucket: null,
+      path: null,
+      mimeType: null,
+      sizeBytes: null
+    };
+  }
+
+  const values = storage as Record<string, unknown>;
+  const sizeBytes = values.size_bytes;
+
+  return {
+    bucket: typeof values.bucket === "string" ? values.bucket : null,
+    path: typeof values.path === "string" ? values.path : null,
+    mimeType: typeof values.mime_type === "string" ? values.mime_type : null,
+    sizeBytes: typeof sizeBytes === "number" && Number.isFinite(sizeBytes) ? sizeBytes : null
+  };
+}
+
+export async function listFinalSimulationDocuments(simulationId: string): Promise<FinalSimulationDocumentRow[]> {
+  await requireRole("admin");
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("simulation_documents")
+    .select("*")
+    .eq("simulation_id", simulationId)
+    .order("generated_at", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  const rows = (data ?? []) as Array<Omit<FinalSimulationDocumentRow, "generated_by_name" | "generated_by_email" | "storage_bucket" | "storage_path" | "mime_type" | "size_bytes">>;
+  const generatedByIds = Array.from(new Set(rows.map((row) => row.generated_by).filter(Boolean))) as string[];
+  const usersById = new Map<string, { name: string | null; email: string | null }>();
+
+  if (generatedByIds.length > 0) {
+    const { data: users } = await supabase.from("app_users").select("id, name, email").in("id", generatedByIds);
+
+    for (const user of users ?? []) {
+      usersById.set(String(user.id), {
+        name: user.name ? String(user.name) : null,
+        email: user.email ? String(user.email) : null
+      });
+    }
+  }
+
+  return rows.map((row) => {
+    const snapshotJson = row.snapshot_json ?? {};
+    const storage = readStorageMetadata(snapshotJson);
+    const generatedBy = row.generated_by ? usersById.get(row.generated_by) : null;
+
+    return {
+      ...row,
+      snapshot_json: snapshotJson,
+      generated_by_name: generatedBy?.name ?? null,
+      generated_by_email: generatedBy?.email ?? null,
+      storage_bucket: storage.bucket,
+      storage_path: storage.path ?? row.file_path,
+      mime_type: storage.mimeType,
+      size_bytes: storage.sizeBytes
+    };
+  });
 }
 
 export async function getFinalSimulationTaxPreviewInput(

@@ -278,6 +278,29 @@ export type NcmTaxProfileRow = {
   updated_at: string;
 };
 
+export type FinalSimulationDocumentType = "client_pdf" | "internal_detailed_report" | "pricing_excel";
+
+export type FinalSimulationDocumentRow = {
+  id: string;
+  simulation_id: string;
+  version_id: string | null;
+  upload_id: string | null;
+  document_type: FinalSimulationDocumentType;
+  file_name: string;
+  file_path: string | null;
+  version_number: number | null;
+  snapshot_json: Record<string, unknown>;
+  generated_by: string | null;
+  generated_by_name: string | null;
+  generated_by_email: string | null;
+  generated_at: string;
+  created_at: string;
+  storage_bucket: string | null;
+  storage_path: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+};
+
 export type FinalSimulationMainDataValues = {
   simulationId?: string;
   customerId?: string;

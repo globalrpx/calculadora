@@ -59,6 +59,45 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Historico de documentos gerados da Simulacao Final
+
+- Implementada query `listFinalSimulationDocuments(simulationId)`.
+- A query usa `simulation_documents` como fonte do historico de documentos gerados.
+- O gerador/usuario e enriquecido a partir de `app_users`, quando disponivel.
+- O tamanho, bucket, mime type e path sao lidos de `simulation_documents.snapshot_json.metadata.storage`.
+- Criado componente `FinalSimulationDocumentsSection` no detalhe da Simulacao Final.
+- A secao exibe:
+  - card de acesso rapido ao ultimo PDF cliente gerado;
+  - historico de PDFs cliente, ordenado do mais recente para o mais antigo;
+  - badges `Mais recente` e `PDF cliente`;
+  - estado vazio `Nenhum PDF cliente gerado ainda.`;
+  - acoes por documento: `Visualizar`, `Baixar PDF`, `Abrir em nova aba`.
+- Extraida modal reutilizavel `FinalSimulationDocumentModal`, usada tanto no fluxo de geracao quanto no historico.
+- Visualizar/baixar usa o PDF salvo via rota segura `/admin/simulacoes-finais/[id]/documentos/[documentId]/pdf`; nao regenera PDF.
+- Atualizado `docs/ROUTES_AND_SCREENS.md`.
+- Nao houve migration, bucket novo, RLS, auth, middleware, permissao, calculo fiscal, recalc automatico, layout interno do PDF, `package.json`, producao, `temp/`, remocao ou sobrescrita de documentos antigos.
+
+Validado nesta etapa:
+
+- `git diff --check`: sem erros.
+- `npm run typecheck`: passou.
+- `npm run lint`: passou sem warnings ou erros.
+- Browser no Supabase Dev:
+  - simulacao sem PDF exibiu estado vazio em `Ultimo PDF cliente` e `Documentos gerados`;
+  - simulacao com PDFs exibiu card `Ultimo PDF cliente`;
+  - historico exibiu os PDFs cliente do mais recente para o mais antigo;
+  - badge `Mais recente` apareceu no PDF atual;
+  - acoes `Visualizar`, `Baixar PDF` e `Abrir em nova aba` apareceram para cada documento;
+  - `Visualizar` abriu modal usando o PDF salvo;
+  - `Abrir em nova aba` apontou para a rota segura do PDF salvo;
+  - `Baixar PDF` apontou para a rota segura com `?download=1`;
+  - o navegador embutido nao emitiu evento de download, mas a rota server-side usa `Content-Disposition: attachment` quando recebe `?download=1`.
+- Supabase Dev:
+  - a simulacao testada manteve 3 documentos `client_pdf`;
+  - os 3 documentos possuem paths distintos;
+  - visualizar documento salvo nao criou novo registro;
+  - simulacao sem PDF permaneceu sem registros `client_pdf`.
+
 ### 2026-07-10 - PDF cliente salvo em Storage e modal de preview
 
 - Implementada a action admin `generateAndStoreFinalSimulationClientPdfAction`.
