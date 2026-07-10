@@ -59,6 +59,33 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Responsividade dos cards de documentos da Simulacao Final
+
+- Corrigido o layout dos cards na secao `Documentos gerados`.
+- A causa do layout quebrado era o titulo do arquivo dentro de um container flex/grid sem largura real, combinado com quebra agressiva anterior, o que fazia o filename ficar ilegivel em colunas estreitas.
+- O card agora separa:
+  - nome do arquivo com largura controlada e `truncate`;
+  - badges `Mais recente` e `PDF cliente`;
+  - acoes em coluna quando o card esta estreito;
+  - metadados em texto menor abaixo do bloco principal.
+- As acoes `Visualizar`, `Baixar PDF` e `Abrir em nova aba` foram mantidas.
+- Nao houve alteracao em queries, actions, rotas, Storage, geracao de PDF, banco, migration, calculo, `package.json`, producao ou `temp/`.
+
+Validado nesta etapa:
+
+- Browser no Supabase Dev:
+  - secao `Documentos gerados` exibida sem o card `Ultimo PDF cliente`;
+  - filename deixou de quebrar letra por letra;
+  - botoes ficaram legiveis e dentro do card;
+  - badge `Mais recente` permaneceu apenas no primeiro documento;
+  - documentos antigos continuaram listados;
+  - `Visualizar` abriu modal com a rota segura do PDF;
+  - `Baixar PDF` manteve a rota segura com `?download=1`;
+  - `Abrir em nova aba` manteve `target="_blank"`;
+  - viewport desktop sem overflow horizontal;
+  - viewport mobile 390x844 sem overflow horizontal;
+  - simulacao sem documentos exibiu o estado vazio.
+
 ### 2026-07-10 - Ajuste visual do historico de documentos da Simulacao Final
 
 - Removido o card separado `Ultimo PDF cliente` do detalhe da Simulacao Final.

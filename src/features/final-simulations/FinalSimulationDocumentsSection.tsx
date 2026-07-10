@@ -57,13 +57,13 @@ function DocumentActions({
   const viewUrl = `/admin/simulacoes-finais/${document.simulation_id}/documentos/${document.id}/pdf`;
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-      <Button type="button" variant="secondary" onClick={() => onPreview(document)}>
+    <div className="grid w-full grid-cols-1 gap-2 2xl:w-auto 2xl:flex 2xl:flex-shrink-0 2xl:items-center 2xl:justify-end">
+      <Button type="button" variant="secondary" className="w-full whitespace-nowrap 2xl:w-auto" onClick={() => onPreview(document)}>
         Visualizar
       </Button>
       <a
         href={`${viewUrl}?download=1`}
-        className="inline-flex min-h-11 items-center justify-center rounded-md border border-rpx-blue/20 bg-white px-4 py-2 text-sm font-semibold text-rpx-blue transition hover:bg-rpx-sky"
+        className="inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-md border border-rpx-blue/20 bg-white px-4 py-2 text-sm font-semibold text-rpx-blue transition hover:bg-rpx-sky 2xl:w-auto"
       >
         Baixar PDF
       </a>
@@ -71,7 +71,7 @@ function DocumentActions({
         href={viewUrl}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex min-h-11 items-center justify-center rounded-md px-4 py-2 text-sm font-semibold text-rpx-blue transition hover:bg-rpx-sky"
+        className="inline-flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-md px-4 py-2 text-sm font-semibold text-rpx-blue transition hover:bg-rpx-sky 2xl:w-auto"
       >
         Abrir em nova aba
       </a>
@@ -91,7 +91,7 @@ export function FinalSimulationDocumentsSection({
     <>
       <Card title="Documentos gerados" description="Histórico de documentos salvos para esta simulação, do mais recente para o mais antigo.">
         {clientPdfDocuments.length > 0 ? (
-          <div className="mt-4 grid gap-3">
+          <div className="mt-4 space-y-3">
             {clientPdfDocuments.map((document, index) => (
               <article
                 key={document.id}
@@ -101,32 +101,27 @@ export function FinalSimulationDocumentsSection({
                     : "rounded-md border border-slate-200 bg-white p-4"
                 }
               >
-                <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <h3 className="min-w-0 max-w-full break-words text-sm font-semibold text-rpx-ink">
+                <div className="flex min-w-0 flex-col gap-3 2xl:flex-row 2xl:items-start 2xl:justify-between">
+                  <div className="w-full min-w-0 flex-1">
+                    <div className="w-full min-w-0">
+                      <h3 className="block w-full max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold leading-5 text-rpx-ink">
                         {document.file_name}
                       </h3>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
                       {index === 0 ? <StatusBadge variant="info">Mais recente</StatusBadge> : null}
                       <StatusBadge variant="neutral">{documentTypeLabel(document.document_type)}</StatusBadge>
                     </div>
-                    <dl className="mt-3 grid gap-3 text-sm text-slate-700 sm:grid-cols-3">
-                      <div className="min-w-0">
-                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gerado em</dt>
-                        <dd className="mt-1 break-words">{formatDateTime(document.generated_at)}</dd>
-                      </div>
-                      <div className="min-w-0">
-                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gerado por</dt>
-                        <dd className="mt-1 break-words">{document.generated_by_name ?? document.generated_by_email ?? "-"}</dd>
-                      </div>
-                      <div className="min-w-0">
-                        <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tamanho</dt>
-                        <dd className="mt-1">{formatFileSize(document.size_bytes)}</dd>
-                      </div>
-                    </dl>
                   </div>
                   <DocumentActions document={document} onPreview={setPreviewDocument} />
                 </div>
+                <p className="mt-3 text-xs leading-5 text-slate-600">
+                  Gerado em {formatDateTime(document.generated_at)}
+                  {document.generated_by_name || document.generated_by_email
+                    ? ` por ${document.generated_by_name ?? document.generated_by_email}`
+                    : ""}
+                  {document.size_bytes ? ` • ${formatFileSize(document.size_bytes)}` : ""}
+                </p>
               </article>
             ))}
           </div>
