@@ -59,6 +59,21 @@ Observacao: o preview em `scripts/preview-server.mjs` continua disponivel. As de
 
 ## Entregue ate agora
 
+### 2026-07-10 - Indicacao de campos obrigatorios na cotacao
+
+- Ajustada a tela da calculadora/cotacao do cliente para marcar com `*` apenas os campos obrigatorios:
+  - nome do produto;
+  - HS Code ou NCM sugerido;
+  - FOB unitario em dolar;
+  - quantidade.
+- Removida a tag textual `(opcional)` dos campos opcionais:
+  - nome do fornecedor;
+  - e-mail do fornecedor;
+  - telefone do fornecedor;
+  - foto/cartao ou contato do fornecedor.
+- Mantida a regra funcional da etapa anterior: fornecedor e anexos de fornecedor continuam opcionais.
+- Nao houve alteracao em banco, migrations, RLS, auth/middleware/permissoes, Storage, admin, Simulacoes Finais, calculo, `package.json`, producao ou `temp/`.
+
 ### 2026-07-10 - Fornecedor opcional na cotacao do cliente
 
 - Criado/garantido usuario cliente de teste no Supabase Dev:

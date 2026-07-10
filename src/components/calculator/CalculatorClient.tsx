@@ -658,7 +658,7 @@ export function CalculatorClient({
                 <h2 className="mt-1 text-xl font-bold text-rpx-ink">Produto e fornecedor</h2>
               </div>
               <div className="grid gap-5 md:grid-cols-2">
-              <FormField label="Nome do produto">
+              <FormField label="Nome do produto *">
                 <TextInput value={input.productName} onChange={(event) => updateInput("productName", event.target.value)} placeholder="Ex: Garrafa térmica inox" />
                 {productNcmSuggestions.length > 0 && !selectedNcm ? (
                   <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-soft">
@@ -679,7 +679,7 @@ export function CalculatorClient({
                   </div>
                 ) : null}
               </FormField>
-              <FormField label="HS Code ou NCM sugerido" help="Classificação preliminar, sujeita a validação fiscal.">
+              <FormField label="HS Code ou NCM sugerido *" help="Classificação preliminar, sujeita a validação fiscal.">
                 <TextInput value={input.hsCode} onChange={(event) => updateInput("hsCode", event.target.value)} placeholder="Ex: 9617.00.10" />
                 {ncmSuggestions.length > 0 ? (
                   <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-soft">
@@ -702,20 +702,20 @@ export function CalculatorClient({
                   </div>
                 ) : null}
               </FormField>
-              <FormField label="FOB unitário em dólar">
+              <FormField label="FOB unitário em dólar *">
                 <NumberInput value={input.fobUnitUsd} onChange={(event) => updateInput("fobUnitUsd", event.target.value)} />
               </FormField>
-              <FormField label="Quantidade">
+              <FormField label="Quantidade *">
                 <NumberInput step="1" value={input.quantity} onChange={(event) => updateInput("quantity", event.target.value)} />
               </FormField>
-              <FormField label="Nome do fornecedor (opcional)">
+              <FormField label="Nome do fornecedor">
                 <TextInput
                   value={supplierName}
                   onChange={(event) => updateSupplierField(setSupplierName, event.target.value)}
                   placeholder="Ex: Shenzhen ABC Trading"
                 />
               </FormField>
-              <FormField label="E-mail do fornecedor (opcional)">
+              <FormField label="E-mail do fornecedor">
                 <TextInput
                   type="email"
                   value={supplierEmail}
@@ -723,7 +723,7 @@ export function CalculatorClient({
                   placeholder="contato@fornecedor.com"
                 />
               </FormField>
-              <FormField label="Telefone do fornecedor (opcional)">
+              <FormField label="Telefone do fornecedor">
                 <TextInput
                   type="tel"
                   value={supplierPhone}
@@ -762,7 +762,7 @@ export function CalculatorClient({
                 ) : null}
               </FormField>
               <FormField
-                label="Foto do cartão ou contato do fornecedor (opcional)"
+                label="Foto do cartão ou contato do fornecedor"
                 help="Dados do fornecedor são opcionais. Se tiver, anexe cartão de visita, foto do estande ou outra referência para ajudar a equipe na análise. Até 5 arquivos."
               >
                 <input
